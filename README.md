@@ -20,11 +20,18 @@ Evaluaciones:
 - incluir banco de preguntas asociado a objetivos de aprendizaje
 - permitir aplicar evaluaciones digitales o registrar evaluaciones aplicadas a papel
 - generar  resultados automáticos por estudiante y curso
+- permitir analisis de resultados
 
 
 Biblioteca escolar:
 
 - permitir gestión de catalogo bibliográfico del establecimiento , incluyendo registro de prestamos', devoluciones y reportes de uso, en caso de ser requerido se puede instalar una biblioteca virtual con mas de 1500 libros 
+
+
+Comunicacion con apoderados:
+
+- permitir comunicacion bidireccional entre profesores y apoderados, a traves de un chat interno del sistema y el envio de correos
+- permitir ver los anuncios y noticias publicadas por los profesores
 
 ## Requisitos de funcionalidad por roles
 administrador
@@ -42,6 +49,8 @@ administrador
 6. por cada usuario de rol profesor, designar asignatura que impartira(puede impartir una o mas asignaturas)
 
 7. cada usuario rol alumno, designar a que curso corresponde (desde 1° basico hasta 4° medio)
+
+8. debe poder crear anucios en un panel de anuncios y noticias
 ```
 
 profesor
@@ -58,9 +67,17 @@ profesor
 5. la opcion de crear pruebas se permite 3 tipos de preguntas(alternativa,verdadero o falso, desarrollo)
 
 6. cada item unidad, prueba , debe tener un checkbox que indique si es visible para el estudiante o no
+
+7. debe poder crear anucios en un panel de anuncios y noticias
 ```
 
 estudiante
 ```
 1. tiene nivel de acceso 1 a cada modulo, en su mayoria solo puede leer la info y descargarla 
+```
+
+apoderado
+```
+1. Tiene acceso a info especifica del estudiante tales como(registro de notas por curso,registro de asistencia(mensual, por clases del dia), 
+calendario con fechas importantes, lista de contactos de profesores(correos y telefonos))
 ```
