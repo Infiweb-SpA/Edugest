@@ -81,3 +81,140 @@ apoderado
 1. Tiene acceso a info especifica del estudiante tales como(registro de notas por curso,registro de asistencia(mensual, por clases del dia), 
 calendario con fechas importantes, lista de contactos de profesores(correos y telefonos))
 ```
+
+
+# Mapeado de la base de datos
+
+```mermaid
+erDiagram
+
+    Person ||--o{ PersonIdentifier : "tiene"
+    Person ||--o{ PersonAddress : "reside en"
+    Person ||--o{ PersonTelephone : "tiene"
+    Person ||--o{ PersonEmailAddress : "tiene"
+    Person ||--o{ PersonRelationship : "se relaciona con"
+    
+    RefCounty ||--o{ PersonAddress : "contiene"
+    
+    Organization ||--o{ OrganizationRelationship : "jerarquiza (Padre/Hijo)"
+    Organization ||--o{ OrganizationPersonRole : "asigna roles en"
+    Organization ||--o{ OrganizationCalendarSession : "planifica sesiones en"
+    Organization ||--o{ Incident : "registra incidentes/reuniones en"
+    
+    Person ||--o{ OrganizationPersonRole : "asume"
+    Person ||--o{ IncidentPerson : "atiende/firma en"
+    
+    OrganizationPersonRole ||--o{ RoleAttendanceEvent : "registra asistencia de"
+    OrganizationPersonRole ||--o{ K12StudentDiscipline : "asocia disciplina a"
+    OrganizationPersonRole ||--o{ AssessmentResult : "recibe evaluaciones en"
+    
+    Incident ||--o{ IncidentPerson : "involucra a"
+    Incident ||--o{ K12StudentDiscipline : "origina"
+    
+    Person {
+        int personId PK
+        string FirstName
+        string MiddleName
+        string LastName
+        string SecondLastName
+        int RefSexId
+    }
+    
+    PersonIdentifier {
+        int personId FK
+        string Identifier
+        int RefPersonIdentificationSystemId
+    }
+    
+    Organization {
+        int OrganizationId PK
+        string Name
+        string ShortName
+        int RefOrganizationTypeId
+    }
+    
+    OrganizationRelationship {
+        int OrganizationId FK
+        int ParentOrganizationId FK
+    }
+    
+    OrganizationPersonRole {
+        int OrganizationPersonRoleId PK
+        int PersonId FK
+        int OrganizationId FK
+        int RoleId
+        date EntryDate
+        date ExitDate
+    }
+    
+    PersonRelationship {
+        int PersonId FK
+        int RelatedPersonId FK
+        int RefPersonRelationshipId
+    }
+    
+    RoleAttendanceEvent {
+        int RoleAttendanceEventId PK
+        int OrganizationPersonRoleId FK
+        date Date
+        int RefAttendanceEventTypeId
+        int RefAttendanceStatusId
+        int RefAbsentAttendanceCategoryId
+        int RefPresentAttendanceCategoryId
+        boolean VirtualIndicator
+        string fileScanBase64
+        string digitalRandomKey
+    }
+    
+    OrganizationCalendarSession {
+        int OrganizationCalendarSessionId PK
+        int OrganizationId FK
+        date BeginDate
+        date EndDate
+        time SessionStartTime
+        time SessionEndTime
+        string Description
+        boolean MarkingTermIndicator
+        boolean SchedulingTermIndicator
+    }
+    
+    Incident {
+        int IncidentId PK
+        int OrganizationId FK
+        date IncidentDate
+        time IncidentTime
+        string IncidentDescription
+        int RefIncidentBehaviorId
+    }
+    
+    IncidentPerson {
+        int IncidentId FK
+        int PersonId FK
+        int RefIncidentPersonRoleTypeId
+        string fileScanBase64
+        string digitalRandomKey
+    }
+    
+    K12StudentDiscipline {
+        int IncidentId FK
+        int OrganizationPersonRoleId FK
+    }
+    
+    AssessmentResult {
+        int AssessmentResultId PK
+        int OrganizationPersonRoleId FK
+        string ScoreValue
+    }
+    
+    PersonAddress {
+        int PersonId FK
+        string StreetNumberAndName
+        int RefCountyId FK
+    }
+    
+    RefCounty {
+        int RefCountyId PK
+        string Description
+    }
+
+```
