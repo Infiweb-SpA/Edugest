@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Administración - Edugest{% endblock %}
+{% block header_title %}Configuración Global del Sistema{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    
+    <div class="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-1">Matriz de Habilitación de Módulos</h3>
+        <p class="text-sm text-gray-500">Como administrador, puedes controlar qué módulos se encuentran visibles y operativos para la comunidad educativa.</p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden divide-y divide-gray-100">
+        {% for module in modules %}
+        <div class="p-6 flex items-center justify-between hover:bg-slate-50 transition">
+            <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                    <h4 class="font-semibold text-gray-800">{{ module.ModuleName }}</h4>
+                    {% if module.IsEnabled %}
+                        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Activo</span>
+                    {% else %}
+                        <span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">Deshabilitado</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-gray-500">Controla el acceso público, enrutamiento y lógica operacional del módulo {{ module.ModuleName }}.</p>
+            </div>
+            
+            <div>
+                <form action="{{ url_for('admin.toggle_module', module_id=module.ModuleId) }}" method="POST">
+                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg shadow-xs border transition cursor-pointer
+                        {% if module.IsEnabled %}
+                            bg-white text-gray-700 border-gray-300 hover:bg-gray-50
+                        {% else %}
+                            bg-indigo-600 text-white border-transparent hover:bg-indigo-700
+                        {% endif %}">
+                        {% if module.IsEnabled %} Desactivar {% else %} Activar {% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-sm text-gray-500">
+            No hay módulos registrados en el catálogo del sistema.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

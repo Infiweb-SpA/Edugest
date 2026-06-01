@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis Asignaturas - Edugest{% endblock %}
+{% block header_title %}Panel de Aula del Docente{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    
+    <div class="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-1">Libro de Clases Digital</h3>
+        <p class="text-sm text-gray-500">Seleccione la asignatura correspondiente para abrir un bloque pedagógico, firmar el leccionario y registrar la asistencia.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for asig in asignaturas %}
+        <div class="bg-white rounded-xl shadow-xs border border-gray-200 p-6 flex flex-col justify-between hover:shadow-md transition">
+            <div>
+                <div class="w-12 h-12 rounded-lg bg-indigo-50 flex items-center justify-center text-xl mb-4">
+                    📐
+                </div>
+                <h4 class="font-bold text-gray-900 text-lg mb-1">{{ asig.Name }}</h4>
+                <p class="text-xs text-slate-400 mb-4">Código Modular: {{ asig.ShortName }}</p>
+            </div>
+            
+            <a href="{{ url_for('libro_digital.registrar_bloque', org_id=asig.OrganizationId) }}" class="w-full text-center inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition cursor-pointer">
+                Abrir Libro de Clases ➡️
+            </a>
+        </div>
+        {% else %}
+        <div class="col-span-2 p-12 bg-white rounded-xl text-center border border-gray-200">
+            <p class="text-sm text-gray-500 font-medium">No se encontraron asignaturas asociadas en este entorno.</p>
+            <p class="text-xs text-gray-400 mt-1">Por favor, ejecuta `python seed.py` en tu consola.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

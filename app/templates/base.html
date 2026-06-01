@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Edugest - Gestión Escolar{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <aside class="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between hidden md:flex z-10 shadow-lg">
+            <div class="p-5">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">🎓</span>
+                    <h1 class="text-xl font-bold tracking-wider text-white">Edugest</h1>
+                </div>
+                
+                <nav class="mt-10 space-y-1">
+                    <a href="{{ url_for('admin.dashboard') }}" class="flex items-center space-x-3 py-3 px-4 rounded-lg bg-indigo-600 text-white font-medium transition">
+                        <span>⚙️</span>
+                        <span>Administración</span>
+                    </a>
+                    <a href="{{ url_for('libro_digital.mis_asignaturas') }}" class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
+    <span>📖</span>
+    <span>Libro Digital</span>
+</a>
+                    <a href="#" class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition cursor-not-allowed" title="Próximo módulo">
+                        <span>📝</span>
+                        <span>Evaluaciones</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition cursor-not-allowed" title="Próximo módulo">
+                        <span>📚</span>
+                        <span>Biblioteca CRA</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="p-4 border-t border-slate-800 bg-slate-950 text-xs text-slate-500 text-center">
+                Edugest SpA &copy; 2026 <br> Región de La Araucanía
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            
+            <header class="bg-white shadow-sm border-b border-gray-200 py-4 px-6 flex justify-between items-center z-0">
+                <h2 class="text-xl font-semibold text-gray-800">
+                    {% block header_title %}Panel de Control{% endblock %}
+                </h2>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-gray-700">Administrador</p>
+                        <p class="text-xs text-gray-400">Soporte Infiweb</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                        AI
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 bg-slate-50">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+</body>
+</html>
