@@ -82,7 +82,7 @@ calendario con fechas importantes, lista de contactos de profesores(correos y te
 ```
 
 
-# Mapeado de la base de datos
+# Mapeado de la base de datos mineduc
 
 ```mermaid
 erDiagram
