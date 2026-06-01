@@ -25,8 +25,7 @@ Evaluaciones:
 
 Biblioteca escolar:
 
-- permitir gestión de catalogo bibliográfico del establecimiento , incluyendo registro de prestamos', devoluciones y reportes de uso, en caso de ser requerido se puede instalar una biblioteca virtual con mas de 1500 libros 
-
+- permitir gestión de catalogo bibliográfico del establecimiento , incluyendo registro de prestamos', devoluciones y reportes de uso
 
 Comunicacion con apoderados:
 
