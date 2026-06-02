@@ -48,7 +48,10 @@ class EdugestAssessmentInstrument(db.Model):
     __tablename__ = 'edugest_assessment_instrument'
     
     InstrumentId = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    PlanId = db.Column(db.Integer, db.ForeignKey('edugest_curriculum_plan.PlanId', ondelete='CASCADE'), nullable=False)
+    # 1. Agregamos de manera explícita el OrganizationId que pide tu lógica de rutas
+    OrganizationId = db.Column(db.Integer, db.ForeignKey('Organization.OrganizationId', ondelete='CASCADE'), nullable=False)
+    # 2. Cambiamos nullable a True para que la evaluación pueda existir sin estar amarrada obligatoriamente a una unidad
+    PlanId = db.Column(db.Integer, db.ForeignKey('edugest_curriculum_plan.PlanId', ondelete='CASCADE'), nullable=True)
     Title = db.Column(db.String(255), nullable=False)
     IsDigital = db.Column(db.Boolean, default=True, nullable=False) 
     IsVisible = db.Column(db.Boolean, default=False, nullable=False) 
@@ -61,8 +64,11 @@ class EdugestAssessmentQuestion(db.Model):
     QuestionId = db.Column(db.Integer, primary_key=True, autoincrement=True)
     InstrumentId = db.Column(db.Integer, db.ForeignKey('edugest_assessment_instrument.InstrumentId', ondelete='CASCADE'), nullable=False)
     QuestionText = db.Column(db.Text, nullable=False)
-    QuestionType = db.Column(db.String(50), nullable=False) 
+    QuestionType = db.Column(db.String(50), nullable=False) # 'Alternativa', 'Verdadero/Falso', 'Desarrollo'
     Points = db.Column(db.Integer, default=1, nullable=False)
+
+    # NUEVO: Relación automática para acceder a las opciones desde la pregunta
+    opciones = db.relationship('EdugestQuestionOption', backref='question', lazy=True, cascade="all, delete-orphan")
 
 
 class EdugestQuestionOption(db.Model):

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Evaluaciones - Edugest{% endblock %}
+{% block header_title %}Motor de Evaluaciones e Instrumentos{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+    
+    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
+        <h3 class="text-lg font-bold text-gray-900 mb-2">Crear Nuevo Instrumento</h3>
+        <p class="text-sm text-gray-500 mb-4">Selecciona una asignatura para diseñar una evaluación digital y conectarla con la planificación del aula.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for asig in asignaturas %}
+            <div class="border border-gray-100 rounded-lg p-4 bg-slate-50 flex justify-between items-center">
+                <div>
+                    <h4 class="font-semibold text-gray-800 text-sm">{{ asig.Name }}</h4>
+                    <p class="text-xs text-gray-400">{{ asig.ShortName }}</p>
+                </div>
+                <a href="{{ url_for('evaluaciones.crear_instrumento', org_id=asig.OrganizationId) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-2 rounded-md font-medium shadow-xs transition">
+                    + Nueva Prueba
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+        <div class="p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900">Banco de Instrumentos Disponibles</h3>
+        </div>
+        
+        <div class="divide-y divide-gray-100">
+            {% for inst in instrumentos %}
+            <div class="p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition gap-4">
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h4 class="font-bold text-gray-800">{{ inst.Title }}</h4>
+                        {% if inst.IsVisible %}
+                        <span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full font-medium">Publicada</span>
+                        {% else %}
+                        <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-medium">Borrador</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Modalidad: {% if inst.IsDigital %}Digital Auto-corregible{% else %}Papel Registrado{% endif %}</p>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <a href="{{ url_for('evaluaciones.disenar_preguntas', inst_id=inst.InstrumentId) }}" class="border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs px-3 py-2 rounded-lg font-medium transition">
+                        ✏️ Preguntas
+                    </a>
+                    <a href="{{ url_for('evaluaciones.resultados', inst_id=inst.InstrumentId) }}" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3 py-2 rounded-lg font-medium transition">
+                        📊 Resultados
+                    </a>
+                    
+                    <form action="{{ url_for('evaluaciones.cambiar_visibilidad', inst_id=inst.InstrumentId) }}" method="POST">
+                        <button type="submit" class="text-xs px-3 py-2 rounded-lg font-medium cursor-pointer text-white {% if inst.IsVisible %} bg-red-600 hover:bg-red-700 {% else %} bg-emerald-600 hover:bg-emerald-700 {% endif %}">
+                            {% if inst.IsVisible %} Ocultar {% else %} Publicar {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-sm text-gray-400">No hay instrumentos de evaluación creados todavía.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

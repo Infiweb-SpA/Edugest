@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Evaluación - Edugest{% endblock %}
+{% block header_title %}Configurar Cabecera de Evaluación{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
+    <h3 class="text-lg font-bold text-gray-900 mb-1">Nueva Prueba para {{ asignatura.Name }}</h3>
+    <p class="text-sm text-gray-500 mb-6">Asocia este instrumento a una unidad curricular para asegurar coherencia institucional en los reportes del leccionario.</p>
+
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Título de la Evaluación</label>
+            <input type="text" name="title" required placeholder="Ej: Prueba Parcial Módulo 1: Álgebra Lineal" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Unidad Didáctica / Planificación Asociada</label>
+            <select name="plan_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                {% for un in unidades %}
+                <option value="{{ un.PlanId }}">{{ un.UnitTitle }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex items-center p-3 bg-slate-50 rounded-lg border border-gray-100">
+            <input id="is_digital" name="is_digital" type="checkbox" checked class="h-4 w-4 rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <label for="is_digital" class="ml-2 block text-sm font-medium text-gray-700 cursor-pointer">
+                Habilitar como Evaluación Digital Remota (Auto-corrección activa)
+            </label>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-4">
+            <a href="{{ url_for('evaluaciones.index') }}" class="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-xs cursor-pointer">Crear e Ir a Preguntas</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

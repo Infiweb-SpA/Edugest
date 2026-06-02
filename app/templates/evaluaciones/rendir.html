@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Examen Online - Edugest{% endblock %}
+{% block header_title %}Entorno de Evaluación Virtual{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    <div class="bg-slate-900 p-6 text-white">
+        <p class="text-xs text-indigo-400 font-bold uppercase tracking-wider">Estudiante en sesión: {{ alumno.FirstName }} {{ alumno.LastName }}</p>
+        <h2 class="text-2xl font-bold mt-1">{{ instrumento.Title }}</h2>
+    </div>
+
+    <form method="POST" class="p-6 space-y-6">
+        {% for item in preguntas_data %}
+        <div class="space-y-3 p-4 border border-gray-100 rounded-xl bg-slate-50">
+            <h4 class="font-bold text-gray-900 text-sm">
+                {{ loop.index }}. {{ item.pregunta.QuestionText }} 
+                <span class="text-xs text-slate-400 font-normal">({{ item.pregunta.Points }} Pts)</span>
+            </h4>
+            
+            <div class="space-y-2">
+                {% for op in item.opciones %}
+                <label class="flex items-center p-2.5 bg-white rounded-lg border border-gray-200 text-xs text-gray-700 hover:bg-slate-50 cursor-pointer transition">
+                    <input type="radio" name="pregunta_{{ item.pregunta.QuestionId }}" value="{{ op.OptionId }}" required class="text-indigo-600 focus:ring-indigo-500 h-4 w-4 mr-3">
+                    <span class="font-medium text-gray-500 uppercase mr-2">{{ 'abcdefghijklmnopqrstuvwxyz'[loop.index0] }})</span> 
+                    <span>{{ op.OptionText }}</span>
+                </label>
+                {% else %}
+                <p class="text-xs text-amber-600 italic p-2 bg-amber-50 rounded-lg border border-amber-100">
+                    ⚠️ Esta pregunta no tiene alternativas asociadas todavía.
+                </p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="flex justify-end pt-4 border-t border-gray-100">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-lg shadow-md transition cursor-pointer text-sm">
+                📤 Finalizar y Enviar Examen
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

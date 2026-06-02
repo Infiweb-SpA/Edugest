@@ -26,16 +26,29 @@ def create_app():
             db.session.add_all(modulos_iniciales)
             db.session.commit()
 
-    # REGISTRO DE BLUEPRINTS
+    # ==========================================
+    # REGISTRO ÚNICO DE BLUEPRINTS
+    # ==========================================
+    
+    # 1. Módulo de Administración
     from app.modules.admin.routes import admin_bp
     app.register_blueprint(admin_bp)
 
+    # 2. Módulo de Libro Digital
     from app.modules.libro_digital.routes import libro_digital_bp
     app.register_blueprint(libro_digital_bp)
 
-    # Redirección de conveniencia: Al entrar a '/' nos manda directo al módulo funcional
+    # 3. Módulo de Evaluaciones (Agregado)
+    from app.modules.evaluaciones.routes import evaluaciones_bp
+    app.register_blueprint(evaluaciones_bp)
+
+    # Redirección de la raíz al panel de administración por defecto
     @app.route('/')
-    def health_check():
+    def index():
         return redirect(url_for('admin.dashboard'))
 
+# Filtro Jinja para transformar índices (0, 1, 2, 3) en letras (A, B, C, D)
+    @app.template_filter('tochar')
+    def tochar(number):
+        return chr(65 + number) # 65 es el código ASCII para la letra 'A'
     return app
