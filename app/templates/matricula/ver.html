@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Ficha Estudiante{% endblock %}
+{% block header_title %}Ficha del Estudiante{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Tarjeta Identidad -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">
+                    {{ persona.FirstName }} {{ persona.MiddleName or '' }}
+                    {{ persona.LastName }} {{ persona.SecondLastName or '' }}
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">ID Interno: {{ persona.PersonId }}</p>
+            </div>
+            <span class="inline-flex items-center rounded-md bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">Estudiante</span>
+        </div>
+
+        <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">RUN</span>
+                <span class="font-mono font-medium text-gray-900">{{ ids_map.get(51, '—') }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">IPE</span>
+                <span class="font-mono font-medium text-gray-900">{{ ids_map.get(52, '—') }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">N° Matrícula</span>
+                <span class="font-mono font-medium text-gray-900">{{ ids_map.get(55, '—') }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">N° Lista</span>
+                <span class="font-mono font-medium text-gray-900">{{ ids_map.get(54, '—') }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matrículas activas -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Cursos Matriculados</h3>
+        {% if matriculas %}
+        <div class="space-y-3">
+            {% for m in matriculas %}
+            <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+                <div>
+                    <p class="font-medium text-gray-900">{{ m.organization.Name }}</p>
+                    <p class="text-xs text-gray-500">Ingreso: {{ m.EntryDate }} {% if m.ExitDate %} | Retiro: {{ m.ExitDate }}{% endif %}</p>
+                </div>
+                <span class="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-800">Activo</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No hay matrículas registradas para este estudiante.</p>
+        {% endif %}
+    </div>
+
+    <div class="flex justify-start">
+        <a href="{{ url_for('matricula.listar_estudiantes') }}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium">← Volver al listado</a>
+    </div>
+</div>
+{% endblock %}

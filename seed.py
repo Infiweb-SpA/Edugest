@@ -1,8 +1,8 @@
 from app import create_app
 from app.database import db
 from app.models import (
-    Person, PersonIdentifier, Organization, 
-    OrganizationPersonRole, EdugestCurriculumPlan
+    Person, PersonIdentifier, Organization,
+    OrganizationPersonRole, EdugestCurriculumPlan, EdugestModule
 )
 
 app = create_app()
@@ -10,21 +10,49 @@ app = create_app()
 with app.app_context():
     print("🚀 Iniciando siembra de datos de prueba para Edugest...")
 
+    # ============================================================
+    # 0. SEMILLA DE MÓDULOS DEL SISTEMA (incluye Matrícula)
+    # ============================================================
+    if not EdugestModule.query.first():
+        modulos_iniciales = [
+            EdugestModule(ModuleName="Libro Digital", IsEnabled=True),
+            EdugestModule(ModuleName="Evaluaciones", IsEnabled=True),
+            EdugestModule(ModuleName="Biblioteca CRA", IsEnabled=True),
+            EdugestModule(ModuleName="Comunicaciones", IsEnabled=True),
+            EdugestModule(ModuleName="Matrícula", IsEnabled=True)
+        ]
+        db.session.add_all(modulos_iniciales)
+        db.session.commit()
+        print("✅ Módulos base creados (Libro Digital, Evaluaciones, Biblioteca CRA, Comunicaciones, Matrícula).")
+    else:
+        # Si ya existen módulos pero falta Matrícula, la creamos individualmente
+        modulo_matricula = EdugestModule.query.filter_by(ModuleName="Matrícula").first()
+        if not modulo_matricula:
+            db.session.add(EdugestModule(ModuleName="Matrícula", IsEnabled=True))
+            db.session.commit()
+            print("✅ Módulo Matrícula agregado al catálogo existente.")
+        else:
+            print("ℹ️ El módulo Matrícula ya existe en el catálogo.")
+
+    # ============================================================
     # 1. Crear Asignatura de prueba (RefOrganizationTypeId=22)
+    # ============================================================
     asignatura = Organization.query.filter_by(Name="Matemáticas - 1º Medio", RefOrganizationTypeId=22).first()
     if not asignatura:
         asignatura = Organization(
-            Name="Matemáticas - 1º Medio", 
-            ShortName="MAT-1M", 
+            Name="Matemáticas - 1º Medio",
+            ShortName="MAT-1M",
             RefOrganizationTypeId=22
         )
         db.session.add(asignatura)
-        db.session.flush()  
+        db.session.flush()
         print(f"✅ Asignatura creada: {asignatura.Name}")
     else:
         print(f"ℹ️ La asignatura ya existe: {asignatura.Name}")
 
+    # ============================================================
     # 2. Crear Planificaciones Curriculares asociadas
+    # ============================================================
     if not EdugestCurriculumPlan.query.filter_by(OrganizationId=asignatura.OrganizationId).first():
         unidades = [
             EdugestCurriculumPlan(OrganizationId=asignatura.OrganizationId, UnitTitle="Unidad 1: Números racionales y potencias"),
@@ -34,7 +62,9 @@ with app.app_context():
         db.session.add_all(unidades)
         print("✅ Unidades de planificación curricular añadidas.")
 
+    # ============================================================
     # 3. Datos de los 5 Alumnos Ficticios
+    # ============================================================
     alumnos_datos = [
         {"rut": "21.345.678-9", "nombre": "Juan Carlos", "apellido_p": "Pérez", "apellido_m": "Muñoz"},
         {"rut": "22.456.789-K", "nombre": "María José", "apellido_p": "González", "apellido_m": "Tapia"},
@@ -45,7 +75,7 @@ with app.app_context():
 
     for data in alumnos_datos:
         identificador_existente = PersonIdentifier.query.filter_by(
-            Identifier=data["rut"], 
+            Identifier=data["rut"],
             RefPersonIdentificationSystemId=51
         ).first()
 
@@ -57,7 +87,7 @@ with app.app_context():
                 SecondLastName=data["apellido_m"]
             )
             db.session.add(nueva_persona)
-            db.session.flush()  
+            db.session.flush()
 
             nuevo_rut = PersonIdentifier(
                 PersonId=nueva_persona.PersonId,

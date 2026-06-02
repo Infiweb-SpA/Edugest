@@ -42,6 +42,10 @@ def create_app():
     from app.modules.evaluaciones.routes import evaluaciones_bp
     app.register_blueprint(evaluaciones_bp)
 
+     # 4. Módulo de Matrícula
+    from app.modules.matricula.routes import matricula_bp
+    app.register_blueprint(matricula_bp)
+    
     # Redirección de la raíz al panel de administración por defecto
     @app.route('/')
     def index():

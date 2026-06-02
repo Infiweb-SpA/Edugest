@@ -13,7 +13,7 @@ class Person(db.Model):
 
     # Relaciones ORM para consultas ágiles en plantillas
     identifiers = db.relationship('PersonIdentifier', backref='person', lazy=True, cascade="all, delete-orphan")
-    roles = db.relationship('OrganizationPersonRole', backref='person', lazy=True, cascade="all, delete-orphan")
+    # NOTA: La relación 'roles' se define desde OrganizationPersonRole con backref
 
 
 class PersonIdentifier(db.Model):
@@ -46,6 +46,10 @@ class OrganizationPersonRole(db.Model):
     EntryDate = db.Column(db.Date, nullable=True)
     ExitDate = db.Column(db.Date, nullable=True)
 
+    # Relaciones ORM - backref crea 'roles' en Person y 'role_assignments' en Organization
+    person = db.relationship('Person', backref='roles', lazy=True)
+    organization = db.relationship('Organization', backref='role_assignments', lazy=True)
+
 
 class RoleAttendanceEvent(db.Model):
     """Registro de asistencia oficial diaria o por bloques por estudiante"""
@@ -74,7 +78,7 @@ class OrganizationCalendarSession(db.Model):
     MarkingTermIndicator = db.Column(db.Boolean, default=False, nullable=False)   
     SchedulingTermIndicator = db.Column(db.Boolean, default=False, nullable=False) 
     
-    # 🔗 EXTENSIÓN EDUGEST: Enlace dinámico no obligatorio hacia la planificación anual
+    # EXTENSIÓN EDUGEST: Enlace dinámico no obligatorio hacia la planificación anual
     PlanId = db.Column(db.Integer, db.ForeignKey('edugest_curriculum_plan.PlanId', ondelete='SET NULL'), nullable=True)
 
 

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Matrícula - Estudiantes{% endblock %}
+{% block header_title %}Registro de Matrícula{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex justify-between items-center">
+        <h3 class="text-lg font-bold text-gray-900">Estudiantes Matriculados</h3>
+        <a href="{{ url_for('matricula.nuevo_estudiante') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
+            + Nuevo Estudiante
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left font-semibold text-gray-700">N° Lista</th>
+                    <th class="px-6 py-3 text-left font-semibold text-gray-700">RUN / IPE</th>
+                    <th class="px-6 py-3 text-left font-semibold text-gray-700">Nombre Completo</th>
+                    <th class="px-6 py-3 text-left font-semibold text-gray-700">Curso</th>
+                    <th class="px-6 py-3 text-left font-semibold text-gray-700">Fecha Matrícula</th>
+                    <th class="px-6 py-3 text-right font-semibold text-gray-700">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for rol in estudiantes %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 text-gray-600">
+                        {% set num_lista = rol.person.identifiers | selectattr("RefPersonIdentificationSystemId", "equalto", 54) | map(attribute="Identifier") | first %}
+                        {{ num_lista or '-' }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 font-mono">
+                        {% set rut = rol.person.identifiers | selectattr("RefPersonIdentificationSystemId", "equalto", 51) | map(attribute="Identifier") | first %}
+                        {{ rut or '-' }}
+                    </td>
+                    <td class="px-6 py-4 font-medium text-gray-900">
+                        {{ rol.person.FirstName }} {{ rol.person.MiddleName or '' }}
+                        {{ rol.person.LastName }} {{ rol.person.SecondLastName or '' }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">{{ rol.organization.Name }}</td>
+                    <td class="px-6 py-4 text-gray-600">{{ rol.EntryDate or '-' }}</td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{{ url_for('matricula.ver_estudiante', person_id=rol.person.PersonId) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">Ver ficha</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                        No hay estudiantes matriculados. <a href="{{ url_for('matricula.nuevo_estudiante') }}" class="text-indigo-600 underline">Crear el primero</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

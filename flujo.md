@@ -229,9 +229,3 @@ erDiagram
 ```
 
 ---
-
-# 🛠️ Instrucciones de Prompt para iniciar la construcción con tu IA
-
-Cuando le entregues este diseño a la IA constructora, te sugiero usar el siguiente comando de arranque:
-
-> *"Actúa como un Ingeniero de Software Fullstack experto en Python/Flask (o Laravel según decidas), JavaScript y SQLite. Usando como especificación técnica el plano de base de datos provisto en este documento, vamos a construir el sistema **Edugest** paso a paso. No escribas todo el código de una vez. Comenzaremos con el **Paso 1: Generación de las migraciones y modelos en SQLite** respetando estrictamente las llaves foráneas entre el bloque MINEDUC y las extensiones. Confírmame que entiendes la estructura y dame el código para las tablas del Módulo A (Permisos) y Módulo B (Planificación) para empezar."*
