@@ -6,25 +6,30 @@
 <div class="max-w-6xl mx-auto space-y-6">
     <div class="flex justify-between items-center">
         <h3 class="text-lg font-bold text-gray-900">Estudiantes Matriculados</h3>
-        <a href="{{ url_for('matricula.nuevo_estudiante') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
+        <a href="{{ url_for('matricula.nuevo_estudiante') }}" 
+           class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
             + Nuevo Estudiante
         </a>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm whitespace-nowrap">
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left font-semibold text-gray-700">N° Lista</th>
                     <th class="px-6 py-3 text-left font-semibold text-gray-700">RUN / IPE</th>
                     <th class="px-6 py-3 text-left font-semibold text-gray-700">Nombre Completo</th>
+                    <th class="px-6 py-3 text-left font-semibold text-gray-700">Nivel</th>
+                    <th class="px-6 py-3 text-left font-semibold text-gray-700">Grado</th>
                     <th class="px-6 py-3 text-left font-semibold text-gray-700">Curso</th>
                     <th class="px-6 py-3 text-left font-semibold text-gray-700">Fecha Matrícula</th>
                     <th class="px-6 py-3 text-right font-semibold text-gray-700">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-                {% for rol in estudiantes %}
+                {% for item in estudiantes %}
+                {% set rol = item.rol %}
+                {% set jerarquia = item.jerarquia %}
                 <tr class="hover:bg-gray-50 transition">
                     <td class="px-6 py-4 text-gray-600">
                         {% set num_lista = rol.person.identifiers | selectattr("RefPersonIdentificationSystemId", "equalto", 54) | map(attribute="Identifier") | first %}
@@ -38,16 +43,24 @@
                         {{ rol.person.FirstName }} {{ rol.person.MiddleName or '' }}
                         {{ rol.person.LastName }} {{ rol.person.SecondLastName or '' }}
                     </td>
-                    <td class="px-6 py-4 text-gray-600">{{ rol.organization.Name }}</td>
+                    <td class="px-6 py-4 text-gray-600">{{ jerarquia.nivel or '-' }}</td>
+                    <td class="px-6 py-4 text-gray-600">{{ jerarquia.grado or '-' }}</td>
+                    <td class="px-6 py-4 text-gray-600">
+                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
+                            {{ jerarquia.grado or '' }} {{ jerarquia.letra or '' }}
+                        </span>
+                    </td>
                     <td class="px-6 py-4 text-gray-600">{{ rol.EntryDate or '-' }}</td>
                     <td class="px-6 py-4 text-right">
-                        <a href="{{ url_for('matricula.ver_estudiante', person_id=rol.person.PersonId) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">Ver ficha</a>
+                        <a href="{{ url_for('matricula.ver_estudiante', person_id=rol.person.PersonId) }}" 
+                           class="text-indigo-600 hover:text-indigo-900 font-medium">Ver ficha</a>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                        No hay estudiantes matriculados. <a href="{{ url_for('matricula.nuevo_estudiante') }}" class="text-indigo-600 underline">Crear el primero</a>.
+                    <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                        No hay estudiantes matriculados. 
+                        <a href="{{ url_for('matricula.nuevo_estudiante') }}" class="text-indigo-600 underline">Crear el primero</a>.
                     </td>
                 </tr>
                 {% endfor %}

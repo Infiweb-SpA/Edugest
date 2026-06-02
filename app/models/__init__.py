@@ -5,7 +5,12 @@ from app.database import db
 from app.models.mineduc import (
     Person, PersonIdentifier, Organization, 
     OrganizationPersonRole, RoleAttendanceEvent, 
-    OrganizationCalendarSession, AssessmentResult
+    OrganizationCalendarSession, AssessmentResult,
+    OrganizationRelationship, OrganizationIdentifier,
+    PersonAddress, PersonTelephone, PersonEmailAddress,
+    PersonRelationship, PersonHealth, PersonStatus,
+    PersonDegreeOrCertificate, PersonBirthplace, PersonAllergy,
+    Incident, IncidentPerson, K12StudentDiscipline
 )
 from app.models.edugest import (
     EdugestModule, EdugestRolePermission, EdugestCurriculumPlan,
