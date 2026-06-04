@@ -8,7 +8,7 @@ from app.models.mineduc import (
     RoleAttendanceEvent, PersonIdentifier, Person, OrganizationRelationship
 )
 from app.models.edugest import (
-    EdugestOrganizationConfig, EdugestCurriculumPlan, EdugestSessionAttendance
+    EdugestOrganizationConfig, EdugestCurriculumPlan, EdugestSessionAttendance, EdugestAssessmentInstrument
 )
 
 libro_digital_bp = Blueprint('libro_digital', __name__, url_prefix='/libro-digital')
@@ -85,10 +85,11 @@ def asignaturas_por_grado(grado_id):
 @libro_digital_bp.route('/asignatura/<int:org_id>/unidades', methods=['GET', 'POST'])
 def crud_unidades(org_id):
     asignatura = Organization.query.get_or_404(org_id)
-     # ── FIX: obtener el grado al que pertenece esta asignatura ──
+
+    # FIX: obtener el grado al que pertenece esta asignatura
     relacion_grado = OrganizationRelationship.query.filter_by(OrganizationId=org_id).first()
     grado_id = relacion_grado.ParentOrganizationId if relacion_grado else None
-    # ────────────────────────────────────────────────────────────
+
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -123,20 +124,29 @@ def crud_unidades(org_id):
 
     # --- LÓGICA GET ---
     # Obtenemos todos los planes ordenados por fecha de creación
-    planes = EdugestCurriculumPlan.query.filter_by(OrganizationId=org_id).order_by(EdugestCurriculumPlan.CreatedAt).all()
+    # --- LÓGICA GET ---
+    planes = EdugestCurriculumPlan.query.filter_by(OrganizationId=org_id)\
+                                        .order_by(EdugestCurriculumPlan.CreatedAt).all()
     
     # Agrupamos las clases por el nombre de la Unidad
     unidades_agrupadas = {}
     for plan in planes:
         if plan.UnitTitle not in unidades_agrupadas:
-            unidades_agrupadas[plan.UnitTitle] = [] # Inicializamos la unidad vacía
+            unidades_agrupadas[plan.UnitTitle] = []
             
-        # Si el registro tiene Contenido u Objetivo, es una "Clase" real, la agregamos a la lista
+        # Si el registro tiene Contenido u Objetivo, es una "Clase" real
         if plan.Contenido or plan.Objetivo or plan.DetallesActividad:
-            unidades_agrupadas[plan.UnitTitle].append(plan)
+            # ── NUEVO: Cargar evaluaciones vinculadas a esta clase ──
+            evaluaciones = EdugestAssessmentInstrument.query.filter_by(PlanId=plan.PlanId).all()
+            # ────────────────────────────────────────────────────────
+            
+            unidades_agrupadas[plan.UnitTitle].append({
+                'plan': plan,
+                'evaluaciones': evaluaciones
+            })
 
-    return render_template('libro_digital/unidades.html', 
-                           asignatura=asignatura, 
+    return render_template('libro_digital/unidades.html',
+                           asignatura=asignatura,
                            unidades_agrupadas=unidades_agrupadas,
                            grado_id=grado_id)
 

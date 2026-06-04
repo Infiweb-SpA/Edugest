@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Evaluaciones - Asignaturas{% endblock %}
+{% block header_title %}Asignaturas: {{ grado.Name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <div class="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
+        <div>
+            <h3 class="text-lg font-bold text-gray-900">Asignaturas del Grado</h3>
+            <p class="text-sm text-gray-500">Seleccione una asignatura para ver sus unidades y evaluaciones.</p>
+        </div>
+        <a href="{{ url_for('evaluaciones.listar_grados') }}" class="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            ← Volver a Grados
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for item in asignaturas_data %}
+        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h4 class="font-bold text-gray-900">{{ item.asignatura.Name }}</h4>
+                    <p class="text-xs text-gray-400">Código: {{ item.asignatura.ShortName }}</p>
+                </div>
+                {% if item.evaluaciones > 0 %}
+                <span class="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                    {{ item.evaluaciones }} eval
+                </span>
+                {% endif %}
+            </div>
+            
+            <div class="flex space-x-2 mt-4">
+                <a href="{{ url_for('evaluaciones.unidades_asignatura', org_id=item.asignatura.OrganizationId) }}" 
+                   class="flex-1 text-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                    📂 Ver Unidades y Clases
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-full p-8 text-center text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
+            No hay asignaturas registradas en este grado.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Evaluaciones - Unidades{% endblock %}
+{% block header_title %}Unidades: {{ asignatura.Name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <div class="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
+        <div>
+            <h3 class="text-lg font-bold text-gray-900">Unidades Curriculares y Clases</h3>
+            <p class="text-sm text-gray-500">Cree evaluaciones vinculadas a clases específicas.</p>
+        </div>
+        <a href="{{ url_for('evaluaciones.asignaturas_por_grado', grado_id=grado_id) }}" 
+           class="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            ← Volver a Asignaturas
+        </a>
+    </div>
+
+    <div class="space-y-4">
+        {% for titulo, data in unidades_agrupadas.items() %}
+        <details class="group bg-white rounded-xl border border-gray-200 overflow-hidden" open>
+            <summary class="flex justify-between items-center font-semibold cursor-pointer list-none p-5 bg-gray-50 hover:bg-gray-100 transition border-b border-gray-200">
+                <span class="text-indigo-900 text-lg flex items-center gap-2">
+                    📁 {{ titulo }} 
+                    <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                        {{ data.clases|length }} Clases
+                    </span>
+                </span>
+                <span class="transition-transform duration-300 group-open:rotate-180">
+                    <svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                </span>
+            </summary>
+            
+            <div class="p-6 bg-white space-y-4">
+                {% for clase in data.clases %}
+                <div class="p-4 border border-gray-100 rounded-lg bg-gray-50">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-sm">Clase {{ loop.index }}</h4>
+                            <p class="text-xs text-gray-400">
+                                {{ clase.plan.CreatedAt.strftime('%d/%m/%Y') if clase.plan.CreatedAt else '' }}
+                            </p>
+                        </div>
+                        <a href="{{ url_for('evaluaciones.crear_evaluacion_clase', plan_id=clase.plan.PlanId) }}" 
+                           class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition">
+                            + Nueva Evaluación
+                        </a>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-sm mb-3">
+                        <div><strong class="text-gray-600 text-xs">Objetivo:</strong> {{ clase.plan.Objetivo or '—' }}</div>
+                        <div><strong class="text-gray-600 text-xs">Contenido:</strong> {{ clase.plan.Contenido or '—' }}</div>
+                    </div>
+
+                    <!-- EVALUACIONES VINCULADAS A ESTA CLASE -->
+                    {% if clase.evaluaciones %}
+                    <div class="mt-3 pt-3 border-t border-gray-200">
+                        <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Evaluaciones de esta clase:</p>
+                        <div class="space-y-2">
+                            {% for eval in clase.evaluaciones %}
+                            <div class="flex justify-between items-center p-2 bg-white rounded border border-gray-100">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-medium text-gray-800">{{ eval.Title }}</span>
+                                    {% if eval.IsDigital %}
+                                    <span class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Digital</span>
+                                    {% endif %}
+                                    {% if eval.IsVisible %}
+                                    <span class="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">Publicada</span>
+                                    {% else %}
+                                    <span class="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">Borrador</span>
+                                    {% endif %}
+                                </div>
+                                                                <div class="flex gap-2">
+                                    <a href="{{ url_for('evaluaciones.disenar_preguntas', inst_id=eval.InstrumentId) }}" 
+                                       class="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50">✏️ Preguntas</a>
+                                    <a href="{{ url_for('evaluaciones.resultados', inst_id=eval.InstrumentId) }}" 
+                                       class="text-xs px-2 py-1 bg-slate-800 text-white rounded hover:bg-slate-700">📊 Resultados</a>
+                                    <form action="{{ url_for('evaluaciones.cambiar_visibilidad', inst_id=eval.InstrumentId) }}" method="POST" class="inline">
+                                        <button type="submit" 
+                                                class="text-xs px-2 py-1 rounded font-medium cursor-pointer text-white {% if eval.IsVisible %} bg-red-600 hover:bg-red-700 {% else %} bg-emerald-600 hover:bg-emerald-700 {% endif %}">
+                                            {% if eval.IsVisible %}🚫 Ocultar{% else %}✅ Publicar{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500 italic text-center py-4">
+                    No hay clases registradas en esta unidad.
+                </p>
+                {% endfor %}
+            </div>
+        </details>
+        {% else %}
+        <div class="p-10 text-center bg-white rounded-xl border border-gray-200">
+            <span class="text-4xl">📭</span>
+            <p class="mt-4 text-gray-500">Aún no hay unidades creadas.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
