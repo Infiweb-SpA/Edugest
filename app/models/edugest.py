@@ -143,6 +143,9 @@ class EdugestBook(db.Model):
     AvailableStock = db.Column(db.Integer, default=0, nullable=False)
     IsVirtual = db.Column(db.Boolean, default=False, nullable=False)
     FileUrl = db.Column(db.String(500), nullable=True)
+    
+    # ← AGREGAR ESTA RELACIÓN
+    loans = db.relationship('EdugestBookLoan', backref='book', lazy=True, cascade="all, delete-orphan")
 
 
 class EdugestBookLoan(db.Model):
@@ -155,7 +158,10 @@ class EdugestBookLoan(db.Model):
     LoanDate = db.Column(db.Date, nullable=False)
     DueDate = db.Column(db.Date, nullable=False)
     ReturnDate = db.Column(db.Date, nullable=True)
-    Status = db.Column(db.String(50), default='Prestado', nullable=False) 
+    Status = db.Column(db.String(50), default='Prestado', nullable=False)
+    
+    # ← AGREGAR ESTA RELACIÓN (opcional pero útil para acceder a la persona)
+    person_role = db.relationship('OrganizationPersonRole', backref='book_loans', lazy=True)
 
 
 # ============================================================================

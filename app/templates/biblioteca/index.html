@@ -1,0 +1,79 @@
+{% extends 'biblioteca/base.html' %}
+{% block biblioteca_content %}
+
+<!-- KPIs -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Total Libros</p>
+                <p class="text-2xl font-bold text-gray-900">{{ total_libros }}</p>
+            </div>
+            <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center text-xl">📚</div>
+        </div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Prestados</p>
+                <p class="text-2xl font-bold text-amber-600">{{ total_prestados }}</p>
+            </div>
+            <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-xl">🔄</div>
+        </div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Atrasados</p>
+                <p class="text-2xl font-bold text-red-600">{{ total_atrasados }}</p>
+            </div>
+            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-xl">⚠️</div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones rápidas -->
+<div class="flex flex-wrap gap-3">
+    <a href="{{ url_for('biblioteca.nuevo_libro') }}" 
+       class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm">
+        ➕ Nuevo Libro
+    </a>
+    <a href="{{ url_for('biblioteca.nuevo_prestamo') }}" 
+       class="px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition shadow-sm">
+        🔄 Nuevo Préstamo
+    </a>
+    <a href="{{ url_for('biblioteca.recursos_digitales') }}" 
+       class="px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition">
+        🌐 Bibliotecas Open Source
+    </a>
+</div>
+
+<!-- Préstamos recientes -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+    <div class="p-4 border-b border-gray-100">
+        <h3 class="font-bold text-gray-900">Préstamos Recientes</h3>
+    </div>
+    <div class="divide-y divide-gray-100">
+        {% for p in prestamos_recientes %}
+        <div class="p-4 flex justify-between items-center">
+            <div>
+                <p class="text-sm font-medium text-gray-800">{{ p.book.Title }}</p>
+                <p class="text-xs text-gray-500">
+                    Prestado a: {{ p.person_role.person.FirstName }} {{ p.person_role.person.LastName }} | 
+                    Vence: {{ p.DueDate.strftime('%d/%m/%Y') }}
+                </p>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full font-medium 
+                {% if p.Status == 'Prestado' %}bg-amber-100 text-amber-700
+                {% elif p.Status == 'Atrasado' %}bg-red-100 text-red-700
+                {% else %}bg-green-100 text-green-700{% endif %}">
+                {{ p.Status }}
+            </span>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-sm text-gray-400">No hay préstamos registrados.</div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

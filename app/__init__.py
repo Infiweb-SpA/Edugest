@@ -45,6 +45,10 @@ def create_app():
      # 4. Módulo de Matrícula
     from app.modules.matricula.routes import matricula_bp
     app.register_blueprint(matricula_bp)
+
+    # 5. Módulo de Biblioteca (CRA)
+    from app.modules.biblioteca import biblioteca_bp
+    app.register_blueprint(biblioteca_bp)
     
     # Redirección de la raíz al panel de administración por defecto
     @app.route('/')

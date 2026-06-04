@@ -1,0 +1,105 @@
+{% extends 'biblioteca/base.html' %}
+{% block biblioteca_content %}
+
+<div class="flex justify-between items-center">
+    <h3 class="text-lg font-bold text-gray-900">Gestión de Préstamos</h3>
+    <a href="{{ url_for('biblioteca.nuevo_prestamo') }}" 
+       class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+        ➕ Nuevo Préstamo
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="flex flex-wrap gap-2 bg-white rounded-lg border border-gray-200 p-3">
+    <a href="{{ url_for('biblioteca.prestamos', estado='todos') }}" 
+       class="px-3 py-1 text-xs rounded-full {% if estado == 'todos' %}bg-indigo-600 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">
+        Todos
+    </a>
+    <a href="{{ url_for('biblioteca.prestamos', estado='prestado') }}" 
+       class="px-3 py-1 text-xs rounded-full {% if estado == 'prestado' %}bg-amber-600 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">
+        Prestados
+    </a>
+    <a href="{{ url_for('biblioteca.prestamos', estado='atrasado') }}" 
+       class="px-3 py-1 text-xs rounded-full {% if estado == 'atrasado' %}bg-red-600 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">
+        Atrasados
+    </a>
+    <a href="{{ url_for('biblioteca.prestamos', estado='devuelto') }}" 
+       class="px-3 py-1 text-xs rounded-full {% if estado == 'devuelto' %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">
+        Devueltos
+    </a>
+</div>
+
+<!-- Tabla -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+    <table class="w-full text-sm text-left">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+            <tr>
+                <th class="px-4 py-3">Libro</th>
+                <th class="px-4 py-3">Prestado a</th>
+                <th class="px-4 py-3">Fecha Préstamo</th>
+                <th class="px-4 py-3">Vencimiento</th>
+                <th class="px-4 py-3">Estado</th>
+                <th class="px-4 py-3 text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for p in prestamos %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3">
+                    <p class="font-medium text-gray-900">{{ p.book.Title }}</p>
+                    <p class="text-xs text-gray-400">{{ p.book.Isbn }}</p>
+                </td>
+                <td class="px-4 py-3">
+                    <p class="text-sm text-gray-700">
+                        {{ p.person_role.person.FirstName }} {{ p.person_role.person.LastName }}
+                    </p>
+                    <p class="text-xs text-gray-400">
+                        {% if p.person_role.RoleId == 6 %}Estudiante{% else %}Profesor{% endif %}
+                    </p>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-600">
+                    {{ p.LoanDate.strftime('%d/%m/%Y') }}
+                </td>
+                <td class="px-4 py-3 text-sm">
+                    <span class="{% if p.Status == 'Atrasado' %}text-red-600 font-bold{% else %}text-gray-600{% endif %}">
+                        {{ p.DueDate.strftime('%d/%m/%Y') }}
+                    </span>
+                </td>
+                <td class="px-4 py-3">
+                    <span class="text-xs px-2 py-1 rounded-full font-medium
+                        {% if p.Status == 'Prestado' %}bg-amber-100 text-amber-700
+                        {% elif p.Status == 'Atrasado' %}bg-red-100 text-red-700
+                        {% else %}bg-green-100 text-green-700{% endif %}">
+                        {{ p.Status }}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    {% if p.Status in ['Prestado', 'Atrasado'] %}
+                    <div class="flex justify-end gap-1">
+                        <form action="{{ url_for('biblioteca.devolver_prestamo', loan_id=p.LoanId) }}" method="POST" class="inline">
+                            <button type="submit" class="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                                ✓ Devolver
+                            </button>
+                        </form>
+                        <form action="{{ url_for('biblioteca.renovar_prestamo', loan_id=p.LoanId) }}" method="POST" class="inline">
+                            <input type="hidden" name="dias_extra" value="7">
+                            <button type="submit" class="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                                ↻ Renovar
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <span class="text-xs text-gray-400">Devuelto el {{ p.ReturnDate.strftime('%d/%m/%Y') }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-gray-400">No hay préstamos registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

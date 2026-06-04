@@ -1,0 +1,98 @@
+{% extends 'biblioteca/base.html' %}
+{% block biblioteca_content %}
+
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <h3 class="text-lg font-bold text-gray-900">🌐 Recursos Digitales Open Source</h3>
+        <p class="text-sm text-gray-500">Acceda a bibliotecas digitales gratuitas para enriquecer el catálogo de su establecimiento.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Project Gutenberg -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs hover:shadow-md transition">
+            <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-2xl mb-4">📚</div>
+            <h4 class="font-bold text-gray-900 mb-2">Project Gutenberg</h4>
+            <p class="text-sm text-gray-500 mb-4">
+                Más de 70,000 libros electrónicos gratuitos. Clásicos de la literatura en dominio público en múltiples idiomas.
+            </p>
+            <a href="https://www.gutenberg.org" target="_blank" 
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition">
+                Visitar Gutenberg →
+            </a>
+        </div>
+
+        <!-- Internet Archive -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs hover:shadow-md transition">
+            <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center text-2xl mb-4">🏛️</div>
+            <h4 class="font-bold text-gray-900 mb-2">Internet Archive</h4>
+            <p class="text-sm text-gray-500 mb-4">
+                Biblioteca digital universal con millones de libros, textos académicos, audios y videos gratuitos.
+            </p>
+            <a href="https://archive.org/details/books" target="_blank" 
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                Visitar Archive →
+            </a>
+        </div>
+
+        <!-- Open Library -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs hover:shadow-md transition">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-2xl mb-4">📖</div>
+            <h4 class="font-bold text-gray-900 mb-2">Open Library</h4>
+            <p class="text-sm text-gray-500 mb-4">
+                Catálogo editable de Internet Archive. Permite préstamos digitales controlados de e-books.
+            </p>
+            <a href="https://openlibrary.org" target="_blank" 
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                Visitar Open Library →
+            </a>
+        </div>
+
+        <!-- Wikisource -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs hover:shadow-md transition">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl mb-4">📝</div>
+            <h4 class="font-bold text-gray-900 mb-2">Wikisource</h4>
+            <p class="text-sm text-gray-500 mb-4">
+                Biblioteca de textos originales de dominio público mantenida por la comunidad Wikimedia.
+            </p>
+            <a href="https://es.wikisource.org" target="_blank" 
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
+                Visitar Wikisource →
+            </a>
+        </div>
+
+        <!-- DOAJ -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs hover:shadow-md transition">
+            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-2xl mb-4">🔬</div>
+            <h4 class="font-bold text-gray-900 mb-2">DOAJ</h4>
+            <p class="text-sm text-gray-500 mb-4">
+                Directorio de revistas científicas de acceso abierto. Ideal para investigación académica.
+            </p>
+            <a href="https://doaj.org" target="_blank" 
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+                Visitar DOAJ →
+            </a>
+        </div>
+
+        <!-- UNESCO Digital Library -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs hover:shadow-md transition">
+            <div class="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center text-2xl mb-4">🌍</div>
+            <h4 class="font-bold text-gray-900 mb-2">UNESCO Digital Library</h4>
+            <p class="text-sm text-gray-500 mb-4">
+                Documentos, publicaciones y recursos educativos de la UNESCO en acceso abierto.
+            </p>
+            <a href="https://unesdoc.unesco.org" target="_blank" 
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition">
+                Visitar UNESCO →
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-6 bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+        <p class="text-sm text-indigo-800">
+            <strong>💡 Tip:</strong> Puede descargar libros de estas plataformas y registrar su URL en el catálogo de Edugest 
+            marcándolos como <em>libros digitales</em> para que los estudiantes accedan directamente.
+        </p>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'biblioteca/base.html' %}
+{% block biblioteca_content %}
+
+<div class="flex justify-between items-center">
+    <h3 class="text-lg font-bold text-gray-900">Catálogo Bibliográfico</h3>
+    <a href="{{ url_for('biblioteca.nuevo_libro') }}" 
+       class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+        ➕ Agregar Libro
+    </a>
+</div>
+
+<!-- Buscador -->
+<form method="GET" class="flex gap-2">
+    <input type="text" name="q" value="{{ search }}" placeholder="Buscar por título, autor o ISBN..." 
+           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+        🔍 Buscar
+    </button>
+</form>
+
+<!-- Grid de libros -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    {% for libro in libros.items %}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-xs hover:shadow-md transition">
+        <div class="flex items-start justify-between mb-3">
+            <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-xl">
+                {% if libro.IsVirtual %}📱{% else %}📖{% endif %}
+            </div>
+            <div class="flex gap-1">
+                <a href="{{ url_for('biblioteca.editar_libro', book_id=libro.BookId) }}" 
+                   class="text-xs text-gray-500 hover:text-indigo-600 p-1">✏️</a>
+                <form action="{{ url_for('biblioteca.eliminar_libro', book_id=libro.BookId) }}" method="POST" class="inline" 
+                      onsubmit="return confirm('¿Eliminar este libro?');">
+                    <button type="submit" class="text-xs text-gray-500 hover:text-red-600 p-1">🗑️</button>
+                </form>
+            </div>
+        </div>
+        
+        <h4 class="font-bold text-gray-900 text-sm mb-1 line-clamp-2" title="{{ libro.Title }}">{{ libro.Title }}</h4>
+        <p class="text-xs text-gray-500 mb-2">{{ libro.Author }}</p>
+        
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs px-2 py-0.5 rounded-full 
+                {% if libro.IsVirtual %}bg-blue-50 text-blue-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                {% if libro.IsVirtual %}Digital{% else %}Físico{% endif %}
+            </span>
+            <span class="text-xs text-gray-400">ISBN: {{ libro.Isbn }}</span>
+        </div>
+        
+        <div class="flex justify-between items-center text-xs border-t border-gray-100 pt-3">
+            <span class="text-gray-500">
+                Stock: <strong class="{% if libro.AvailableStock > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ libro.AvailableStock }}/{{ libro.TotalStock }}
+                </strong>
+            </span>
+            {% if libro.IsVirtual and libro.FileUrl %}
+            <a href="{{ libro.FileUrl }}" target="_blank" class="text-indigo-600 hover:underline">📥 Descargar</a>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="col-span-full p-8 text-center text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
+        No hay libros registrados.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Paginación -->
+{% if libros.pages > 1 %}
+<div class="flex justify-center gap-2 mt-4">
+    {% if libros.has_prev %}
+    <a href="{{ url_for('biblioteca.catalogo', page=libros.prev_num, q=search) }}" class="px-3 py-1 text-sm border rounded hover:bg-gray-50">← Anterior</a>
+    {% endif %}
+    <span class="px-3 py-1 text-sm text-gray-600">Página {{ libros.page }} de {{ libros.pages }}</span>
+    {% if libros.has_next %}
+    <a href="{{ url_for('biblioteca.catalogo', page=libros.next_num, q=search) }}" class="px-3 py-1 text-sm border rounded hover:bg-gray-50">Siguiente →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

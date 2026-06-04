@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Biblioteca CRA - Edugest{% endblock %}
+{% block header_title %}Centro de Recursos de Aprendizaje{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Navegación interna del módulo -->
+    <div class="flex flex-wrap gap-2 bg-white rounded-xl border border-gray-200 p-4 shadow-xs">
+        <a href="{{ url_for('biblioteca.index') }}" 
+           class="px-4 py-2 text-sm font-medium rounded-lg {% if request.endpoint == 'biblioteca.index' %}bg-indigo-600 text-white{% else %}text-gray-700 hover:bg-gray-50{% endif %} transition">
+            📊 Dashboard
+        </a>
+        <a href="{{ url_for('biblioteca.catalogo') }}" 
+           class="px-4 py-2 text-sm font-medium rounded-lg {% if request.endpoint == 'biblioteca.catalogo' %}bg-indigo-600 text-white{% else %}text-gray-700 hover:bg-gray-50{% endif %} transition">
+            📚 Catálogo
+        </a>
+        <a href="{{ url_for('biblioteca.prestamos') }}" 
+           class="px-4 py-2 text-sm font-medium rounded-lg {% if request.endpoint == 'biblioteca.prestamos' %}bg-indigo-600 text-white{% else %}text-gray-700 hover:bg-gray-50{% endif %} transition">
+            🔄 Préstamos
+        </a>
+        <a href="{{ url_for('biblioteca.recursos_digitales') }}" 
+           class="px-4 py-2 text-sm font-medium rounded-lg {% if request.endpoint == 'biblioteca.recursos_digitales' %}bg-indigo-600 text-white{% else %}text-gray-700 hover:bg-gray-50{% endif %} transition">
+            🌐 Recursos Digitales
+        </a>
+    </div>
+    
+    {% block biblioteca_content %}{% endblock %}
+</div>
+{% endblock %}
