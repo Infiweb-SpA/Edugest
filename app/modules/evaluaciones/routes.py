@@ -192,46 +192,151 @@ def crear_instrumento(org_id):
     return redirect(url_for('evaluaciones.asignaturas_por_grado', grado_id=1))
 
 
+import os
+from werkzeug.utils import secure_filename
+
+UPLOAD_FOLDER = 'app/static/uploads/preguntas'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @evaluaciones_bp.route('/disenar_preguntas/<int:inst_id>', methods=['GET', 'POST'])
 def disenar_preguntas(inst_id):
     instrumento = EdugestAssessmentInstrument.query.get_or_404(inst_id)
 
     if request.method == 'POST':
+        tipo = request.form.get('question_type', 'Alternativa')
+        puntos = int(request.form.get('points', 1))
+        
+        # Procesar imagen
+        imagen_url = None
+        if 'question_image' in request.files:
+            file = request.files['question_image']
+            if file and file.filename and allowed_file(file.filename):
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                filename = secure_filename(f"{inst_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                file.save(filepath)
+                imagen_url = f"/static/uploads/preguntas/{filename}"
+
+        # Crear pregunta base
         nueva_pregunta = EdugestAssessmentQuestion(
             InstrumentId=inst_id,
             QuestionText=request.form.get('question_text'),
-            QuestionType=request.form.get('question_type', 'Alternativa'),
-            Points=int(request.form.get('points', 1))
+            QuestionType=tipo,
+            Points=puntos,
+            ImageUrl=imagen_url
         )
         db.session.add(nueva_pregunta)
         db.session.flush()
 
-        correcta_key = request.form.get('correcta')
-
-        for i in range(1, 5):
-            texto_opcion = request.form.get(f'opcion_{i}')
-            if not texto_opcion:
-                continue
-
-            es_correcta = (correcta_key == f'opcion_{i}')
-            opcion = EdugestQuestionOption(
+        # Crear opciones según tipo
+        if tipo == 'Alternativa':
+            correcta_key = request.form.get('correcta')
+            for i in range(1, 5):
+                texto = request.form.get(f'opcion_{i}')
+                if texto:
+                    db.session.add(EdugestQuestionOption(
+                        QuestionId=nueva_pregunta.QuestionId,
+                        OptionText=texto,
+                        IsCorrect=(correcta_key == f'opcion_{i}')
+                    ))
+        
+        elif tipo == 'VerdaderoFalso':
+            vf = request.form.get('vf_correcta')
+            db.session.add(EdugestQuestionOption(
                 QuestionId=nueva_pregunta.QuestionId,
-                OptionText=texto_opcion,
-                IsCorrect=es_correcta
-            )
-            db.session.add(opcion)
+                OptionText='Verdadero',
+                IsCorrect=(vf == 'Verdadero')
+            ))
+            db.session.add(EdugestQuestionOption(
+                QuestionId=nueva_pregunta.QuestionId,
+                OptionText='Falso',
+                IsCorrect=(vf == 'Falso')
+            ))
+        
+        elif tipo == 'Desarrollo':
+            # Sin opciones, solo marca de tipo
+            pass
+        
+        elif tipo == 'RelacionColumnas':
+            for i in range(1, 4):
+                izq = request.form.get(f'rel_izq_{i}')
+                der = request.form.get(f'rel_der_{i}')
+                if izq and der:
+                    db.session.add(EdugestQuestionOption(
+                        QuestionId=nueva_pregunta.QuestionId,
+                        OptionText=izq,
+                        MatchText=der,
+                        IsCorrect=True,
+                        OrderIndex=i
+                    ))
+        
+        elif tipo == 'Completar':
+            for i in range(1, 4):
+                resp = request.form.get(f'comp_resp_{i}')
+                if resp:
+                    db.session.add(EdugestQuestionOption(
+                        QuestionId=nueva_pregunta.QuestionId,
+                        OptionText=resp,
+                        IsCorrect=True,
+                        OrderIndex=i
+                    ))
 
         db.session.commit()
-        flash('Pregunta y alternativas guardadas correctamente.', 'success')
+        flash('Pregunta guardada correctamente.', 'success')
         return redirect(url_for('evaluaciones.disenar_preguntas', inst_id=inst_id))
 
     preguntas = EdugestAssessmentQuestion.query.filter_by(InstrumentId=inst_id).all()
     for p in preguntas:
-        p.opciones_list = EdugestQuestionOption.query.filter_by(QuestionId=p.QuestionId).all()
+        p.opciones_list = EdugestQuestionOption.query.filter_by(QuestionId=p.QuestionId).order_by(EdugestQuestionOption.OrderIndex).all()
 
     return render_template('evaluaciones/disenar_preguntas.html',
                            instrumento=instrumento,
                            preguntas=preguntas)
+
+# ============================================================================
+#funcioneshelper
+# ============================================================================
+def _guardar_respuesta(matricula, pregunta, opcion_id, puntaje):
+    """Guarda o actualiza respuesta para preguntas con opción"""
+    respuesta = EdugestStudentResponse.query.filter_by(
+        OrganizationPersonRoleId=matricula.OrganizationPersonRoleId,
+        QuestionId=pregunta.QuestionId
+    ).first()
+
+    if respuesta:
+        respuesta.SelectedOptionId = opcion_id
+        respuesta.ScoreEarned = puntaje
+    else:
+        nueva = EdugestStudentResponse(
+            OrganizationPersonRoleId=matricula.OrganizationPersonRoleId,
+            QuestionId=pregunta.QuestionId,
+            SelectedOptionId=opcion_id,
+            ScoreEarned=puntaje
+        )
+        db.session.add(nueva)
+
+
+def _guardar_respuesta_desarrollo(matricula, pregunta, texto):
+    """Guarda respuesta de desarrollo (sin auto-corrección)"""
+    respuesta = EdugestStudentResponse.query.filter_by(
+        OrganizationPersonRoleId=matricula.OrganizationPersonRoleId,
+        QuestionId=pregunta.QuestionId
+    ).first()
+
+    if respuesta:
+        respuesta.TextResponse = texto
+        respuesta.ScoreEarned = None
+    else:
+        nueva = EdugestStudentResponse(
+            OrganizationPersonRoleId=matricula.OrganizationPersonRoleId,
+            QuestionId=pregunta.QuestionId,
+            TextResponse=texto,
+            ScoreEarned=None
+        )
+        db.session.add(nueva)
 
 
 @evaluaciones_bp.route('/rendir/<int:inst_id>/<int:alumno_id>', methods=['GET', 'POST'])
@@ -240,12 +345,10 @@ def rendir(inst_id, alumno_id):
     alumno = Person.query.get_or_404(alumno_id)
 
     # FIX: Buscar matrícula en el CURSO (Tipo 21), no en la asignatura
-    # Primero obtenemos el grado de la asignatura
     relacion_grado = OrganizationRelationship.query.filter_by(
         OrganizationId=instrumento.OrganizationId
     ).first()
     
-    # Buscamos cursos hijos del grado
     cursos = []
     if relacion_grado:
         cursos = Organization.query.join(
@@ -256,7 +359,6 @@ def rendir(inst_id, alumno_id):
             OrganizationRelationship.ParentOrganizationId == relacion_grado.ParentOrganizationId
         ).all()
     
-    # Buscar matrícula en alguno de esos cursos
     matricula = None
     for curso in cursos:
         mat = OrganizationPersonRole.query.filter_by(
@@ -272,49 +374,72 @@ def rendir(inst_id, alumno_id):
         flash('El estudiante no está matriculado en ningún curso de esta asignatura.', 'danger')
         return redirect(url_for('evaluaciones.resultados', inst_id=inst_id))
 
+    # Cargar preguntas del instrumento
     preguntas = EdugestAssessmentQuestion.query.filter_by(InstrumentId=inst_id).all()
+
+    # PREPARAR LISTA CON PREGUNTAS + OPCIONES
     preguntas_data = []
     for q in preguntas:
-        opciones = EdugestQuestionOption.query.filter_by(QuestionId=q.QuestionId).all()
-        preguntas_data.append({'pregunta': q, 'opciones': opciones})
+        opciones = EdugestQuestionOption.query.filter_by(QuestionId=q.QuestionId).order_by(EdugestQuestionOption.OrderIndex).all()
+        preguntas_data.append({
+            'pregunta': q,
+            'opciones': opciones
+        })
 
     if request.method == 'POST':
         for item in preguntas_data:
             q = item['pregunta']
-            campo = f'pregunta_{q.QuestionId}'
-            opcion_id_str = request.form.get(campo)
-            if not opcion_id_str:
-                continue
-
-            opcion_id = int(opcion_id_str)
-            opcion = EdugestQuestionOption.query.get(opcion_id)
-            puntaje = q.Points if (opcion and opcion.IsCorrect) else 0
-
-            respuesta = EdugestStudentResponse.query.filter_by(
-                OrganizationPersonRoleId=matricula.OrganizationPersonRoleId,
-                QuestionId=q.QuestionId
-            ).first()
-
-            if respuesta:
-                respuesta.SelectedOptionId = opcion_id
-                respuesta.ScoreEarned = puntaje
-            else:
-                nueva = EdugestStudentResponse(
-                    OrganizationPersonRoleId=matricula.OrganizationPersonRoleId,
-                    QuestionId=q.QuestionId,
-                    SelectedOptionId=opcion_id,
-                    ScoreEarned=puntaje
-                )
-                db.session.add(nueva)
+            
+            # --- ALTERNATIVA y V/F ---
+            if q.QuestionType in ['Alternativa', 'VerdaderoFalso']:
+                campo = f'pregunta_{q.QuestionId}'
+                opcion_id_str = request.form.get(campo)
+                if not opcion_id_str:
+                    continue
+                opcion_id = int(opcion_id_str)
+                opcion = EdugestQuestionOption.query.get(opcion_id)
+                puntaje = q.Points if (opcion and opcion.IsCorrect) else 0
+                
+                _guardar_respuesta(matricula, q, opcion_id, puntaje)
+            
+            # --- DESARROLLO ---
+            elif q.QuestionType == 'Desarrollo':
+                texto = request.form.get(f'pregunta_{q.QuestionId}', '')
+                _guardar_respuesta_desarrollo(matricula, q, texto)
+            
+            # --- RELACIÓN DE COLUMNAS ---
+            elif q.QuestionType == 'RelacionColumnas':
+                puntaje = 0
+                total = len(item['opciones'])
+                for op in item['opciones']:
+                    respuesta = request.form.get(f'relacion_{q.QuestionId}_{op.OrderIndex}')
+                    if respuesta and int(respuesta) == op.OptionId:
+                        puntaje += q.Points / total if total > 0 else 0
+                
+                _guardar_respuesta(matricula, q, None, round(puntaje, 2))
+            
+            # --- COMPLETAR ---
+            elif q.QuestionType == 'Completar':
+                respuestas_correctas = [op.OptionText.strip().lower() for op in sorted(item['opciones'], key=lambda x: x.OrderIndex or 0)]
+                aciertos = 0
+                for idx, correcta in enumerate(respuestas_correctas, 1):
+                    resp = request.form.get(f'completar_{q.QuestionId}_{idx}', '').strip().lower()
+                    if resp == correcta:
+                        aciertos += 1
+                
+                puntaje = (aciertos / len(respuestas_correctas)) * q.Points if respuestas_correctas else 0
+                _guardar_respuesta(matricula, q, None, round(puntaje, 2))
 
         db.session.commit()
         flash('Evaluación enviada y calificada automáticamente.', 'success')
         return redirect(url_for('evaluaciones.resultados', inst_id=inst_id))
 
-    return render_template('evaluaciones/rendir.html',
-                           instrumento=instrumento,
-                           alumno=alumno,
-                           preguntas_data=preguntas_data)
+    return render_template(
+        'evaluaciones/rendir.html',
+        instrumento=instrumento,
+        alumno=alumno,
+        preguntas_data=preguntas_data
+    )
 
 
 @evaluaciones_bp.route('/instrumento/<int:inst_id>/resultados')

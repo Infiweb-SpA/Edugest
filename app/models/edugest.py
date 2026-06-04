@@ -96,21 +96,23 @@ class EdugestAssessmentQuestion(db.Model):
     QuestionId = db.Column(db.Integer, primary_key=True, autoincrement=True)
     InstrumentId = db.Column(db.Integer, db.ForeignKey('edugest_assessment_instrument.InstrumentId', ondelete='CASCADE'), nullable=False)
     QuestionText = db.Column(db.Text, nullable=False)
-    QuestionType = db.Column(db.String(50), nullable=False) # 'Alternativa', 'Verdadero/Falso', 'Desarrollo'
+    QuestionType = db.Column(db.String(50), nullable=False)  # 'Alternativa', 'VerdaderoFalso', 'Desarrollo', 'RelacionColumnas', 'Completar'
     Points = db.Column(db.Integer, default=1, nullable=False)
-
-    # NUEVO: Relación automática para acceder a las opciones desde la pregunta
+    ImageUrl = db.Column(db.String(500), nullable=True)  # <-- NUEVO: imagen opcional
+    
     opciones = db.relationship('EdugestQuestionOption', backref='question', lazy=True, cascade="all, delete-orphan")
 
 
 class EdugestQuestionOption(db.Model):
-    """Opciones de alternativas para el algoritmo de auto-corrección"""
+    """Opciones para Alternativa, VF, Relación y Completar"""
     __tablename__ = 'edugest_question_option'
     
     OptionId = db.Column(db.Integer, primary_key=True, autoincrement=True)
     QuestionId = db.Column(db.Integer, db.ForeignKey('edugest_assessment_question.QuestionId', ondelete='CASCADE'), nullable=False)
-    OptionText = db.Column(db.String(255), nullable=False)
+    OptionText = db.Column(db.String(255), nullable=False)      # Texto mostrado (ej: "Verdadero", "Opción A")
+    MatchText = db.Column(db.String(255), nullable=True)       # <-- NUEVO: para Relación de columnas (término a emparejar)
     IsCorrect = db.Column(db.Boolean, default=False, nullable=False)
+    OrderIndex = db.Column(db.Integer, default=0, nullable=True) # <-- NUEVO: orden para completar o relación
 
 
 class EdugestStudentResponse(db.Model):

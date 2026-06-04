@@ -4,55 +4,165 @@
 
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-    
+
+    <!-- FORMULARIO LATERAL -->
     <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs h-fit">
-        <h3 class="text-base font-bold text-gray-900 mb-4">Nueva Pregunta de Alternativas</h3>
-        
-        <form method="POST" class="space-y-3">
+        <h3 class="text-base font-bold text-gray-900 mb-4">Nueva Pregunta</h3>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-3" id="formPregunta">
+
+            <!-- TIPO DE PREGUNTA -->
             <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Enunciado</label>
-                <textarea name="question_text" required rows="3" placeholder="Escribe el planteamiento de la pregunta..." class="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500"></textarea>
-            </div>
-            
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Puntaje</label>
-                <input type="number" name="points" value="1" min="1" class="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Tipo de Pregunta</label>
+                <select name="question_type" id="questionType" onchange="cambiarTipo()"
+                    class="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                    <option value="Alternativa">Alternativas (4 opciones, 1 correcta)</option>
+                    <option value="VerdaderoFalso">Verdadero / Falso</option>
+                    <option value="Desarrollo">Desarrollo Escrito</option>
+                    <option value="RelacionColumnas">Relación de Columnas (Flechas)</option>
+                    <option value="Completar">Completar Espacios</option>
+                </select>
             </div>
 
-            <div class="space-y-2 pt-2">
-                <label class="block text-xs font-semibold text-gray-500 uppercase">Alternativas y Selección Correcta</label>
-                
+            <!-- ENUNCIADO -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Enunciado</label>
+                <textarea name="question_text" required rows="3"
+                    placeholder="Escribe el planteamiento de la pregunta..."
+                    class="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <!-- IMAGEN OPCIONAL (solo visual) -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Imagen (Opcional)</label>
+                <input type="file" disabled
+                    class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg opacity-50 cursor-not-allowed"
+                    title="Funcionalidad próximamente">
+                <p class="text-xs text-gray-400 mt-1">💡 Esta función estará disponible en una próxima actualización.
+                </p>
+            </div>
+
+            <!-- PUNTAJE -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Puntaje</label>
+                <input type="number" name="points" value="1" min="1"
+                    class="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <!-- ==================== ALTERNATIVA ==================== -->
+            <div id="tipoAlternativa" class="space-y-2 pt-2">
+                <label class="block text-xs font-semibold text-gray-500 uppercase">Alternativas y Selección
+                    Correcta</label>
                 {% for i in range(1, 5) %}
                 <div class="flex items-center space-x-2">
-                    <input type="radio" name="correcta" value="opcion_{{i}}" {% if i==1 %}checked{% endif %} class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
-                    <input type="text" name="opcion_{{i}}" required placeholder="Alternativa {{i}}" class="w-full text-xs px-2 py-1.5 border border-gray-300 rounded-md">
+                    <input type="radio" name="correcta" value="opcion_{{i}}" {% if i==1 %}checked{% endif %}
+                        class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                    <input type="text" name="opcion_{{i}}" placeholder="Alternativa {{i}}"
+                        class="w-full text-xs px-2 py-1.5 border border-gray-300 rounded-md">
                 </div>
                 {% endfor %}
             </div>
 
-            <button type="submit" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-lg shadow-xs cursor-pointer">
+            <!-- ==================== VERDADERO/FALSO ==================== -->
+            <div id="tipoVerdaderoFalso" class="space-y-2 pt-2 hidden">
+                <label class="block text-xs font-semibold text-gray-500 uppercase">Respuesta Correcta</label>
+                <div class="flex gap-4">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="radio" name="vf_correcta" value="Verdadero" checked
+                            class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                        <span
+                            class="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded">Verdadero</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="radio" name="vf_correcta" value="Falso"
+                            class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                        <span class="text-sm font-medium text-rose-700 bg-rose-50 px-3 py-1 rounded">Falso</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ==================== DESARROLLO ==================== -->
+            <div id="tipoDesarrollo" class="pt-2 hidden">
+                <p class="text-xs text-gray-500 italic">El estudiante responderá con un texto libre. La corrección será
+                    manual.</p>
+                <input type="hidden" name="desarrollo" value="1">
+            </div>
+
+            <!-- ==================== RELACIÓN DE COLUMNAS ==================== -->
+            <div id="tipoRelacion" class="space-y-2 pt-2 hidden">
+                <label class="block text-xs font-semibold text-gray-500 uppercase">Columna Izquierda (Opciones)</label>
+                {% for i in range(1, 4) %}
+                <input type="text" name="rel_izq_{{i}}" placeholder="Opción {{i}} (ej: Mitocondria)"
+                    class="w-full text-xs px-2 py-1.5 border border-gray-300 rounded-md mb-1">
+                {% endfor %}
+
+                <label class="block text-xs font-semibold text-gray-500 uppercase mt-2">Columna Derecha
+                    (Términos)</label>
+                {% for i in range(1, 4) %}
+                <input type="text" name="rel_der_{{i}}" placeholder="Término {{i}} (ej: Energía celular)"
+                    class="w-full text-xs px-2 py-1.5 border border-gray-300 rounded-md mb-1">
+                {% endfor %}
+
+                <p class="text-xs text-gray-400 mt-1">💡 El sistema emparejará automáticamente por orden (Opción 1 →
+                    Término 1)</p>
+            </div>
+
+            <!-- ==================== COMPLETAR ==================== -->
+            <div id="tipoCompletar" class="space-y-2 pt-2 hidden">
+                <label class="block text-xs font-semibold text-gray-500 uppercase">Texto con Espacios</label>
+                <textarea name="texto_completar" rows="3"
+                    placeholder="Escribe el texto usando [___] para los espacios. Ej: La [___] es la capital de Chile."
+                    class="w-full text-xs px-2 py-1.5 border border-gray-300 rounded-md"></textarea>
+
+                <label class="block text-xs font-semibold text-gray-500 uppercase mt-2">Respuestas (en orden)</label>
+                {% for i in range(1, 4) %}
+                <input type="text" name="comp_resp_{{i}}" placeholder="Respuesta espacio {{i}}"
+                    class="w-full text-xs px-2 py-1.5 border border-gray-300 rounded-md mb-1">
+                {% endfor %}
+            </div>
+
+            <button type="submit"
+                class="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-lg shadow-xs cursor-pointer">
                 💾 Guardar e Inyectar al Banco
             </button>
         </form>
     </div>
 
+    <!-- LISTA DE PREGUNTAS -->
     <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
         <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-3">
             <h3 class="text-lg font-bold text-gray-900">Preguntas Guardadas (Total: {{ preguntas|length }})</h3>
-            <a href="{{ url_for('evaluaciones.index') }}" class="text-xs bg-slate-100 hover:bg-slate-200 text-gray-700 px-3 py-1.5 rounded-md font-medium">Volver al Panel</a>
+            <a href="{{ url_for('evaluaciones.index') }}"
+                class="text-xs bg-slate-100 hover:bg-slate-200 text-gray-700 px-3 py-1.5 rounded-md font-medium">Volver
+                al Panel</a>
         </div>
 
         <div class="space-y-4">
             {% for q in preguntas %}
             <div class="p-4 border border-gray-100 rounded-xl bg-slate-50 space-y-3">
                 <div class="flex justify-between items-start">
-                    <span class="font-semibold text-sm text-gray-800">{{ loop.index }}. {{ q.QuestionText }}</span>
-                    <span class="bg-indigo-50 text-indigo-700 text-xs px-2 py-0.5 rounded-sm font-bold">{{ q.Points }} pts</span>
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-sm text-gray-800">{{ loop.index }}. {{ q.QuestionText }}</span>
+                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">{{
+                            q.QuestionType }}</span>
+                    </div>
+                    <span class="bg-indigo-50 text-indigo-700 text-xs px-2 py-0.5 rounded-sm font-bold">{{ q.Points }}
+                        pts</span>
                 </div>
-                
+
+                {% if q.ImageUrl %}
+                <div class="my-2">
+                    <img src="{{ q.ImageUrl }}" alt="Imagen pregunta"
+                        class="max-h-40 rounded-lg border border-gray-200">
+                </div>
+                {% endif %}
+
+                <!-- MOSTRAR SEGÚN TIPO -->
+                {% if q.QuestionType == 'Alternativa' %}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                     {% for op in q.opciones_list %}
-                    <div class="p-2 rounded-lg border flex justify-between items-center {% if op.IsCorrect %} bg-emerald-50 border-emerald-200 text-emerald-800 font-medium {% else %} bg-white border-gray-100 text-gray-600 {% endif %}">
+                    <div
+                        class="p-2 rounded-lg border flex justify-between items-center {% if op.IsCorrect %} bg-emerald-50 border-emerald-200 text-emerald-800 font-medium {% else %} bg-white border-gray-100 text-gray-600 {% endif %}">
                         <span>{{ op.OptionText }}</span>
                         {% if op.IsCorrect %}
                         <span class="text-xs font-bold text-emerald-600">✔️ Correcta</span>
@@ -60,6 +170,49 @@
                     </div>
                     {% endfor %}
                 </div>
+
+                {% elif q.QuestionType == 'VerdaderoFalso' %}
+                <div class="flex gap-2 text-xs">
+                    {% for op in q.opciones_list %}
+                    <span
+                        class="px-3 py-1 rounded-lg border {% if op.IsCorrect %} bg-emerald-50 border-emerald-200 text-emerald-800 font-bold {% else %} bg-white border-gray-100 text-gray-400 {% endif %}">
+                        {{ op.OptionText }}
+                    </span>
+                    {% endfor %}
+                </div>
+
+                {% elif q.QuestionType == 'Desarrollo' %}
+                <div class="p-3 bg-white rounded border border-dashed border-gray-300 text-xs text-gray-500 italic">
+                    ✏️ Respuesta de desarrollo (corrección manual)
+                </div>
+
+                {% elif q.QuestionType == 'RelacionColumnas' %}
+                <div class="grid grid-cols-2 gap-4 text-xs">
+                    <div class="space-y-1">
+                        <p class="font-semibold text-gray-500 mb-1">Columna A</p>
+                        {% for op in q.opciones_list|sort(attribute='OrderIndex') %}
+                        <div class="p-2 bg-white rounded border border-gray-100">{{ op.OptionText }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="space-y-1">
+                        <p class="font-semibold text-gray-500 mb-1">Columna B</p>
+                        {% for op in q.opciones_list|sort(attribute='OrderIndex') %}
+                        <div class="p-2 bg-white rounded border border-gray-100">{{ op.MatchText }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% elif q.QuestionType == 'Completar' %}
+                <div class="p-3 bg-white rounded border border-gray-100 text-xs">
+                    <p class="text-gray-500 mb-2">Respuestas esperadas:</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for op in q.opciones_list|sort(attribute='OrderIndex') %}
+                        <span class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded font-medium">{{ op.OptionText
+                            }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
             {% else %}
             <div class="p-8 text-center text-sm text-gray-400 border border-dashed border-gray-200 rounded-xl">
@@ -69,4 +222,30 @@
         </div>
     </div>
 </div>
+
+<script>
+    function cambiarTipo() {
+        const tipo = document.getElementById('questionType').value;
+
+        // Ocultar todos
+        document.getElementById('tipoAlternativa').classList.add('hidden');
+        document.getElementById('tipoVerdaderoFalso').classList.add('hidden');
+        document.getElementById('tipoDesarrollo').classList.add('hidden');
+        document.getElementById('tipoRelacion').classList.add('hidden');
+        document.getElementById('tipoCompletar').classList.add('hidden');
+
+        // Mostrar el seleccionado
+        const map = {
+            'Alternativa': 'tipoAlternativa',
+            'VerdaderoFalso': 'tipoVerdaderoFalso',
+            'Desarrollo': 'tipoDesarrollo',
+            'RelacionColumnas': 'tipoRelacion',
+            'Completar': 'tipoCompletar'
+        };
+        document.getElementById(map[tipo]).classList.remove('hidden');
+    }
+
+    // Inicializar
+    cambiarTipo();
+</script>
 {% endblock %}
