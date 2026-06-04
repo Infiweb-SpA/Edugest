@@ -10,17 +10,10 @@ app = create_app()
 
 
 def crear_jerarquia_completa():
-    """
-    Crea la jerarquía completa MINEDUC para un establecimiento de prueba.
+    """Crea la jerarquía completa MINEDUC para un establecimiento de prueba."""
+    import string
 
-    Jerarquía: RBD(10) → Modalidad(38) → Jornada(39) → Nivel(40) → Rama(41) 
-               → Sector(42) → Especialidad(43) → TipoCurso(44) → CódigoEnseñanza(45) 
-               → Grado(46) → Curso(21)
-    """
-
-    # ============================================================
     # 0. MÓDULOS DEL SISTEMA
-    # ============================================================
     if not EdugestModule.query.first():
         modulos_iniciales = [
             EdugestModule(ModuleName="Libro Digital", IsEnabled=True),
@@ -41,64 +34,37 @@ def crear_jerarquia_completa():
         else:
             print("ℹ️ Módulos ya existen.")
 
-    # ============================================================
     # 1. ESTABLECIMIENTO (RBD)
-    # ============================================================
     rbd = Organization.query.filter_by(ShortName="RBD09599", RefOrganizationTypeId=10).first()
     if not rbd:
-        rbd = Organization(
-            Name="Liceo Bicentenario Temuco",
-            ShortName="RBD09599",
-            RefOrganizationTypeId=10
-        )
+        rbd = Organization(Name="Liceo Bicentenario Temuco", ShortName="RBD09599", RefOrganizationTypeId=10)
         db.session.add(rbd)
         db.session.flush()
-
-        # Identificador RBD
-        db.session.add(OrganizationIdentifier(
-            OrganizationId=rbd.OrganizationId,
-            Identifier="09599",
-            RefOrganizationIdentificationSystemId=1  # RBD
-        ))
-        print(f"✅ Establecimiento creado: {rbd.Name} ({rbd.ShortName})")
+        db.session.add(OrganizationIdentifier(OrganizationId=rbd.OrganizationId, Identifier="09599", RefOrganizationIdentificationSystemId=1))
+        print(f"✅ Establecimiento creado: {rbd.Name}")
     else:
         print(f"ℹ️ Establecimiento ya existe: {rbd.Name}")
 
-    # ============================================================
-    # 2. MODALIDAD (Tipo 38)
-    # ============================================================
+    # 2. MODALIDAD (38)
     modalidad = Organization.query.filter_by(Name="Regular", RefOrganizationTypeId=38).first()
     if not modalidad:
         modalidad = Organization(Name="Regular", RefOrganizationTypeId=38)
         db.session.add(modalidad)
         db.session.flush()
-        db.session.add(OrganizationRelationship(
-            OrganizationId=modalidad.OrganizationId,
-            ParentOrganizationId=rbd.OrganizationId
-        ))
+        db.session.add(OrganizationRelationship(OrganizationId=modalidad.OrganizationId, ParentOrganizationId=rbd.OrganizationId))
         print("✅ Modalidad creada: Regular")
 
-    # ============================================================
-    # 3. JORNADA (Tipo 39)
-    # ============================================================
+    # 3. JORNADA (39)
     jornada = Organization.query.filter_by(Name="Mañana", RefOrganizationTypeId=39).first()
     if not jornada:
         jornada = Organization(Name="Mañana", RefOrganizationTypeId=39)
         db.session.add(jornada)
         db.session.flush()
-        db.session.add(OrganizationRelationship(
-            OrganizationId=jornada.OrganizationId,
-            ParentOrganizationId=modalidad.OrganizationId
-        ))
+        db.session.add(OrganizationRelationship(OrganizationId=jornada.OrganizationId, ParentOrganizationId=modalidad.OrganizationId))
         print("✅ Jornada creada: Mañana")
 
-    # ============================================================
-    # 4. NIVEL (Tipo 40) - Enseñanza Básica y Media
-    # ============================================================
-    niveles_data = [
-        ("02", "Enseñanza Básica Niños"),
-        ("05", "Enseñanza Media Humanístico Científica Jóvenes")
-    ]
+    # 4. NIVELES (40)
+    niveles_data = [("02", "Enseñanza Básica Niños"), ("05", "Enseñanza Media Humanístico Científica Jóvenes")]
     niveles = {}
     for codigo, nombre in niveles_data:
         nivel = Organization.query.filter_by(Name=nombre, RefOrganizationTypeId=40).first()
@@ -106,237 +72,163 @@ def crear_jerarquia_completa():
             nivel = Organization(Name=nombre, ShortName=codigo, RefOrganizationTypeId=40)
             db.session.add(nivel)
             db.session.flush()
-            db.session.add(OrganizationRelationship(
-                OrganizationId=nivel.OrganizationId,
-                ParentOrganizationId=jornada.OrganizationId
-            ))
+            db.session.add(OrganizationRelationship(OrganizationId=nivel.OrganizationId, ParentOrganizationId=jornada.OrganizationId))
             print(f"✅ Nivel creado: {nombre}")
         niveles[codigo] = nivel
 
-    # ============================================================
-    # 5. RAMA (Tipo 41)
-    # ============================================================
-        # 5. RAMA (Tipo 41) — UNA por cada nivel
+    # 5. RAMAS (41)
+    ramas_data = [("02", "Educación General"), ("05", "Humanístico-Científica")]
     ramas = {}
-    
-    # Rama para Básica
-    rama_basica = Organization.query.filter_by(Name="Educación General", RefOrganizationTypeId=41).first()
-    if not rama_basica:
-        rama_basica = Organization(Name="Educación General", RefOrganizationTypeId=41)
-        db.session.add(rama_basica)
-        db.session.flush()
-        print("✅ Rama creada: Educación General")
-    ramas["02"] = rama_basica
-    
-    # Rama para Media
-    rama_media = Organization.query.filter_by(Name="Humanístico-Científica", RefOrganizationTypeId=41).first()
-    if not rama_media:
-        rama_media = Organization(Name="Humanístico-Científica", RefOrganizationTypeId=41)
-        db.session.add(rama_media)
-        db.session.flush()
-        print("✅ Rama creada: Humanístico-Científica")
-    ramas["05"] = rama_media
+    for codigo, nombre in ramas_data:
+        rama = Organization.query.filter_by(Name=nombre, RefOrganizationTypeId=41).first()
+        if not rama:
+            rama = Organization(Name=nombre, RefOrganizationTypeId=41)
+            db.session.add(rama)
+            db.session.flush()
+            print(f"✅ Rama creada: {nombre}")
+        ramas[codigo] = rama
+        db.session.add(OrganizationRelationship(OrganizationId=rama.OrganizationId, ParentOrganizationId=niveles[codigo].OrganizationId))
 
-    # Relacionar cada rama con SU nivel
-    db.session.add(OrganizationRelationship(
-        OrganizationId=rama_basica.OrganizationId,
-        ParentOrganizationId=niveles["02"].OrganizationId
-    ))
-    db.session.add(OrganizationRelationship(
-        OrganizationId=rama_media.OrganizationId,
-        ParentOrganizationId=niveles["05"].OrganizationId
-    ))
-
-    # ============================================================
-    # 6. SECTOR (Tipo 42)
-    # ============================================================
-        # 6. SECTOR (Tipo 42) — UNO por cada rama
+    # 6. SECTORES (42)
     sectores = {}
-    
-    for codigo_nivel, rama in ramas.items():
-        sector_nombre = f"Sin Sector {codigo_nivel}"
-        sector = Organization.query.filter_by(Name=sector_nombre, RefOrganizationTypeId=42).first()
+    for codigo, rama in ramas.items():
+        nombre = f"Sin Sector {codigo}"
+        sector = Organization.query.filter_by(Name=nombre, RefOrganizationTypeId=42).first()
         if not sector:
-            sector = Organization(Name=sector_nombre, RefOrganizationTypeId=42)
+            sector = Organization(Name=nombre, RefOrganizationTypeId=42)
             db.session.add(sector)
             db.session.flush()
-            db.session.add(OrganizationRelationship(
-                OrganizationId=sector.OrganizationId,
-                ParentOrganizationId=rama.OrganizationId
-            ))
-            print(f"✅ Sector creado: {sector_nombre}")
-        sectores[codigo_nivel] = sector
+            db.session.add(OrganizationRelationship(OrganizationId=sector.OrganizationId, ParentOrganizationId=rama.OrganizationId))
+            print(f"✅ Sector creado: {nombre}")
+        sectores[codigo] = sector
 
-    # ============================================================
-    # 7. ESPECIALIDAD (Tipo 43)
-    # ============================================================
-        # 7. ESPECIALIDAD (Tipo 43) — UNA por cada sector
+    # 7. ESPECIALIDADES (43)
     especialidades = {}
-    
-    for codigo_nivel, sector in sectores.items():
-        esp_nombre = f"Sin Especialidad {codigo_nivel}"
-        especialidad = Organization.query.filter_by(Name=esp_nombre, RefOrganizationTypeId=43).first()
-        if not especialidad:
-            especialidad = Organization(Name=esp_nombre, RefOrganizationTypeId=43)
-            db.session.add(especialidad)
+    for codigo, sector in sectores.items():
+        nombre = f"Sin Especialidad {codigo}"
+        esp = Organization.query.filter_by(Name=nombre, RefOrganizationTypeId=43).first()
+        if not esp:
+            esp = Organization(Name=nombre, RefOrganizationTypeId=43)
+            db.session.add(esp)
             db.session.flush()
-            db.session.add(OrganizationRelationship(
-                OrganizationId=especialidad.OrganizationId,
-                ParentOrganizationId=sector.OrganizationId
-            ))
-            print(f"✅ Especialidad creada: {esp_nombre}")
-        especialidades[codigo_nivel] = especialidad
+            db.session.add(OrganizationRelationship(OrganizationId=esp.OrganizationId, ParentOrganizationId=sector.OrganizationId))
+            print(f"✅ Especialidad creada: {nombre}")
+        especialidades[codigo] = esp
 
-    # ============================================================
-    # 8. TIPO DE CURSO (Tipo 44)
-    # ============================================================
-        # 8. TIPO DE CURSO (Tipo 44) — UNO por cada especialidad
+    # 8. TIPOS DE CURSO (44)
     tipos_curso = {}
-    
-    for codigo_nivel, especialidad in especialidades.items():
-        tipo_nombre = f"Simple {codigo_nivel}"
-        tipo_curso = Organization.query.filter_by(Name=tipo_nombre, RefOrganizationTypeId=44).first()
-        if not tipo_curso:
-            tipo_curso = Organization(Name=tipo_nombre, RefOrganizationTypeId=44)
-            db.session.add(tipo_curso)
+    for codigo, esp in especialidades.items():
+        nombre = f"Simple {codigo}"
+        tipo = Organization.query.filter_by(Name=nombre, RefOrganizationTypeId=44).first()
+        if not tipo:
+            tipo = Organization(Name=nombre, RefOrganizationTypeId=44)
+            db.session.add(tipo)
             db.session.flush()
-            db.session.add(OrganizationRelationship(
-                OrganizationId=tipo_curso.OrganizationId,
-                ParentOrganizationId=especialidad.OrganizationId
-            ))
-            print(f"✅ Tipo de curso creado: {tipo_nombre}")
-        tipos_curso[codigo_nivel] = tipo_curso
+            db.session.add(OrganizationRelationship(OrganizationId=tipo.OrganizationId, ParentOrganizationId=esp.OrganizationId))
+            print(f"✅ Tipo de curso creado: {nombre}")
+        tipos_curso[codigo] = tipo
 
-    # ============================================================
-    # 9. CÓDIGO DE ENSEÑANZA (Tipo 45)
-    # ============================================================
-        # 9. CÓDIGO DE ENSEÑANZA (Tipo 45) — UNO por cada tipo de curso
+    # 9. CÓDIGOS DE ENSEÑANZA (45)
+    codigos_data = {"02": ("110", "Básica Niños"), "05": ("310", "Media HC Jóvenes")}
     codigos = {}
-    
-    codigo_data = {
-        "02": ("110", "Básica Niños"),
-        "05": ("310", "Media HC Jóvenes")
-    }
-    
-    for codigo_nivel, tipo_curso in tipos_curso.items():
-        codigo_val, codigo_short = codigo_data[codigo_nivel]
-        codigo = Organization.query.filter_by(Name=codigo_val, RefOrganizationTypeId=45).first()
-        if not codigo:
-            codigo = Organization(Name=codigo_val, ShortName=codigo_short, RefOrganizationTypeId=45)
-            db.session.add(codigo)
+    for codigo, tipo in tipos_curso.items():
+        val, short = codigos_data[codigo]
+        c = Organization.query.filter_by(Name=val, RefOrganizationTypeId=45).first()
+        if not c:
+            c = Organization(Name=val, ShortName=short, RefOrganizationTypeId=45)
+            db.session.add(c)
             db.session.flush()
-            db.session.add(OrganizationRelationship(
-                OrganizationId=codigo.OrganizationId,
-                ParentOrganizationId=tipo_curso.OrganizationId
-            ))
-            print(f"✅ Código enseñanza creado: {codigo_val} ({codigo_short})")
-        codigos[codigo_nivel] = codigo
+            db.session.add(OrganizationRelationship(OrganizationId=c.OrganizationId, ParentOrganizationId=tipo.OrganizationId))
+            print(f"✅ Código enseñanza creado: {val} ({short})")
+        codigos[codigo] = c
 
-    # ============================================================
-    # 10. GRADOS (Tipo 46) - 1° a 8° Básico, 1° a 4° Medio
-    # ============================================================
-        # 10. GRADOS (Tipo 46)
+    # 10. GRADOS (46)
     grados_data = {
-        "02": ["1º Básico", "2º Básico", "3º Básico", "4º Básico",
-               "5º Básico", "6º Básico", "7º Básico", "8º Básico"],
+        "02": ["1º Básico", "2º Básico", "3º Básico", "4º Básico", "5º Básico", "6º Básico", "7º Básico", "8º Básico"],
         "05": ["1º Medio", "2º Medio", "3º Medio", "4º Medio"]
     }
-    
     grados_creados = {}
-    
-    for codigo_nivel, lista_grados in grados_data.items():
-        for grado_nombre in lista_grados:
-            grado = Organization.query.filter_by(Name=grado_nombre, RefOrganizationTypeId=46).first()
-            if not grado:
-                grado = Organization(Name=grado_nombre, RefOrganizationTypeId=46)
-                db.session.add(grado)
+    for codigo_nivel, lista in grados_data.items():
+        for nombre in lista:
+            g = Organization.query.filter_by(Name=nombre, RefOrganizationTypeId=46).first()
+            if not g:
+                g = Organization(Name=nombre, RefOrganizationTypeId=46)
+                db.session.add(g)
                 db.session.flush()
-                db.session.add(OrganizationRelationship(
-                    OrganizationId=grado.OrganizationId,
-                    ParentOrganizationId=codigos[codigo_nivel].OrganizationId
-                ))
-                print(f"✅ Grado creado: {grado_nombre}")
-            grados_creados[grado_nombre] = grado
+                db.session.add(OrganizationRelationship(OrganizationId=g.OrganizationId, ParentOrganizationId=codigos[codigo_nivel].OrganizationId))
+                print(f"✅ Grado creado: {nombre}")
+            grados_creados[nombre] = g
 
-    # ============================================================
-    # 11. CURSOS CON LETRAS (Tipo 21)
-    # ============================================================
-        import string
-    letras = list(string.ascii_uppercase)  # ['A', 'B', 'C', ..., 'Z']
-    cursos_creados = []
-
+    # 11. CURSOS CON LETRAS (21)
+    letras = list(string.ascii_uppercase)
+    creados = 0
     for grado_nombre, grado in grados_creados.items():
         for letra in letras:
             curso_nombre = f"{grado_nombre} {letra}"
-            curso = Organization.query.filter_by(Name=curso_nombre, RefOrganizationTypeId=21).first()
-            if not curso:
-                curso = Organization(
-                    Name=curso_nombre,
-                    ShortName=letra,
-                    RefOrganizationTypeId=21
-                )
+            if not Organization.query.filter_by(Name=curso_nombre, RefOrganizationTypeId=21).first():
+                curso = Organization(Name=curso_nombre, ShortName=letra, RefOrganizationTypeId=21)
                 db.session.add(curso)
                 db.session.flush()
-                db.session.add(OrganizationRelationship(
-                    OrganizationId=curso.OrganizationId,
-                    ParentOrganizationId=grado.OrganizationId
-                ))
-                print(f"✅ Curso creado: {curso_nombre}")
-                cursos_creados.append(curso_nombre)
-
+                db.session.add(OrganizationRelationship(OrganizationId=curso.OrganizationId, ParentOrganizationId=grado.OrganizationId))
+                creados += 1
     db.session.commit()
-    print(f"\n🎉 Jerarquía completa creada. Total cursos: {len(cursos_creados)}")
+    print(f"\n🎉 Jerarquía completa. Total cursos nuevos: {creados}")
     return True
 
 
-# seed.py
-
 def crear_asignaturas_basicas_mineduc(grado_id):
     """
-    Crea asignaturas (Tipo 22) y las vincula al grado (Tipo 46) 
-    mediante OrganizationRelationship.
+    Crea asignaturas (Tipo 22) y las vincula al grado (Tipo 46).
+    Verifica por grado específico para no saltarse grados posteriores.
     """
     asignaturas_nombres = ["Lenguaje y Comunicación", "Matemática", "Historia", "Ciencias Naturales"]
     creadas = []
-    
+
     for nombre in asignaturas_nombres:
-        # 1. Crear la asignatura
-        asig = Organization.query.filter_by(Name=nombre, RefOrganizationTypeId=22).first()
-        if not asig:
+        # Verificar si YA existe esta asignatura vinculada a ESTE grado específico
+        asig_existente = Organization.query.join(
+            OrganizationRelationship,
+            Organization.OrganizationId == OrganizationRelationship.OrganizationId
+        ).filter(
+            Organization.Name == nombre,
+            Organization.RefOrganizationTypeId == 22,
+            OrganizationRelationship.ParentOrganizationId == grado_id
+        ).first()
+
+        if not asig_existente:
             asig = Organization(Name=nombre, ShortName=nombre[:3].upper(), RefOrganizationTypeId=22)
             db.session.add(asig)
             db.session.flush()
-            
-            # 2. Vincularla al Grado
+
             db.session.add(OrganizationRelationship(
                 OrganizationId=asig.OrganizationId,
                 ParentOrganizationId=grado_id
             ))
             creadas.append(asig)
-            print(f"✅ Asignatura creada y vinculada: {nombre}")
-    
+            print(f"   ✅ {nombre} creada para Grado ID {grado_id}")
+        else:
+            creadas.append(asig_existente)
+            print(f"   ℹ️ {nombre} ya existe para Grado ID {grado_id}")
+
     db.session.commit()
     return creadas
 
 
 def crear_planificaciones(asignatura):
-    """Crea planificaciones curriculares"""
+    """Crea planificaciones curriculares para una asignatura"""
     if not EdugestCurriculumPlan.query.filter_by(OrganizationId=asignatura.OrganizationId).first():
         unidades = [
-            EdugestCurriculumPlan(OrganizationId=asignatura.OrganizationId, 
-                                  UnitTitle="Unidad 1: Números racionales y potencias"),
-            EdugestCurriculumPlan(OrganizationId=asignatura.OrganizationId, 
-                                  UnitTitle="Unidad 2: Álgebra y funciones lineales"),
-            EdugestCurriculumPlan(OrganizationId=asignatura.OrganizationId, 
-                                  UnitTitle="Unidad 3: Geometría y Teorema de Pitágoras")
+            EdugestCurriculumPlan(OrganizationId=asignatura.OrganizationId, UnitTitle="Unidad 1: Números racionales y potencias"),
+            EdugestCurriculumPlan(OrganizationId=asignatura.OrganizationId, UnitTitle="Unidad 2: Álgebra y funciones lineales"),
+            EdugestCurriculumPlan(OrganizationId=asignatura.OrganizationId, UnitTitle="Unidad 3: Geometría y Teorema de Pitágoras")
         ]
         db.session.add_all(unidades)
         db.session.commit()
         print("✅ Planificaciones curriculares creadas.")
 
 
-def crear_alumnos_prueba(asignatura):
-    """Crea 5 alumnos ficticios"""
+def crear_alumnos_prueba(curso_id):
+    """Crea 5 alumnos ficticios y los matricula en el CURSO (Tipo 21)"""
     alumnos_datos = [
         {"rut": "21.345.678-9", "nombre": "Juan Carlos", "apellido_p": "Pérez", "apellido_m": "Muñoz"},
         {"rut": "22.456.789-K", "nombre": "María José", "apellido_p": "González", "apellido_m": "Tapia"},
@@ -346,35 +238,30 @@ def crear_alumnos_prueba(asignatura):
     ]
 
     for data in alumnos_datos:
-        identificador_existente = PersonIdentifier.query.filter_by(
-            Identifier=data["rut"],
-            RefPersonIdentificationSystemId=51
-        ).first()
-
-        if not identificador_existente:
-            nueva_persona = Person(
+        ident = PersonIdentifier.query.filter_by(Identifier=data["rut"], RefPersonIdentificationSystemId=51).first()
+        if not ident:
+            persona = Person(
                 FirstName=data["nombre"],
                 MiddleName="",
                 LastName=data["apellido_p"],
                 SecondLastName=data["apellido_m"]
             )
-            db.session.add(nueva_persona)
+            db.session.add(persona)
             db.session.flush()
 
-            nuevo_rut = PersonIdentifier(
-                PersonId=nueva_persona.PersonId,
+            db.session.add(PersonIdentifier(
+                PersonId=persona.PersonId,
                 Identifier=data["rut"],
                 RefPersonIdentificationSystemId=51
-            )
-            db.session.add(nuevo_rut)
+            ))
 
-            nuevo_rol = OrganizationPersonRole(
-                OrganizationId=asignatura.OrganizationId,
-                PersonId=nueva_persona.PersonId,
+            # MATRICULA EN EL CURSO (Tipo 21), NO EN LA ASIGNATURA
+            db.session.add(OrganizationPersonRole(
+                OrganizationId=curso_id,
+                PersonId=persona.PersonId,
                 RoleId=6
-            )
-            db.session.add(nuevo_rol)
-            print(f"👤 Estudiante matriculado: {data['nombre']} {data['apellido_p']}")
+            ))
+            print(f"👤 {data['nombre']} matriculado en Curso ID {curso_id}")
         else:
             print(f"ℹ️ Estudiante ya existe: {data['rut']}")
 
@@ -384,39 +271,37 @@ def crear_alumnos_prueba(asignatura):
 # ============================================================
 # EJECUCIÓN PRINCIPAL
 # ============================================================
-# ============================================================
-# EJECUCIÓN PRINCIPAL
-# ============================================================
-# ============================================================
-# EJECUCIÓN PRINCIPAL
-# ============================================================
 with app.app_context():
-    print("🚀 Iniciando siembra de datos de prueba para Edugest...")
+    print("🚀 Iniciando siembra...")
     print("=" * 60)
 
-    # 1. Jerarquía completa
     crear_jerarquia_completa()
 
-    # 2. Obtener UN grado (Tipo 46) para vincular asignaturas
-    grado_prueba = Organization.query.filter_by(RefOrganizationTypeId=46).first()
+    # Crear asignaturas para TODOS los grados
+    todos_los_grados = Organization.query.filter_by(RefOrganizationTypeId=46).order_by(Organization.OrganizationId).all()
+    for idx, grado in enumerate(todos_los_grados):
+        asignaturas = crear_asignaturas_basicas_mineduc(grado.OrganizationId)
+        if idx == 0 and asignaturas:
+            crear_planificaciones(asignaturas[0])
 
-    if grado_prueba:
-        # 3. Crear asignaturas vinculadas al GRADO (Tipo 46), no al curso
-        asignaturas = crear_asignaturas_basicas_mineduc(grado_prueba.OrganizationId)
-        print(f"✅ Asignaturas creadas y vinculadas al grado: {grado_prueba.Name}")
+    # Buscar el Curso 1° Básico A (Tipo 21) para matricular alumnos de prueba
+    grado_1basico = Organization.query.filter_by(Name="1º Básico", RefOrganizationTypeId=46).first()
+    if grado_1basico:
+        curso_1A = Organization.query.join(
+            OrganizationRelationship,
+            Organization.OrganizationId == OrganizationRelationship.OrganizationId
+        ).filter(
+            Organization.RefOrganizationTypeId == 21,
+            Organization.ShortName == 'A',
+            OrganizationRelationship.ParentOrganizationId == grado_1basico.OrganizationId
+        ).first()
+
+        if curso_1A:
+            crear_alumnos_prueba(curso_1A.OrganizationId)
+        else:
+            print("❌ No se encontró el curso 1° Básico A")
     else:
-        print("❌ No se encontró un Grado para vincular las asignaturas.")
-        asignaturas = []
-
-    # 4. Tomar la primera asignatura para planificaciones y alumnos de prueba
-    if asignaturas:
-        asignatura_prueba = asignaturas[0]
-
-        # Planificaciones
-        crear_planificaciones(asignatura_prueba)
-
-        # Alumnos ficticios
-        crear_alumnos_prueba(asignatura_prueba)
+        print("❌ No se encontró el grado 1° Básico")
 
     print("\n" + "=" * 60)
-    print("🎉 ¡Proceso de siembra completado con éxito!")
+    print("🎉 ¡Siembra completada!")

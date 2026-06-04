@@ -148,65 +148,101 @@ def crud_unidades(org_id):
 def registrar_clase_dinamica(org_id):
     asignatura = Organization.query.get_or_404(org_id)
 
-# ── OBTENER GRADO PADRE (Tipo 46) ──
-    # Subimos un nivel: Asignatura(22) -> Grado(46)
+    # Grado padre
     relacion_grado = OrganizationRelationship.query.filter_by(OrganizationId=org_id).first()
     grado_id = relacion_grado.ParentOrganizationId if relacion_grado else None
-    # ───────────────────────────────────
 
-    # Listado de alumnos (Rol = 6) de esta asignatura
-    alumnos_roles = OrganizationPersonRole.query.filter_by(OrganizationId=org_id, RoleId=6).all()
-    
-    # Obtener rut e información cruzando la tabla Person y PersonIdentifier
-    lista_estudiantes = []
-    for rol in alumnos_roles:
-        persona = Person.query.get(rol.PersonId)
-        identificador = PersonIdentifier.query.filter_by(PersonId=persona.PersonId, RefPersonIdentificationSystemId=51).first()
-        rut = identificador.Identifier if identificador else "Sin RUT"
-        
-        lista_estudiantes.append({
-            'rol_id': rol.OrganizationPersonRoleId,
-            'rut': rut,
-            'nombres': persona.FirstName,
-            'apellidos': f"{persona.LastName} {persona.SecondLastName or ''}".strip()
-        })
-    
+    # Letra actual
     if request.method == 'POST':
-        hora_inicio = request.form.get('hora_inicio') # Ej: "08:00"
-        hora_termino = request.form.get('hora_termino') # Ej: "10:00"
+        letra = request.form.get('letra_curso', '')
+    else:
+        letra = request.args.get('letra', 'A')
+
+    # Curso específico
+    curso = None
+    if grado_id and letra:
+        curso = Organization.query.join(
+            OrganizationRelationship,
+            Organization.OrganizationId == OrganizationRelationship.OrganizationId
+        ).filter(
+            Organization.RefOrganizationTypeId == 21,
+            Organization.ShortName == letra,
+            OrganizationRelationship.ParentOrganizationId == grado_id
+        ).first()
+
+    # Estudiantes del curso
+    lista_estudiantes = []
+    if curso:
+        alumnos_roles = OrganizationPersonRole.query.filter_by(
+            OrganizationId=curso.OrganizationId, RoleId=6
+        ).all()
+        for rol in alumnos_roles:
+            persona = Person.query.get(rol.PersonId)
+            if persona:
+                ident = PersonIdentifier.query.filter_by(
+                    PersonId=persona.PersonId,
+                    RefPersonIdentificationSystemId=51
+                ).first()
+                lista_estudiantes.append({
+                    'rol_id': rol.OrganizationPersonRoleId,
+                    'rut': ident.Identifier if ident else "Sin RUT",
+                    'nombres': persona.FirstName,
+                    'apellidos': f"{persona.LastName} {persona.SecondLastName or ''}".strip()
+                })
+
+    # Letras disponibles para el select
+    letras_disponibles = []
+    if grado_id:
+        cursos = Organization.query.join(
+            OrganizationRelationship,
+            Organization.OrganizationId == OrganizationRelationship.OrganizationId
+        ).filter(
+            Organization.RefOrganizationTypeId == 21,
+            OrganizationRelationship.ParentOrganizationId == grado_id
+        ).order_by(Organization.ShortName).all()
+        letras_disponibles = [c.ShortName for c in cursos if c.ShortName]
+
+    if request.method == 'POST':
+        if not letra:
+            flash('Debe seleccionar la letra del curso.', 'warning')
+            return redirect(url_for('libro_digital.registrar_clase_dinamica', org_id=org_id))
+
+        hora_inicio = request.form.get('hora_inicio')
+        hora_termino = request.form.get('hora_termino')
         fecha_hoy = datetime.now().strftime('%Y-%m-%d')
-        letra_curso = request.form.get('letra_curso') # Select de la letra (A, B, C...)
-        
-        # Crear la sesión de calendario (Bloque horario)
+
         sesion = OrganizationCalendarSession(
             OrganizationId=org_id,
             BeginDate=fecha_hoy,
             EndDate=fecha_hoy,
             SessionStartTime=hora_inicio,
             SessionEndTime=hora_termino,
-            Description=f"Clase registrada para Letra {letra_curso}",
+            Description=f"Clase registrada para Letra {letra}",
             MarkingTermIndicator=True,
             SchedulingTermIndicator=False
         )
         db.session.add(sesion)
-        db.session.flush() # Flush para capturar el ID de la sesión antes del commit final
-        
-        # Registrar asistencia para cada estudiante en el bloque
+        db.session.flush()
+
         for est in lista_estudiantes:
-            estado_asistencia = request.form.get(f"asistencia_{est['rol_id']}")
-            if estado_asistencia:
-                asistencia = EdugestSessionAttendance(
+            estado = request.form.get(f"asistencia_{est['rol_id']}")
+            if estado:
+                db.session.add(EdugestSessionAttendance(
                     OrganizationCalendarSessionId=sesion.OrganizationCalendarSessionId,
                     OrganizationPersonRoleId=est['rol_id'],
-                    RefAttendanceStatusId=int(estado_asistencia) # 1=Presente, 2=Ausente, 3=Atrasado
-                )
-                db.session.add(asistencia)
-        
+                    RefAttendanceStatusId=int(estado)
+                ))
+
         db.session.commit()
         flash('Registro de clase y asistencia firmados exitosamente.', 'success')
-        return redirect(url_for('libro_digital.asignaturas_por_grado'))
+        return redirect(url_for('libro_digital.asignaturas_por_grado', grado_id=grado_id))
 
-    return render_template('libro_digital/lista_curso.html', asignatura=asignatura, alumnos=lista_estudiantes, grado_id=grado_id)
+    return render_template('libro_digital/lista_curso.html',
+                           asignatura=asignatura,
+                           alumnos=lista_estudiantes,
+                           grado_id=grado_id,
+                           letra_actual=letra,
+                           letras_disponibles=letras_disponibles)
 
 
 # ============================================================================
@@ -215,35 +251,130 @@ def registrar_clase_dinamica(org_id):
 @libro_digital_bp.route('/asignatura/<int:org_id>/exportar')
 def exportar_lista(org_id):
     asignatura = Organization.query.get_or_404(org_id)
-    alumnos_roles = OrganizationPersonRole.query.filter_by(OrganizationId=org_id, RoleId=6).all()
     
-    # Preparamos el buffer en memoria
+    # Obtener grado padre
+    relacion_grado = OrganizationRelationship.query.filter_by(OrganizationId=org_id).first()
+    grado_id = relacion_grado.ParentOrganizationId if relacion_grado else None
+    
+    # Obtener letra del query param (default A)
+    letra = request.args.get('letra', 'A')
+    
+    # Buscar el curso por letra
+    curso = None
+    if grado_id and letra:
+        curso = Organization.query.join(
+            OrganizationRelationship,
+            Organization.OrganizationId == OrganizationRelationship.OrganizationId
+        ).filter(
+            Organization.RefOrganizationTypeId == 21,
+            Organization.ShortName == letra,
+            OrganizationRelationship.ParentOrganizationId == grado_id
+        ).first()
+    
+    if not curso:
+        flash(f'No existe el curso {letra} para este grado.', 'warning')
+        return redirect(url_for('libro_digital.registrar_clase_dinamica', org_id=org_id))
+    
+    # Obtener alumnos del curso
+    alumnos_roles = OrganizationPersonRole.query.filter_by(
+        OrganizationId=curso.OrganizationId, RoleId=6
+    ).all()
+    
+    # Obtener fecha de hoy
+    fecha_hoy = datetime.now().strftime('%Y-%m-%d')
+    
+    # Buscar sesiones de hoy para esta asignatura
+    sesiones_hoy = OrganizationCalendarSession.query.filter(
+        OrganizationCalendarSession.OrganizationId == org_id,
+        OrganizationCalendarSession.BeginDate == fecha_hoy
+    ).order_by(OrganizationCalendarSession.SessionStartTime).all()
+    
+    # Preparar CSV
     si = StringIO()
     writer = csv.writer(si, delimiter=';')
     
-    # Cabeceras del Excel
-    writer.writerow(['RUT', 'Nombres', 'Apellido Paterno', 'Apellido Materno'])
+    # Cabeceras completas
+    writer.writerow([
+        'Asignatura', 'Curso', 'Letra', 'Fecha Clase',
+        'Hora Inicio', 'Hora Término',
+        'RUT', 'Apellido Paterno', 'Apellido Materno', 'Nombres',
+        'Estado Asistencia'
+    ])
     
-    for rol in alumnos_roles:
-        persona = Person.query.get(rol.PersonId)
-        identificador = PersonIdentifier.query.filter_by(PersonId=persona.PersonId, RefPersonIdentificationSystemId=51).first()
-        rut = identificador.Identifier if identificador else "Sin RUT"
-        
-        writer.writerow([
-            rut, 
-            persona.FirstName, 
-            persona.LastName, 
-            persona.SecondLastName or ''
-        ])
-        
+    # Si no hay sesiones hoy, exportamos solo la lista sin asistencia
+    if not sesiones_hoy:
+        for rol in alumnos_roles:
+            persona = Person.query.get(rol.PersonId)
+            if not persona:
+                continue
+            ident = PersonIdentifier.query.filter_by(
+                PersonId=persona.PersonId, RefPersonIdentificationSystemId=51
+            ).first()
+            rut = ident.Identifier if ident else "Sin RUT"
+            
+            writer.writerow([
+                asignatura.Name,
+                curso.Name,
+                letra,
+                fecha_hoy,
+                'No registrada',
+                'No registrada',
+                rut,
+                persona.LastName,
+                persona.SecondLastName or '',
+                persona.FirstName,
+                'Sin registro'
+            ])
+    else:
+        # Por cada sesión del día, exportar asistencia de los alumnos
+        for sesion in sesiones_hoy:
+            # Obtener registros de asistencia de esta sesión
+            asistencias = EdugestSessionAttendance.query.filter_by(
+                OrganizationCalendarSessionId=sesion.OrganizationCalendarSessionId
+            ).all()
+            
+            # Diccionario {rol_id: estado}
+            asistencia_dict = {a.OrganizationPersonRoleId: a.RefAttendanceStatusId for a in asistencias}
+            
+            for rol in alumnos_roles:
+                persona = Person.query.get(rol.PersonId)
+                if not persona:
+                    continue
+                    
+                ident = PersonIdentifier.query.filter_by(
+                    PersonId=persona.PersonId, RefPersonIdentificationSystemId=51
+                ).first()
+                rut = ident.Identifier if ident else "Sin RUT"
+                
+                estado_id = asistencia_dict.get(rol.OrganizationPersonRoleId)
+                estado_texto = {
+                    1: 'Presente',
+                    2: 'Ausente',
+                    3: 'Atrasado'
+                }.get(estado_id, 'Sin registro')
+                
+                writer.writerow([
+                    asignatura.Name,
+                    curso.Name,
+                    letra,
+                    sesion.BeginDate,
+                    sesion.SessionStartTime or 'No registrada',
+                    sesion.SessionEndTime or 'No registrada',
+                    rut,
+                    persona.LastName,
+                    persona.SecondLastName or '',
+                    persona.FirstName,
+                    estado_texto
+                ])
+    
     output = BytesIO()
-    output.write(si.getvalue().encode('utf-8-sig')) # El BOM utf-8-sig obliga a Excel a reconocer tildes y ñ
+    output.write(si.getvalue().encode('utf-8-sig'))
     output.seek(0)
     
-    nombre_archivo = f"Lista_{asignatura.Name.replace(' ', '_')}.csv"
+    nombre_archivo = f"Asistencia_{asignatura.Name.replace(' ', '_')}_{letra}_{fecha_hoy}.csv"
     
     return Response(
-        output, 
-        mimetype="text/csv", 
+        output,
+        mimetype="text/csv",
         headers={"Content-Disposition": f"attachment;filename={nombre_archivo}"}
     )
