@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ instrumento.Title }} - Edugest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; margin: 0; }
+            .page-break { page-break-after: always; }
+            .avoid-break { page-break-inside: avoid; }
+        }
+        @page { margin: 1.5cm; }
+        .linea-desarrollo {
+            border-bottom: 1px solid #cbd5e1;
+            height: 1.8em;
+            margin-bottom: 0.3em;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+    <!-- BOTÓN DE IMPRESIÓN (solo en pantalla) -->
+    <div class="no-print max-w-4xl mx-auto mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-lg font-bold text-gray-800">Vista previa de impresión</h1>
+            <p class="text-sm text-gray-500">Use <strong>Ctrl + P</strong> y seleccione "Guardar como PDF" para descargar.</p>
+        </div>
+        <button onclick="window.print()" 
+                class="px-5 py-2.5 bg-slate-800 text-white text-sm font-bold rounded-lg hover:bg-slate-700 shadow transition">
+            🖨️ Imprimir / Guardar PDF
+        </button>
+    </div>
+
+    <!-- HOJA DE EVALUACIÓN -->
+    <div class="max-w-[210mm] mx-auto bg-white shadow-lg p-8 md:p-12 min-h-[297mm]">
+        
+        <!-- CABECERA INSTITUCIONAL -->
+        <div class="border-b-2 border-slate-800 pb-4 mb-6">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 uppercase tracking-wide">Evaluación Escrita</h2>
+                    <p class="text-sm text-slate-600 mt-1">
+                        <span class="font-semibold">Asignatura:</span> {{ asignatura.Name }} &nbsp;|&nbsp;
+                        <span class="font-semibold">Grado:</span> {{ grado.Name if grado else '—' }}
+                    </p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-slate-500">Fecha: ________________</p>
+                    <p class="text-xs text-slate-500 mt-1">Puntaje Máximo: {{ preguntas_data | sum(attribute='pregunta.Points') }} pts</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATOS DEL ESTUDIANTE -->
+        <div class="grid grid-cols-2 gap-4 mb-8 text-sm">
+            <div>
+                <label class="block text-slate-700 font-semibold mb-1">Nombre completo:</label>
+                <div class="border-b border-slate-400 h-6"></div>
+            </div>
+            <div>
+                <label class="block text-slate-700 font-semibold mb-1">RUT:</label>
+                <div class="border-b border-slate-400 h-6"></div>
+            </div>
+            <div class="col-span-2">
+                <label class="block text-slate-700 font-semibold mb-1">Curso / Letra:</label>
+                <div class="border-b border-slate-400 h-6 w-1/2"></div>
+            </div>
+        </div>
+
+        <!-- TÍTULO DE LA PRUEBA -->
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-8 text-center">
+            <h3 class="text-lg font-bold text-slate-800">{{ instrumento.Title }}</h3>
+            <p class="text-xs text-slate-500 mt-1">Lea atentamente cada pregunta antes de responder.</p>
+        </div>
+
+        <!-- PREGUNTAS -->
+        <div class="space-y-8">
+            {% for item in preguntas_data %}
+            <div class="avoid-break">
+                <div class="flex items-start gap-3 mb-3">
+                    <span class="flex-shrink-0 w-7 h-7 rounded-full bg-slate-800 text-white text-xs font-bold flex items-center justify-center mt-0.5">
+                        {{ loop.index }}
+                    </span>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-slate-800 leading-relaxed">
+                            {{ item.pregunta.QuestionText }}
+                        </p>
+                        <span class="inline-block mt-1 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                            {{ item.pregunta.QuestionType }} — {{ item.pregunta.Points }} pts
+                        </span>
+                    </div>
+                </div>
+
+                <!-- ALTERNATIVA -->
+                {% if item.pregunta.QuestionType == 'Alternativa' %}
+                <div class="ml-10 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {% for op in item.opciones %}
+                    <div class="flex items-center gap-2 p-2 border border-slate-200 rounded-md bg-white">
+                        <span class="w-5 h-5 rounded-full border-2 border-slate-300 flex-shrink-0"></span>
+                        <span class="text-sm text-slate-700">
+                            <strong class="text-slate-500 mr-1">{{ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[loop.index0] }})</strong>
+                            {{ op.OptionText }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- VERDADERO / FALSO -->
+                {% elif item.pregunta.QuestionType == 'VerdaderoFalso' %}
+                <div class="ml-10 flex gap-6">
+                    {% for op in item.opciones %}
+                    <div class="flex items-center gap-2 p-2">
+                        <span class="w-5 h-5 rounded-full border-2 border-slate-300 flex-shrink-0"></span>
+                        <span class="text-sm text-slate-700 font-medium">{{ op.OptionText }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- DESARROLLO -->
+                {% elif item.pregunta.QuestionType == 'Desarrollo' %}
+                <div class="ml-10 mt-2">
+                    {% for i in range(5) %}
+                    <div class="linea-desarrollo"></div>
+                    {% endfor %}
+                    <p class="text-[10px] text-slate-400 mt-1">Desarrolle su respuesta con claridad.</p>
+                </div>
+
+                <!-- RELACIÓN DE COLUMNAS -->
+                {% elif item.pregunta.QuestionType == 'RelacionColumnas' %}
+                <div class="ml-10 mt-2 grid grid-cols-2 gap-8 text-sm">
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 uppercase mb-2 border-b pb-1">Columna A</p>
+                        <div class="space-y-2">
+                            {% for op in item.opciones|sort(attribute='OrderIndex') %}
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-600 w-4">{{ loop.index }}.</span>
+                                <span class="text-slate-700">{{ op.OptionText }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 uppercase mb-2 border-b pb-1">Columna B</p>
+                        <div class="space-y-2">
+                            {% for op in item.opciones|sort(attribute='OrderIndex') %}
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-600 w-4">{{ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[loop.index0] }})</span>
+                                <span class="text-slate-700">{{ op.MatchText }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <p class="ml-10 text-[10px] text-slate-400 mt-2">Escriba la letra de la Columna B al lado del número correspondiente de la Columna A.</p>
+
+                <!-- COMPLETAR -->
+                {% elif item.pregunta.QuestionType == 'Completar' %}
+                <div class="ml-10 mt-2 p-3 bg-white border border-slate-200 rounded-md text-sm leading-loose text-slate-700">
+                    {% set texto = item.pregunta.QuestionText %}
+                    {% set partes = texto.split('[___]') %}
+                    {% for parte in partes %}
+                        {{ parte }}
+                        {% if not loop.last %}
+                        <span class="inline-block w-24 border-b-2 border-slate-400 mx-1"></span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            {% if loop.index % 3 == 0 and not loop.last %}
+            <div class="page-break"></div>
+            {% endif %}
+            {% else %}
+            <p class="text-center text-slate-400 text-sm">Esta evaluación no tiene preguntas registradas.</p>
+            {% endfor %}
+        </div>
+
+        <!-- PIE DE PÁGINA -->
+        <div class="mt-12 pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
+            Generado desde Edugest — Sistema de Gestión Educativa
+        </div>
+    </div>
+</body>
+</html>

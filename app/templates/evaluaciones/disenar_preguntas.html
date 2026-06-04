@@ -132,9 +132,17 @@
     <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
         <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-3">
             <h3 class="text-lg font-bold text-gray-900">Preguntas Guardadas (Total: {{ preguntas|length }})</h3>
-            <a href="{{ url_for('evaluaciones.index') }}"
-                class="text-xs bg-slate-100 hover:bg-slate-200 text-gray-700 px-3 py-1.5 rounded-md font-medium">Volver
-                al Panel</a>
+            <div class="flex gap-2">
+                <a href="{{ url_for('evaluaciones.imprimir_evaluacion', inst_id=instrumento.InstrumentId) }}" 
+                   target="_blank"
+                   class="text-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md font-medium transition">
+                   🖨️ Versión Imprimible
+                </a>
+                <a href="{{ url_for('evaluaciones.index') }}"
+                   class="text-xs bg-slate-100 hover:bg-slate-200 text-gray-700 px-3 py-1.5 rounded-md font-medium transition">
+                   Volver al Panel
+                </a>
+            </div>
         </div>
 
         <div class="space-y-4">

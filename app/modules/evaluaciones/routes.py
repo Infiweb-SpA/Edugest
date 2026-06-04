@@ -532,3 +532,42 @@ def cambiar_visibilidad(inst_id):
     estado = "publicado" if instrumento.IsVisible else "ocultado"
     flash(f"El instrumento ha sido {estado} correctamente.", "success")
     return redirect(url_for('evaluaciones.unidades_asignatura', org_id=instrumento.OrganizationId))
+
+
+# ============================================================================
+# VISTA IMPRIMIBLE / DESCARGABLE (SIN RESPUESTAS CORRECTAS)
+# ============================================================================
+@evaluaciones_bp.route('/instrumento/<int:inst_id>/imprimir')
+def imprimir_evaluacion(inst_id):
+    """
+    Renderiza una versión limpia de la evaluación lista para imprimir o 
+    exportar a PDF mediante Ctrl+P del navegador.
+    """
+    instrumento = EdugestAssessmentInstrument.query.get_or_404(inst_id)
+    asignatura = Organization.query.get_or_404(instrumento.OrganizationId)
+
+    # Obtener grado para la cabecera
+    relacion_grado = OrganizationRelationship.query.filter_by(
+        OrganizationId=asignatura.OrganizationId
+    ).first()
+    grado = None
+    if relacion_grado:
+        grado = Organization.query.get(relacion_grado.ParentOrganizationId)
+
+    # Cargar preguntas y opciones (sin filtrar por correcta)
+    preguntas = EdugestAssessmentQuestion.query.filter_by(InstrumentId=inst_id).all()
+    preguntas_data = []
+    for q in preguntas:
+        opciones = EdugestQuestionOption.query.filter_by(
+            QuestionId=q.QuestionId
+        ).order_by(EdugestQuestionOption.OrderIndex).all()
+        preguntas_data.append({
+            'pregunta': q,
+            'opciones': opciones
+        })
+
+    return render_template('evaluaciones/imprimir.html',
+                           instrumento=instrumento,
+                           asignatura=asignatura,
+                           grado=grado,
+                           preguntas_data=preguntas_data)
