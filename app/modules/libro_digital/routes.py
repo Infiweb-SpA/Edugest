@@ -3,6 +3,7 @@ from io import StringIO, BytesIO
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, Response
 from app.database import db
+from sqlalchemy import func
 from app.models.mineduc import (
     Organization, OrganizationPersonRole, OrganizationCalendarSession,
     RoleAttendanceEvent, PersonIdentifier, Person, OrganizationRelationship
@@ -44,7 +45,14 @@ def listar_grados():
         
         # Contar estudiantes (Rol 6 = Estudiante) 
         # En una consulta real más profunda, cruzaríamos OrganizationRelationship. Por ahora es un count directo.
-        total_estudiantes = db.session.query(OrganizationPersonRole).filter_by(RoleId=6, OrganizationId=g.OrganizationId).count()
+        total_estudiantes = db.session.query(func.count(OrganizationPersonRole.OrganizationPersonRoleId))\
+            .join(Organization, OrganizationPersonRole.OrganizationId == Organization.OrganizationId)\
+            .join(OrganizationRelationship, Organization.OrganizationId == OrganizationRelationship.OrganizationId)\
+            .filter(
+                OrganizationRelationship.ParentOrganizationId == g.OrganizationId,
+                Organization.RefOrganizationTypeId == 21,   # Garantiza que solo sean cursos
+                OrganizationPersonRole.RoleId == 6            # Solo estudiantes
+            ).scalar() or 0
         
         grados_data.append({
             'id': g.OrganizationId,
