@@ -18,7 +18,8 @@
             <a href="{{ url_for('libro_digital.listar_grados') }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 ⬅️ Volver a Grados
             </a>
-            <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm">
+            <button onclick="document.getElementById('modalAsignatura').classList.remove('hidden')" 
+                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm cursor-pointer">
                 ➕ Agregar Asignatura Manual
             </button>
         </div>
@@ -62,5 +63,44 @@
         </div>
     </div>
 
+</div>
+<!-- MODAL: Crear Asignatura Manual -->
+<div id="modalAsignatura" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-lg border border-gray-200">
+        <div class="mb-4">
+            <h3 class="text-lg font-bold text-gray-900">Nueva Asignatura</h3>
+            <p class="text-sm text-gray-500">Se creará vinculada a <strong>{{ grado.Name }}</strong> siguiendo el estándar MINEDUC.</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('libro_digital.crear_asignatura_manual', grado_id=grado.OrganizationId) }}">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Asignatura <span class="text-red-500">*</span></label>
+                    <input type="text" name="nombre_asignatura" required maxlength="255"
+                           placeholder="Ej: Artes Visuales, Tecnología, Inglés..."
+                           class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Código Corto (Opcional)</label>
+                    <input type="text" name="codigo_asignatura" maxlength="50"
+                           placeholder="Ej: ART, TEC, ING..."
+                           class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    <p class="text-xs text-gray-400 mt-1">Si lo dejas vacío, se generará automáticamente (primeras 3 letras).</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-2 mt-6">
+                <button type="button" onclick="document.getElementById('modalAsignatura').classList.add('hidden')"
+                        class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancelar
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition font-medium">
+                    Crear Asignatura
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}

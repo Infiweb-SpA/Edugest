@@ -396,3 +396,59 @@ def exportar_lista(org_id):
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment;filename={nombre_archivo}"}
     )
+
+# ============================================================================
+# CREAR ASIGNATURA MANUALMENTE
+# ============================================================================
+@libro_digital_bp.route('/grados/<int:grado_id>/asignaturas/crear', methods=['POST'])
+def crear_asignatura_manual(grado_id):
+    """
+    Crea una asignatura (Organization Tipo 22) y la vincula al grado
+    mediante OrganizationRelationship, siguiendo el estándar MINEDUC.
+    """
+    nombre = request.form.get('nombre_asignatura', '').strip()
+    codigo = request.form.get('codigo_asignatura', '').strip()
+
+    # Validaciones básicas
+    if not nombre:
+        flash('Debe ingresar un nombre para la asignatura.', 'warning')
+        return redirect(url_for('libro_digital.asignaturas_por_grado', grado_id=grado_id))
+
+    # Generar código corto automático si el usuario no lo proporcionó
+    if not codigo:
+        # Toma las primeras 3 letras en mayúsculas; si el nombre es corto, usa el nombre completo
+        codigo = nombre[:3].upper()
+
+    # Verificar que no exista ya una asignatura con el mismo nombre en este grado
+    existente = Organization.query.join(
+        OrganizationRelationship,
+        Organization.OrganizationId == OrganizationRelationship.OrganizationId
+    ).filter(
+        Organization.Name == nombre,
+        Organization.RefOrganizationTypeId == 22,
+        OrganizationRelationship.ParentOrganizationId == grado_id
+    ).first()
+
+    if existente:
+        flash(f'La asignatura "{nombre}" ya existe en este grado.', 'warning')
+        return redirect(url_for('libro_digital.asignaturas_por_grado', grado_id=grado_id))
+
+    # 1. Crear la Organization tipo 22 (Asignatura/Sección específica)
+    nueva_asignatura = Organization(
+        Name=nombre,
+        ShortName=codigo,
+        RefOrganizationTypeId=22
+    )
+    db.session.add(nueva_asignatura)
+    db.session.flush()  # Obtener el OrganizationId generado
+
+    # 2. Vincular al grado padre mediante OrganizationRelationship
+    db.session.add(OrganizationRelationship(
+        OrganizationId=nueva_asignatura.OrganizationId,
+        ParentOrganizationId=grado_id
+    ))
+
+    db.session.commit()
+    flash(f'Asignatura "{nombre}" creada y vinculada al grado exitosamente.', 'success')
+
+    return redirect(url_for('libro_digital.asignaturas_por_grado', grado_id=grado_id))
