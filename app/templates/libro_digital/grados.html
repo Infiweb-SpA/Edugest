@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Grados - Edugest{% endblock %}
+{% block header_title %}Administración de Grados Académicos{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div
+        class="p-4 mb-4 text-sm rounded-lg {% if category == 'success' %}bg-green-50 text-green-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-900">Listado de Grados</h3>
+            <p class="text-sm text-gray-500">Habilite o deshabilite los grados según la configuración de su
+                establecimiento.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th scope="col" class="px-6 py-4">Grado Escolar</th>
+                        <th scope="col" class="px-6 py-4 text-center">Nº de Estudiantes</th>
+                        <th scope="col" class="px-6 py-4 text-center">Estado (Habilitar / Deshabilitar)</th>
+                        <th scope="col" class="px-6 py-4 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in grados %}
+                    <tr class="bg-white border-b hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                            {{ g.nombre }}
+                        </td>
+                        <td class="px-6 py-4 text-center font-semibold text-indigo-600">
+                            {{ g.estudiantes }}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <form method="POST" action="{{ url_for('libro_digital.listar_grados') }}"
+                                class="inline-flex items-center">
+                                <input type="hidden" name="organization_id" value="{{ g.id }}">
+                                <input type="hidden" name="is_active" value="{{ '0' if g.activo else '1' }}">
+                                <button type="submit"
+                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 {{ 'bg-indigo-600' if g.activo else 'bg-gray-200' }}">
+                                    <span
+                                        class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {{ 'translate-x-6' if g.activo else 'translate-x-1' }}"></span>
+                                </button>
+                                <span
+                                    class="ml-3 text-xs font-medium {{ 'text-green-600' if g.activo else 'text-gray-400' }}">
+                                    {{ 'Habilitado' if g.activo else 'Deshabilitado' }}
+                                </span>
+                            </form>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{{ url_for('libro_digital.asignaturas_por_grado', grado_id=g.id) }}"
+                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition">
+                                Ver Cursos ➡️
+                            </a> Ver Cursos
+
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">No hay grados registrados en el
+                            sistema.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

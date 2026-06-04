@@ -289,32 +289,34 @@ def crear_jerarquia_completa():
     return True
 
 
-def crear_asignatura_prueba():
-    """Crea una asignatura de prueba para el módulo Libro Digital"""
-    asignatura = Organization.query.filter_by(Name="Matemáticas - 1º Medio A", RefOrganizationTypeId=22).first()
-    if not asignatura:
-        # Buscar el curso 1º Medio A
-        curso_1ma = Organization.query.filter_by(Name="1º Medio A", RefOrganizationTypeId=21).first()
+# seed.py
 
-        asignatura = Organization(
-            Name="Matemáticas - 1º Medio A",
-            ShortName="MAT-1MA",
-            RefOrganizationTypeId=22
-        )
-        db.session.add(asignatura)
-        db.session.flush()
-
-        if curso_1ma:
+def crear_asignaturas_basicas_mineduc(grado_id):
+    """
+    Crea asignaturas (Tipo 22) y las vincula al grado (Tipo 46) 
+    mediante OrganizationRelationship.
+    """
+    asignaturas_nombres = ["Lenguaje y Comunicación", "Matemática", "Historia", "Ciencias Naturales"]
+    creadas = []
+    
+    for nombre in asignaturas_nombres:
+        # 1. Crear la asignatura
+        asig = Organization.query.filter_by(Name=nombre, RefOrganizationTypeId=22).first()
+        if not asig:
+            asig = Organization(Name=nombre, ShortName=nombre[:3].upper(), RefOrganizationTypeId=22)
+            db.session.add(asig)
+            db.session.flush()
+            
+            # 2. Vincularla al Grado
             db.session.add(OrganizationRelationship(
-                OrganizationId=asignatura.OrganizationId,
-                ParentOrganizationId=curso_1ma.OrganizationId
+                OrganizationId=asig.OrganizationId,
+                ParentOrganizationId=grado_id
             ))
-
-        db.session.commit()
-        print(f"✅ Asignatura creada: {asignatura.Name}")
-    else:
-        print(f"ℹ️ Asignatura ya existe: {asignatura.Name}")
-    return asignatura
+            creadas.append(asig)
+            print(f"✅ Asignatura creada y vinculada: {nombre}")
+    
+    db.session.commit()
+    return creadas
 
 
 def crear_planificaciones(asignatura):
@@ -382,6 +384,12 @@ def crear_alumnos_prueba(asignatura):
 # ============================================================
 # EJECUCIÓN PRINCIPAL
 # ============================================================
+# ============================================================
+# EJECUCIÓN PRINCIPAL
+# ============================================================
+# ============================================================
+# EJECUCIÓN PRINCIPAL
+# ============================================================
 with app.app_context():
     print("🚀 Iniciando siembra de datos de prueba para Edugest...")
     print("=" * 60)
@@ -389,20 +397,26 @@ with app.app_context():
     # 1. Jerarquía completa
     crear_jerarquia_completa()
 
-    print("\n" + "=" * 60)
+    # 2. Obtener UN grado (Tipo 46) para vincular asignaturas
+    grado_prueba = Organization.query.filter_by(RefOrganizationTypeId=46).first()
 
-    # 2. Asignatura de prueba
-    asignatura = crear_asignatura_prueba()
+    if grado_prueba:
+        # 3. Crear asignaturas vinculadas al GRADO (Tipo 46), no al curso
+        asignaturas = crear_asignaturas_basicas_mineduc(grado_prueba.OrganizationId)
+        print(f"✅ Asignaturas creadas y vinculadas al grado: {grado_prueba.Name}")
+    else:
+        print("❌ No se encontró un Grado para vincular las asignaturas.")
+        asignaturas = []
 
-    # 3. Planificaciones
-    crear_planificaciones(asignatura)
+    # 4. Tomar la primera asignatura para planificaciones y alumnos de prueba
+    if asignaturas:
+        asignatura_prueba = asignaturas[0]
 
-    # 4. Alumnos ficticios
-    crear_alumnos_prueba(asignatura)
+        # Planificaciones
+        crear_planificaciones(asignatura_prueba)
+
+        # Alumnos ficticios
+        crear_alumnos_prueba(asignatura_prueba)
 
     print("\n" + "=" * 60)
     print("🎉 ¡Proceso de siembra completado con éxito!")
-    print("\n📊 Resumen:")
-    print(f"   • Cursos creados: {Organization.query.filter_by(RefOrganizationTypeId=21).count()}")
-    print(f"   • Grados creados: {Organization.query.filter_by(RefOrganizationTypeId=46).count()}")
-    print(f"   • Estudiantes: {OrganizationPersonRole.query.filter_by(RoleId=6).count()}")

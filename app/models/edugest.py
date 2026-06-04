@@ -15,28 +15,60 @@ class EdugestModule(db.Model):
 
 
 class EdugestRolePermission(db.Model):
-    """Matriz granular de accesos por Rol de usuario (0=No acceso, 1=Lectura, 2=Escritura)"""
+    """Matriz granular de accesos por Rol (0=No acceso, 1=Lectura, 2=Escritura)"""
     __tablename__ = 'edugest_role_permission'
     
     PermissionId = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    RoleId = db.Column(db.Integer, nullable=False)
-    ModuleId = db.Column(db.Integer, db.ForeignKey('edugest_module.ModuleId', ondelete='CASCADE'), nullable=False)
+    RoleId       = db.Column(db.Integer, nullable=False)
+    ModuleId     = db.Column(db.Integer, db.ForeignKey('edugest_module.ModuleId', ondelete='CASCADE'), nullable=False)
     PermissionLevel = db.Column(db.Integer, default=0, nullable=False)
 
 
+class EdugestOrganizationConfig(db.Model):
+    """Permite apagar grados sin borrar la data estructural MINEDUC"""
+    __tablename__ = 'edugest_organization_config'
+    
+    ConfigId       = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    OrganizationId = db.Column(db.Integer, db.ForeignKey('Organization.OrganizationId', ondelete='CASCADE'), nullable=False, unique=True)
+    IsActive       = db.Column(db.Boolean, default=True, nullable=False)
+
+
 # ============================================================================
-# MÓDULO B: PLANIFICACIÓN CURRICULAR
+# MÓDULO B: PLANIFICACIÓN CURRICULAR Y ASISTENCIA POR BLOQUE
 # ============================================================================
 
 class EdugestCurriculumPlan(db.Model):
-    """Unidades didácticas planificadas por el profesor para una asignatura"""
+    """CRUD de Unidades vinculado a la Asignatura (RefOrganizationTypeId = 22)"""
     __tablename__ = 'edugest_curriculum_plan'
     
-    PlanId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    PlanId      = db.Column(db.Integer, primary_key=True, autoincrement=True)
     OrganizationId = db.Column(db.Integer, db.ForeignKey('Organization.OrganizationId', ondelete='CASCADE'), nullable=False)
-    UnitTitle = db.Column(db.String(255), nullable=False)
-    LearningObjectives = db.Column(db.Text, nullable=True)
-    EstimatedClasses = db.Column(db.Integer, nullable=True)
+    UnitTitle   = db.Column(db.String(255), nullable=False)
+    Contenido   = db.Column(db.Text, nullable=True)
+    Actividad   = db.Column(db.Text, nullable=True)
+    DetallesActividad = db.Column(db.Text, nullable=True)
+    Objetivo    = db.Column(db.Text, nullable=True)
+    CreatedAt   = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class EdugestSessionAttendance(db.Model):
+    """Asistencia granular con el bloque horario exacto"""
+    __tablename__ = 'edugest_session_attendance'
+    
+    SessionAttendanceId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    OrganizationCalendarSessionId = db.Column(
+        db.Integer,
+        db.ForeignKey('OrganizationCalendarSession.OrganizationCalendarSessionId', ondelete='CASCADE'),
+        nullable=False
+    )
+    OrganizationPersonRoleId = db.Column(
+        db.Integer,
+        db.ForeignKey('OrganizationPersonRole.OrganizationPersonRoleId', ondelete='CASCADE'),
+        nullable=False
+    )
+    # 1=Presente, 2=Ausente, 3=Atraso
+    RefAttendanceStatusId = db.Column(db.Integer, nullable=False)
+    CreatedAt = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 # ============================================================================
