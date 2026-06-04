@@ -39,6 +39,107 @@
         </div>
     </div>
 
+    <!-- Residencia -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Residencia</h3>
+        <p class="text-sm text-gray-700">
+            {% if residencia %}
+                {{ residencia.StreetNumberAndName }}
+            {% else %}
+                <span class="text-gray-400 italic">Sin dirección registrada</span>
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Apoderado Titular -->
+    {% if ap_titular %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-900">Apoderado Titular</h3>
+            <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Titular</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
+                <span class="block text-xs text-gray-500 uppercase">Nombre Completo</span>
+                <span class="font-medium text-gray-900">
+                    {{ ap_titular.persona.FirstName }} {{ ap_titular.persona.LastName }} {{ ap_titular.persona.SecondLastName or '' }}
+                </span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">RUN</span>
+                <span class="font-mono font-medium text-gray-900">{{ ap_titular.rut or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Teléfono</span>
+                <span class="font-medium text-gray-900">{{ ap_titular.telefono or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-4">
+                <span class="block text-xs text-gray-500 uppercase">Nivel Educacional</span>
+                <span class="font-medium text-gray-900">{{ niveles_map.get(ap_titular.nivel, '—') if ap_titular.nivel else '—' }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Apoderados Suplentes -->
+    {% if ap_suplente1 %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-900">Apoderado Suplente 1</h3>
+            <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700 ring-1 ring-inset ring-yellow-600/20">Suplente</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
+                <span class="block text-xs text-gray-500 uppercase">Nombre Completo</span>
+                <span class="font-medium text-gray-900">
+                    {{ ap_suplente1.persona.FirstName }} {{ ap_suplente1.persona.LastName }} {{ ap_suplente1.persona.SecondLastName or '' }}
+                </span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">RUN</span>
+                <span class="font-mono font-medium text-gray-900">{{ ap_suplente1.rut or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Teléfono</span>
+                <span class="font-medium text-gray-900">{{ ap_suplente1.telefono or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-4">
+                <span class="block text-xs text-gray-500 uppercase">Nivel Educacional</span>
+                <span class="font-medium text-gray-900">{{ niveles_map.get(ap_suplente1.nivel, '—') if ap_suplente1.nivel else '—' }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if ap_suplente2 %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-900">Apoderado Suplente 2</h3>
+            <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700 ring-1 ring-inset ring-yellow-600/20">Suplente</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
+                <span class="block text-xs text-gray-500 uppercase">Nombre Completo</span>
+                <span class="font-medium text-gray-900">
+                    {{ ap_suplente2.persona.FirstName }} {{ ap_suplente2.persona.LastName }} {{ ap_suplente2.persona.SecondLastName or '' }}
+                </span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">RUN</span>
+                <span class="font-mono font-medium text-gray-900">{{ ap_suplente2.rut or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Teléfono</span>
+                <span class="font-medium text-gray-900">{{ ap_suplente2.telefono or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-4">
+                <span class="block text-xs text-gray-500 uppercase">Nivel Educacional</span>
+                <span class="font-medium text-gray-900">{{ niveles_map.get(ap_suplente2.nivel, '—') if ap_suplente2.nivel else '—' }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Matrículas activas -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 class="text-lg font-bold text-gray-900 mb-4">Cursos Matriculados</h3>

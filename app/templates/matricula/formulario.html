@@ -57,7 +57,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT) <span class="text-red-500">*</span></label>
                 <input type="text" name="rut" placeholder="Ej: 12345678-9, 12.345.678-9, 123456789" required  
                        class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
-            <p class="text-xs text-gray-400 mt-1">Se acepta con o sin puntos y guion. Se guardará como: 12.345.678-9</p>
+                <p class="text-xs text-gray-400 mt-1">Se acepta con o sin puntos y guion. Se guardará como: 12.345.678-9</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">IPE</label>
@@ -76,11 +76,20 @@
             </div>
         </div>
 
+        <h3 class="text-lg font-bold text-gray-900 mt-8 mb-6 border-b pb-2">Residencia del Estudiante</h3>
+        <div class="grid grid-cols-1 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección / Residencia <span class="text-red-500">*</span></label>
+                <input type="text" name="residencia" required placeholder="Ej: Av. Alemania 1234, Temuco"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ residencia.StreetNumberAndName if residencia else '' }}">
+            </div>
+        </div>
+
         <h3 class="text-lg font-bold text-gray-900 mt-8 mb-6 border-b pb-2">Matrícula en Curso</h3>
 
         <!-- Selects encadenados: Nivel → Grado → Letra -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- NIVEL -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educativo <span class="text-red-500">*</span></label>
                 <select id="select-nivel" required 
@@ -94,18 +103,16 @@
                 <p class="text-xs text-red-500 mt-1">⚠️ No hay niveles configurados.</p>
                 {% endif %}
             </div>
-
-            <!-- GRADO -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Grado / Año <span class="text-red-500">*</span></label>                <select id="select-grado" required disabled
+                <label class="block text-sm font-medium text-gray-700 mb-1">Grado / Año <span class="text-red-500">*</span></label>
+                <select id="select-grado" required disabled
                         class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-400">
                     <option value="">-- Primero seleccione nivel --</option>
                 </select>
             </div>
-
-            <!-- LETRA / CURSO -->
             <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Letra del Curso <span class="text-red-500">*</span></label>    <select id="select-curso" name="curso_id" required disabled
+                <label class="block text-sm font-medium text-gray-700 mb-1">Letra del Curso <span class="text-red-500">*</span></label>
+                <select id="select-curso" name="curso_id" required disabled
                         class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-400">
                     <option value="">-- Primero seleccione grado --</option>
                 </select>
@@ -117,6 +124,150 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Matrícula <span class="text-red-500">*</span></label>
                 <input type="date" name="entry_date" required 
                        class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+        </div>
+
+        <!-- ==================== APODERADO TITULAR ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 mt-8 mb-6 border-b pb-2">Apoderado Titular <span class="text-red-500">*</span></h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre <span class="text-red-500">*</span></label>
+                <input type="text" name="ap_titular_first_name" required
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_titular.persona.FirstName if ap_titular else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
+                <input type="text" name="ap_titular_last_name" required
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_titular.persona.LastName if ap_titular else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
+                <input type="text" name="ap_titular_second_last_name"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_titular.persona.SecondLastName if ap_titular else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT) <span class="text-red-500">*</span></label>
+                <input type="text" name="ap_titular_rut" required placeholder="Ej: 12.345.678-9"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_titular.rut if ap_titular else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono <span class="text-red-500">*</span></label>
+                <input type="tel" name="ap_titular_telefono" required placeholder="Ej: +56912345678"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_titular.telefono if ap_titular else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional <span class="text-red-500">*</span></label>
+                <select name="ap_titular_nivel_educativo" required
+                        class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="1" {{ 'selected' if ap_titular and ap_titular.nivel == 1 else '' }}>Educación Parvularia</option>
+                    <option value="2" {{ 'selected' if ap_titular and ap_titular.nivel == 2 else '' }}>Educación Básica</option>
+                    <option value="3" {{ 'selected' if ap_titular and ap_titular.nivel == 3 else '' }}>Educación Media</option>
+                    <option value="4" {{ 'selected' if ap_titular and ap_titular.nivel == 4 else '' }}>Educación Técnico-Profesional</option>
+                    <option value="5" {{ 'selected' if ap_titular and ap_titular.nivel == 5 else '' }}>Educación Universitaria</option>
+                    <option value="6" {{ 'selected' if ap_titular and ap_titular.nivel == 6 else '' }}>Postgrado</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ==================== APODERADO SUPLENTE 1 ==================== -->
+        <h3 class="text-lg font-bold text-gray-500 mt-8 mb-6 border-b pb-2">Apoderado Suplente 1 <span class="text-xs font-normal text-gray-400">(Opcional)</span></h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre</label>
+                <input type="text" name="ap_suplente1_first_name"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente1.persona.FirstName if ap_suplente1 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
+                <input type="text" name="ap_suplente1_last_name"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente1.persona.LastName if ap_suplente1 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
+                <input type="text" name="ap_suplente1_second_last_name"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente1.persona.SecondLastName if ap_suplente1 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT)</label>
+                <input type="text" name="ap_suplente1_rut" placeholder="Ej: 12.345.678-9"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente1.rut if ap_suplente1 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <input type="tel" name="ap_suplente1_telefono" placeholder="Ej: +56912345678"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente1.telefono if ap_suplente1 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional</label>
+                <select name="ap_suplente1_nivel_educativo"
+                        class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="1" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 1 else '' }}>Educación Parvularia</option>
+                    <option value="2" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 2 else '' }}>Educación Básica</option>
+                    <option value="3" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 3 else '' }}>Educación Media</option>
+                    <option value="4" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 4 else '' }}>Educación Técnico-Profesional</option>
+                    <option value="5" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 5 else '' }}>Educación Universitaria</option>
+                    <option value="6" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 6 else '' }}>Postgrado</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ==================== APODERADO SUPLENTE 2 ==================== -->
+        <h3 class="text-lg font-bold text-gray-500 mt-8 mb-6 border-b pb-2">Apoderado Suplente 2 <span class="text-xs font-normal text-gray-400">(Opcional)</span></h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre</label>
+                <input type="text" name="ap_suplente2_first_name"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente2.persona.FirstName if ap_suplente2 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
+                <input type="text" name="ap_suplente2_last_name"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente2.persona.LastName if ap_suplente2 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
+                <input type="text" name="ap_suplente2_second_last_name"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente2.persona.SecondLastName if ap_suplente2 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT)</label>
+                <input type="text" name="ap_suplente2_rut" placeholder="Ej: 12.345.678-9"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente2.rut if ap_suplente2 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <input type="tel" name="ap_suplente2_telefono" placeholder="Ej: +56912345678"
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       value="{{ ap_suplente2.telefono if ap_suplente2 else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional</label>
+                <select name="ap_suplente2_nivel_educativo"
+                        class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="1" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 1 else '' }}>Educación Parvularia</option>
+                    <option value="2" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 2 else '' }}>Educación Básica</option>
+                    <option value="3" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 3 else '' }}>Educación Media</option>
+                    <option value="4" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 4 else '' }}>Educación Técnico-Profesional</option>
+                    <option value="5" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 5 else '' }}>Educación Universitaria</option>
+                    <option value="6" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 6 else '' }}>Postgrado</option>
+                </select>
             </div>
         </div>
 
@@ -138,11 +289,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectGrado = document.getElementById('select-grado');
     const selectCurso = document.getElementById('select-curso');
 
-    // Al cambiar el nivel, cargar grados
     selectNivel.addEventListener('change', function() {
         const nivelId = this.value;
-
-        // Resetear selects dependientes
         selectGrado.innerHTML = '<option value="">Cargando grados...</option>';
         selectGrado.disabled = true;
         selectCurso.innerHTML = '<option value="">-- Primero seleccione grado --</option>';
@@ -153,7 +301,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Llamada AJAX para obtener grados
         fetch(`/matricula/ajax/grados/${nivelId}`)
             .then(response => response.json())
             .then(grados => {
@@ -172,10 +319,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
-    // Al cambiar el grado, cargar letras/cursos
     selectGrado.addEventListener('change', function() {
         const gradoId = this.value;
-
         selectCurso.innerHTML = '<option value="">Cargando cursos...</option>';
         selectCurso.disabled = true;
 
@@ -184,7 +329,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Llamada AJAX para obtener cursos/letras
         fetch(`/matricula/ajax/cursos/${gradoId}`)
             .then(response => response.json())
             .then(cursos => {
@@ -192,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 cursos.forEach(curso => {
                     const option = document.createElement('option');
                     option.value = curso.id;
-                    option.textContent = curso.letra;  // Solo muestra la letra: A, B, C
+                    option.textContent = curso.letra;
                     selectCurso.appendChild(option);
                 });
                 selectCurso.disabled = false;
