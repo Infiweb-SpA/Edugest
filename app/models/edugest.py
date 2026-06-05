@@ -220,6 +220,9 @@ class EdugestStudentEnrollment(db.Model):
     MotivoTraslado = db.Column(db.Text, nullable=True)
     FechaIngresoEstablecimiento = db.Column(db.Date, nullable=True)
     
+    # Flag para mostrar/ocultar info académica en UI
+    EsNuevoEnEstablecimiento = db.Column(db.Boolean, default=True, nullable=False)
+    
     # Información socioeconómica
     NivelEducacionalMadre = db.Column(db.Integer, nullable=True)
     NivelEducacionalPadre = db.Column(db.Integer, nullable=True)
@@ -272,17 +275,25 @@ class EdugestStudentEnrollment(db.Model):
 
 
 class EdugestEmergencyContact(db.Model):
-    """Contactos de emergencia del estudiante (1:N)"""
+    """Contactos de emergencia del estudiante (1:N) — ahora con misma estructura que apoderado"""
     __tablename__ = 'edugest_emergency_contact'
     
     ContactId = db.Column(db.Integer, primary_key=True, autoincrement=True)
     PersonId = db.Column(db.Integer, db.ForeignKey('Person.PersonId', ondelete='CASCADE'), nullable=False)
     Orden = db.Column(db.Integer, nullable=False, default=1)
-    NombreCompleto = db.Column(db.String(255), nullable=False)
+    
+    # Campos individuales (igual que apoderado)
+    FirstName = db.Column(db.String(100), nullable=True)
+    LastName = db.Column(db.String(100), nullable=True)
+    SecondLastName = db.Column(db.String(100), nullable=True)
+    NombreCompleto = db.Column(db.String(255), nullable=True)  # Legacy / computado
     RUN = db.Column(db.String(20), nullable=True)
     Parentesco = db.Column(db.String(50), nullable=True)
     TelefonoPrincipal = db.Column(db.String(50), nullable=True)
     TelefonoAlternativo = db.Column(db.String(50), nullable=True)
+    Email = db.Column(db.String(255), nullable=True)
+    ProfesionOcupacion = db.Column(db.String(255), nullable=True)
+    NivelEducacional = db.Column(db.Integer, nullable=True)
 
 
 class EdugestStudentHealth(db.Model):

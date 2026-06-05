@@ -6,28 +6,48 @@
 <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-8">
     <form method="POST" class="space-y-8" id="form-matricula">
 
+        <!-- ==================== 0. BUSCAR MATRÍCULA ANTERIOR ==================== -->
+        <h3 class="text-lg font-bold text-indigo-900 border-b pb-2">0. Precargar desde Matrícula Anterior</h3>
+        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 relative">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Buscar estudiante matriculado anteriormente</label>
+            <div class="relative">
+                <input type="text" id="input-buscar-estudiante" 
+                       class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white pr-10" 
+                       placeholder="Escriba nombre o RUT (mínimo 3 caracteres)..." 
+                       autocomplete="off">
+                <div id="resultados-busqueda" class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
+                    <!-- Resultados se inyectan aquí -->
+                </div>
+            </div>
+            <input type="hidden" id="person-id-seleccionado" name="person_id_precargado" value="">
+            <p class="text-xs text-gray-500 mt-1">Al seleccionar un estudiante se precargarán sus datos personales. Podrá modificarlos antes de guardar.</p>
+            <div id="info-precarga" class="hidden mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
+                <p class="text-sm text-green-800 font-medium">✓ Datos precargados. Puede modificar cualquier campo antes de guardar.</p>
+            </div>
+        </div>
+
         <!-- ==================== 1. DATOS PERSONALES ==================== -->
         <h3 class="text-lg font-bold text-gray-900 border-b pb-2">1. Datos Personales del Estudiante</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre <span class="text-red-500">*</span></label>
-                <input type="text" name="first_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.FirstName if estudiante else '' }}">
+                <input type="text" name="first_name" id="first_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.FirstName if estudiante else '' }}">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Segundo Nombre</label>
-                <input type="text" name="middle_name" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.MiddleName if estudiante else '' }}">
+                <input type="text" name="middle_name" id="middle_name" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.MiddleName if estudiante else '' }}">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
-                <input type="text" name="last_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.LastName if estudiante else '' }}">
+                <input type="text" name="last_name" id="last_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.LastName if estudiante else '' }}">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.SecondLastName if estudiante else '' }}">
+                <input type="text" name="second_last_name" id="second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.SecondLastName if estudiante else '' }}">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
-                <select name="ref_sex_id" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="ref_sex_id" id="ref_sex_id" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
                     <option value="1" {{ 'selected' if estudiante and estudiante.RefSexId == 1 else '' }}>Masculino</option>
                     <option value="2" {{ 'selected' if estudiante and estudiante.RefSexId == 2 else '' }}>Femenino</option>
@@ -35,7 +55,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
-                <input type="date" name="birthdate" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.Birthdate if estudiante else '' }}">
+                <input type="date" name="birthdate" id="birthdate" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.Birthdate if estudiante else '' }}">
             </div>
         </div>
 
@@ -44,27 +64,45 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nacionalidad</label>
-                <input type="text" name="nacionalidad" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Chilena">
+                <input type="text" name="nacionalidad" id="nacionalidad" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Chilena">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">País de Origen</label>
-                <input type="text" name="pais_origen" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Chile">
+                <input type="text" name="pais_origen" id="pais_origen" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Chile">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Comuna de Residencia</label>
-                <input type="text" name="comuna_residencia" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Temuco">
+                <input type="text" name="comuna_residencia" id="comuna_residencia" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Temuco">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Región de Residencia</label>
-                <input type="text" name="region_residencia" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: La Araucanía">
+                <select name="region_residencia" id="region_residencia" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar región --</option>
+                    <option value="Arica y Parinacota">Arica y Parinacota</option>
+                    <option value="Tarapacá">Tarapacá</option>
+                    <option value="Antofagasta">Antofagasta</option>
+                    <option value="Atacama">Atacama</option>
+                    <option value="Coquimbo">Coquimbo</option>
+                    <option value="Valparaíso">Valparaíso</option>
+                    <option value="Metropolitana de Santiago">Metropolitana de Santiago</option>
+                    <option value="Libertador General Bernardo O'Higgins">Libertador General Bernardo O'Higgins</option>
+                    <option value="Maule">Maule</option>
+                    <option value="Ñuble">Ñuble</option>
+                    <option value="Biobío">Biobío</option>
+                    <option value="La Araucanía">La Araucanía</option>
+                    <option value="Los Ríos">Los Ríos</option>
+                    <option value="Los Lagos">Los Lagos</option>
+                    <option value="Aysén del General Carlos Ibáñez del Campo">Aysén del General Carlos Ibáñez del Campo</option>
+                    <option value="Magallanes y de la Antártica Chilena">Magallanes y de la Antártica Chilena</option>
+                </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico (Enseñanza Media)</label>
-                <input type="email" name="email_estudiante" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: alumno@email.com">
+                <input type="email" name="email_estudiante" id="email_estudiante" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: alumno@email.com">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono del Estudiante</label>
-                <input type="tel" name="telefono_estudiante" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: +56912345678">
+                <input type="tel" name="telefono_estudiante" id="telefono_estudiante" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: +56912345678">
             </div>
         </div>
 
@@ -73,29 +111,35 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT) <span class="text-red-500">*</span></label>
-                <input type="text" name="rut" required placeholder="Ej: 12345678-9" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="rut" id="rut" required placeholder="Ej: 12345678-9" class="w-full rounded-lg border-gray-300 border px-3 py-2">
                 <p class="text-xs text-gray-400 mt-1">Se acepta con o sin puntos y guion. Se guardará como: 12.345.678-9</p>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">IPE</label>
-                <input type="text" name="ipe" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <div class="flex items-center mb-2">
+                    <input type="checkbox" name="es_extranjero" id="chk_extranjero" value="1" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                    <label for="chk_extranjero" class="ml-2 block text-sm text-gray-700">Estudiante extranjero (sin RUN chileno)</label>
+                </div>
+                <div id="campo-ipe" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">IPE <span class="text-xs text-gray-500">(Identificador Provisional de Extranjero)</span></label>
+                    <input type="text" name="ipe" id="ipe" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                </div>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">N° Correlativo Matrícula</label>
-                <input type="text" name="num_matricula" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="num_matricula" id="num_matricula" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">N° de Lista</label>
-                <input type="text" name="num_lista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="num_lista" id="num_lista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
         </div>
 
-        <!-- ==================== 3. RESIDENCIA Y MATRÍCULA ==================== -->
+        <!-- ==================== 3. RESIDENCIA Y MATRÍCULA EN CURSO ==================== -->
         <h3 class="text-lg font-bold text-gray-900 border-b pb-2">3. Residencia y Matrícula en Curso</h3>
         <div class="grid grid-cols-1 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Dirección / Residencia <span class="text-red-500">*</span></label>
-                <input type="text" name="residencia" required placeholder="Ej: Av. Alemania 1234, Temuco" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="residencia" id="residencia" required placeholder="Ej: Av. Alemania 1234, Temuco" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
@@ -124,11 +168,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Matrícula <span class="text-red-500">*</span></label>
-                <input type="date" name="entry_date" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="date" name="entry_date" id="entry_date" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Ingreso al Establecimiento</label>
-                <input type="date" name="fecha_ingreso_establecimiento" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="date" name="fecha_ingreso_establecimiento" id="fecha_ingreso_establecimiento" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
         </div>
 
@@ -137,23 +181,23 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre <span class="text-red-500">*</span></label>
-                <input type="text" name="ap_titular_first_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="ap_titular_first_name" id="ap_titular_first_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
-                <input type="text" name="ap_titular_last_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="ap_titular_last_name" id="ap_titular_last_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="ap_titular_second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="ap_titular_second_last_name" id="ap_titular_second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT) <span class="text-red-500">*</span></label>
-                <input type="text" name="ap_titular_rut" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="ap_titular_rut" id="ap_titular_rut" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Parentesco <span class="text-red-500">*</span></label>
-                <select name="ap_titular_parentesco" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="ap_titular_parentesco" id="ap_titular_parentesco" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
                     <option value="Padre">Padre</option>
                     <option value="Madre">Madre</option>
@@ -165,33 +209,40 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                <input type="email" name="ap_titular_email" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="email" name="ap_titular_email" id="ap_titular_email" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono <span class="text-red-500">*</span></label>
-                <input type="tel" name="ap_titular_telefono" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="tel" name="ap_titular_telefono" id="ap_titular_telefono" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación</label>
-                <input type="text" name="ap_titular_profesion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="ap_titular_profesion" id="ap_titular_profesion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Lugar de Trabajo</label>
-                <input type="text" name="ap_titular_lugar_trabajo" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="ap_titular_lugar_trabajo" id="ap_titular_lugar_trabajo" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
-            <div class="md:col-span-2">
+            <div class="md:col-span-3">
+                <div class="flex items-center mb-2">
+                    <input type="checkbox" id="chk_misma_direccion" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                    <label for="chk_misma_direccion" class="ml-2 block text-sm text-gray-700">La dirección es la misma que la del estudiante</label>
+                </div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Dirección (si es distinta al estudiante)</label>
-                <input type="text" name="ap_titular_direccion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="ap_titular_direccion" id="ap_titular_direccion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional <span class="text-red-500">*</span></label>
-                <select name="ap_titular_nivel_educativo" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="ap_titular_nivel_educativo" id="ap_titular_nivel_educativo" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
                     <option value="1">Educación Parvularia</option>
                     <option value="2">Educación Básica</option>
                     <option value="3">Educación Media</option>
+                    <option value="7">Educación Media Científico-Humanista</option>
+                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
                     <option value="4">Educación Técnico-Profesional</option>
                     <option value="5">Educación Universitaria</option>
+                    <option value="9">Educación Superior</option>
                     <option value="6">Postgrado</option>
                 </select>
             </div>
@@ -247,8 +298,11 @@
                     <option value="1">Educación Parvularia</option>
                     <option value="2">Educación Básica</option>
                     <option value="3">Educación Media</option>
+                    <option value="7">Educación Media Científico-Humanista</option>
+                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
                     <option value="4">Educación Técnico-Profesional</option>
                     <option value="5">Educación Universitaria</option>
+                    <option value="9">Educación Superior</option>
                     <option value="6">Postgrado</option>
                 </select>
             </div>
@@ -304,8 +358,11 @@
                     <option value="1">Educación Parvularia</option>
                     <option value="2">Educación Básica</option>
                     <option value="3">Educación Media</option>
+                    <option value="7">Educación Media Científico-Humanista</option>
+                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
                     <option value="4">Educación Técnico-Profesional</option>
                     <option value="5">Educación Universitaria</option>
+                    <option value="9">Educación Superior</option>
                     <option value="6">Postgrado</option>
                 </select>
             </div>
@@ -318,8 +375,16 @@
             <h4 class="text-sm font-bold text-gray-700 mb-3">Contacto de Emergencia {{ i }}</h4>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Nombre Completo</label>
-                    <input type="text" name="contacto_emergencia_{{ i }}_nombre" class="w-full rounded border-gray-300 border px-3 py-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Primer Nombre</label>
+                    <input type="text" name="contacto_emergencia_{{ i }}_first_name" class="w-full rounded border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Apellido Paterno</label>
+                    <input type="text" name="contacto_emergencia_{{ i }}_last_name" class="w-full rounded border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Apellido Materno</label>
+                    <input type="text" name="contacto_emergencia_{{ i }}_second_last_name" class="w-full rounded border-gray-300 border px-3 py-2">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">RUN</label>
@@ -327,7 +392,19 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Parentesco</label>
-                    <input type="text" name="contacto_emergencia_{{ i }}_parentesco" class="w-full rounded border-gray-300 border px-3 py-2">
+                    <select name="contacto_emergencia_{{ i }}_parentesco" class="w-full rounded border-gray-300 border px-3 py-2 bg-white">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="Padre">Padre</option>
+                        <option value="Madre">Madre</option>
+                        <option value="Tutor">Tutor</option>
+                        <option value="Abuelo/a">Abuelo/a</option>
+                        <option value="Tío/a">Tío/a</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Correo Electrónico</label>
+                    <input type="email" name="contacto_emergencia_{{ i }}_email" class="w-full rounded border-gray-300 border px-3 py-2">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Teléfono Principal</label>
@@ -336,6 +413,25 @@
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Teléfono Alternativo</label>
                     <input type="tel" name="contacto_emergencia_{{ i }}_telefono_alt" class="w-full rounded border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Profesión u Ocupación</label>
+                    <input type="text" name="contacto_emergencia_{{ i }}_profesion" class="w-full rounded border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Nivel Educacional</label>
+                    <select name="contacto_emergencia_{{ i }}_nivel_educativo" class="w-full rounded border-gray-300 border px-3 py-2 bg-white">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="1">Educación Parvularia</option>
+                        <option value="2">Educación Básica</option>
+                        <option value="3">Educación Media</option>
+                        <option value="7">Educación Media Científico-Humanista</option>
+                        <option value="8">Educación Media Técnico-Profesional (TP)</option>
+                        <option value="4">Educación Técnico-Profesional</option>
+                        <option value="5">Educación Universitaria</option>
+                        <option value="9">Educación Superior</option>
+                        <option value="6">Postgrado</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -346,7 +442,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Grupo Sanguíneo</label>
-                <select name="grupo_sanguineo" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="grupo_sanguineo" id="grupo_sanguineo" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
                     <option value="A+">A+</option>
                     <option value="A-">A-</option>
@@ -360,7 +456,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sistema de Salud</label>
-                <select name="sistema_salud" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="sistema_salud" id="sistema_salud" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
                     <option value="Fonasa">Fonasa</option>
                     <option value="Isapre">Isapre</option>
@@ -369,41 +465,41 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Centro de Salud Habitual</label>
-                <input type="text" name="centro_salud" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="centro_salud" id="centro_salud" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Médico Tratante</label>
-                <input type="text" name="medico_tratante" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="medico_tratante" id="medico_tratante" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono Médico Tratante</label>
-                <input type="tel" name="telefono_medico" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="tel" name="telefono_medico" id="telefono_medico" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
         </div>
         <div class="grid grid-cols-1 gap-4 mt-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Enfermedades Permanentes</label>
-                <textarea name="enfermedades_permanentes" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="enfermedades_permanentes" id="enfermedades_permanentes" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Alergias <span class="text-red-500">*</span></label>
-                <textarea name="alergias" rows="2" required class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="alergias" id="alergias" rows="2" required class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Medicamentos Permanentes</label>
-                <textarea name="medicamentos_permanentes" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="medicamentos_permanentes" id="medicamentos_permanentes" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Restricciones Alimentarias</label>
-                <textarea name="restricciones_alimentarias" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="restricciones_alimentarias" id="restricciones_alimentarias" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Necesidades Médicas Especiales</label>
-                <textarea name="necesidades_medicas" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="necesidades_medicas" id="necesidades_medicas" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Médicas</label>
-                <textarea name="obs_medicas_detalle" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="obs_medicas_detalle" id="obs_medicas_detalle" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
         </div>
 
@@ -412,58 +508,69 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Pertenece a PIE</label>
-                <select name="pertenece_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="pertenece_pie" id="pertenece_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="0">No</option>
                     <option value="1">Sí</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Diagnóstico</label>
-                <input type="date" name="fecha_diagnostico_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="date" name="fecha_diagnostico_pie" id="fecha_diagnostico_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Profesional Tratante</label>
-                <input type="text" name="profesional_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="profesional_pie" id="profesional_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
         </div>
         <div class="grid grid-cols-1 gap-4 mt-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Diagnóstico PIE</label>
-                <textarea name="diagnostico_pie" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="diagnostico_pie" id="diagnostico_pie" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones PIE</label>
-                <textarea name="observaciones_pie" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="observaciones_pie" id="observaciones_pie" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
         </div>
 
         <!-- ==================== 10. INFORMACIÓN ACADÉMICA ==================== -->
         <h3 class="text-lg font-bold text-gray-900 border-b pb-2">10. Información Académica</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Colegio de Procedencia</label>
-                <input type="text" name="colegio_procedencia" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+        <div class="mb-4">
+            <div class="flex items-center">
+                <input type="checkbox" name="es_nuevo" id="chk_es_nuevo" value="1" checked class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_es_nuevo" class="ml-2 block text-sm font-medium text-gray-700">¿Es nuevo en el establecimiento?</label>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Comuna Colegio Anterior</label>
-                <input type="text" name="comuna_colegio_anterior" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+        </div>
+        <div id="info-academica-campos" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Colegio de Procedencia</label>
+                    <input type="text" name="colegio_procedencia" id="colegio_procedencia" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Comuna Colegio Anterior</label>
+                    <input type="text" name="comuna_colegio_anterior" id="comuna_colegio_anterior" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Región Colegio Anterior</label>
+                    <input type="text" name="region_colegio_anterior" id="region_colegio_anterior" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Último Curso Aprobado</label>
+                    <input type="text" name="ultimo_curso_aprobado" id="ultimo_curso_aprobado" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Año Último Curso Aprobado</label>
+                    <input type="number" name="anio_ultimo_curso" id="anio_ultimo_curso" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 2025">
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Motivo de Traslado</label>
+                    <textarea name="motivo_traslado" id="motivo_traslado" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Región Colegio Anterior</label>
-                <input type="text" name="region_colegio_anterior" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Último Curso Aprobado</label>
-                <input type="text" name="ultimo_curso_aprobado" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Año Último Curso Aprobado</label>
-                <input type="number" name="anio_ultimo_curso" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 2025">
-            </div>
-            <div class="md:col-span-3">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Motivo de Traslado</label>
-                <textarea name="motivo_traslado" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
+        </div>
+        <div id="info-academica-mensaje" class="hidden bg-green-50 p-4 rounded-lg border border-green-200">
+            <p class="text-sm text-green-800 font-medium">Este estudiante ya pertenece al establecimiento. No se requiere información de colegio anterior.</p>
         </div>
 
         <!-- ==================== 11. INFORMACIÓN SOCIOECONÓMICA ==================== -->
@@ -471,47 +578,56 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional de la Madre</label>
-                <select name="nivel_madre" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="nivel_madre" id="nivel_madre" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
                     <option value="1">Educación Parvularia</option>
                     <option value="2">Educación Básica</option>
                     <option value="3">Educación Media</option>
+                    <option value="7">Educación Media Científico-Humanista</option>
+                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
                     <option value="4">Educación Técnico-Profesional</option>
                     <option value="5">Educación Universitaria</option>
+                    <option value="9">Educación Superior</option>
                     <option value="6">Postgrado</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional del Padre</label>
-                <select name="nivel_padre" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="nivel_padre" id="nivel_padre" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
                     <option value="1">Educación Parvularia</option>
                     <option value="2">Educación Básica</option>
                     <option value="3">Educación Media</option>
+                    <option value="7">Educación Media Científico-Humanista</option>
+                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
                     <option value="4">Educación Técnico-Profesional</option>
                     <option value="5">Educación Universitaria</option>
+                    <option value="9">Educación Superior</option>
                     <option value="6">Postgrado</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional del Apoderado</label>
-                <select name="nivel_apoderado" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="nivel_apoderado" id="nivel_apoderado" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
                     <option value="1">Educación Parvularia</option>
                     <option value="2">Educación Básica</option>
                     <option value="3">Educación Media</option>
+                    <option value="7">Educación Media Científico-Humanista</option>
+                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
                     <option value="4">Educación Técnico-Profesional</option>
                     <option value="5">Educación Universitaria</option>
+                    <option value="9">Educación Superior</option>
                     <option value="6">Postgrado</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Ingreso Familiar (Opcional)</label>
-                <input type="text" name="ingreso_familiar" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 800000 - 1200000">
+                <input type="text" name="ingreso_familiar" id="ingreso_familiar" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 800000 - 1200000">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">N° Integrantes del Hogar</label>
-                <input type="number" name="num_integrantes_hogar" class="w-full rounded-lg border-gray-300 border px-3 py-2" min="1">
+                <input type="number" name="num_integrantes_hogar" id="num_integrantes_hogar" class="w-full rounded-lg border-gray-300 border px-3 py-2" min="1">
             </div>
         </div>
 
@@ -541,7 +657,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Pueblo Originario</label>
-                <input type="text" name="pueblo_originario" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="pueblo_originario" id="pueblo_originario" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div class="flex items-center">
                 <input type="checkbox" name="habla_lengua_indigena" value="1" id="chk_lengua" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
@@ -549,11 +665,11 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Lengua Indígena</label>
-                <input type="text" name="lengua_indigena" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="lengua_indigena" id="lengua_indigena" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nacionalidad Extranjera</label>
-                <input type="text" name="nacionalidad_extranjera" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="nacionalidad_extranjera" id="nacionalidad_extranjera" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
         </div>
 
@@ -562,7 +678,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Medio de Transporte</label>
-                <select name="medio_transporte" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                <select name="medio_transporte" id="medio_transporte" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
                     <option value="Bus público">Bus público</option>
                     <option value="Bus escolar">Bus escolar</option>
@@ -578,15 +694,15 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Transportista</label>
-                <input type="text" name="nombre_transportista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="text" name="nombre_transportista" id="nombre_transportista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono Transportista</label>
-                <input type="tel" name="telefono_transportista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="tel" name="telefono_transportista" id="telefono_transportista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tiempo Estimado de Traslado</label>
-                <input type="text" name="tiempo_traslado" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 30 minutos">
+                <input type="text" name="tiempo_traslado" id="tiempo_traslado" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 30 minutos">
             </div>
         </div>
 
@@ -661,19 +777,19 @@
         <div class="grid grid-cols-1 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Académicas</label>
-                <textarea name="obs_academicas" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="obs_academicas" id="obs_academicas" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Médicas</label>
-                <textarea name="obs_medicas" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="obs_medicas" id="obs_medicas" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Familiares</label>
-                <textarea name="obs_familiares" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="obs_familiares" id="obs_familiares" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Comentarios del Establecimiento</label>
-                <textarea name="obs_establecimiento" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+                <textarea name="obs_establecimiento" id="obs_establecimiento" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
             </div>
         </div>
 
@@ -685,12 +801,14 @@
     </form>
 </div>
 
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const selectNivel = document.getElementById('select-nivel');
     const selectGrado = document.getElementById('select-grado');
     const selectCurso = document.getElementById('select-curso');
 
+    // ── Nivel → Grado → Curso ──
     selectNivel.addEventListener('change', function() {
         const nivelId = this.value;
         selectGrado.innerHTML = '<option value="">Cargando grados...</option>';
@@ -734,6 +852,299 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectCurso.disabled = false;
             });
     });
+
+    // ── IPE solo para extranjeros ──
+    const chkExtranjero = document.getElementById('chk_extranjero');
+    const campoIpe = document.getElementById('campo-ipe');
+    chkExtranjero.addEventListener('change', function() {
+        campoIpe.classList.toggle('hidden', !this.checked);
+        if (!this.checked) document.getElementById('ipe').value = '';
+    });
+
+    // ── Dirección apoderado igual a estudiante ──
+    const chkMismaDir = document.getElementById('chk_misma_direccion');
+    const inputResidencia = document.getElementById('residencia');
+    const inputApDir = document.getElementById('ap_titular_direccion');
+    chkMismaDir.addEventListener('change', function() {
+        if (this.checked) {
+            inputApDir.value = inputResidencia.value;
+            inputApDir.readOnly = true;
+            inputApDir.classList.add('bg-gray-100');
+        } else {
+            inputApDir.readOnly = false;
+            inputApDir.classList.remove('bg-gray-100');
+        }
+    });
+    inputResidencia.addEventListener('input', function() {
+        if (chkMismaDir.checked) inputApDir.value = this.value;
+    });
+
+    // ── Información académica condicional ──
+    const chkEsNuevo = document.getElementById('chk_es_nuevo');
+    const divAcademicaCampos = document.getElementById('info-academica-campos');
+    const divAcademicaMensaje = document.getElementById('info-academica-mensaje');
+    function toggleAcademica() {
+        if (chkEsNuevo.checked) {
+            divAcademicaCampos.classList.remove('hidden');
+            divAcademicaMensaje.classList.add('hidden');
+        } else {
+            divAcademicaCampos.classList.add('hidden');
+            divAcademicaMensaje.classList.remove('hidden');
+        }
+    }
+    chkEsNuevo.addEventListener('change', toggleAcademica);
+    toggleAcademica();
+
+    // ═══════════════════════════════════════════════════════════════
+    // AUTOCOMPLETE DE MATRÍCULA ANTERIOR
+    // ═══════════════════════════════════════════════════════════════
+    const inputBuscar = document.getElementById('input-buscar-estudiante');
+    const divResultados = document.getElementById('resultados-busqueda');
+    const hiddenPersonId = document.getElementById('person-id-seleccionado');
+    const infoPrecarga = document.getElementById('info-precarga');
+    let timeoutBuscar;
+
+    function cerrarResultados() {
+        divResultados.classList.add('hidden');
+        divResultados.innerHTML = '';
+    }
+
+    // Cerrar al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (!inputBuscar.contains(e.target) && !divResultados.contains(e.target)) {
+            cerrarResultados();
+        }
+    });
+
+    inputBuscar.addEventListener('input', function() {
+        const q = this.value.trim();
+        hiddenPersonId.value = '';
+        infoPrecarga.classList.add('hidden');
+
+        if (q.length < 3) {
+            cerrarResultados();
+            return;
+        }
+
+        clearTimeout(timeoutBuscar);
+        timeoutBuscar = setTimeout(() => {
+            divResultados.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">Buscando...</div>';
+            divResultados.classList.remove('hidden');
+
+            fetch(`/matricula/ajax/buscar_estudiante?q=${encodeURIComponent(q)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        divResultados.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">No se encontraron resultados</div>';
+                        return;
+                    }
+
+                    divResultados.innerHTML = '';
+                    data.forEach(p => {
+                        const item = document.createElement('div');
+                        item.className = 'px-4 py-3 hover:bg-indigo-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors';
+                        item.innerHTML = `<div class="text-sm font-medium text-gray-900">${p.text}</div>`;
+                        item.addEventListener('click', function() {
+                            inputBuscar.value = p.text.split(' — ')[0]; // Solo el nombre
+                            hiddenPersonId.value = p.id;
+                            cerrarResultados();
+                            cargarDatosEstudiante(p.id);
+                        });
+                        divResultados.appendChild(item);
+                    });
+                })
+                .catch(err => {
+                    divResultados.innerHTML = '<div class="px-4 py-3 text-sm text-red-500">Error al buscar</div>';
+                });
+        }, 300);
+    });
+
+    function cargarDatosEstudiante(personId) {
+        fetch(`/matricula/ajax/estudiante/${personId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.persona) {
+                    alert('No se pudieron cargar los datos del estudiante');
+                    return;
+                }
+
+                // ── Datos personales ──
+                setVal('first_name', data.persona.first_name);
+                setVal('middle_name', data.persona.middle_name);
+                setVal('last_name', data.persona.last_name);
+                setVal('second_last_name', data.persona.second_last_name);
+                setVal('ref_sex_id', data.persona.ref_sex_id);
+                setVal('birthdate', data.persona.birthdate);
+
+                // ── Identificadores ──
+                if (data.identificadores) {
+                    setVal('rut', data.identificadores['51'] || '');
+                    setVal('ipe', data.identificadores['52'] || '');
+                    setVal('num_matricula', data.identificadores['55'] || '');
+                    setVal('num_lista', data.identificadores['54'] || '');
+
+                    if (data.identificadores['52']) {
+                        chkExtranjero.checked = true;
+                        campoIpe.classList.remove('hidden');
+                    }
+                }
+
+                // ── Residencia ──
+                setVal('residencia', data.residencia || '');
+
+                // ── Datos adicionales ──
+                if (data.enrollment) {
+                    const e = data.enrollment;
+                    setVal('nacionalidad', e.nacionalidad);
+                    setVal('pais_origen', e.pais_origen);
+                    setVal('comuna_residencia', e.comuna_residencia);
+                    setVal('region_residencia', e.region_residencia);
+                    setVal('email_estudiante', e.email_estudiante);
+                    setVal('telefono_estudiante', e.telefono_estudiante);
+                    setVal('fecha_ingreso_establecimiento', e.fecha_ingreso_establecimiento);
+
+                    // Académica
+                    chkEsNuevo.checked = e.es_nuevo;
+                    toggleAcademica();
+                    setVal('colegio_procedencia', e.colegio_procedencia);
+                    setVal('comuna_colegio_anterior', e.comuna_colegio_anterior);
+                    setVal('region_colegio_anterior', e.region_colegio_anterior);
+                    setVal('ultimo_curso_aprobado', e.ultimo_curso_aprobado);
+                    setVal('anio_ultimo_curso', e.anio_ultimo_curso);
+                    setVal('motivo_traslado', e.motivo_traslado);
+
+                    // Socioeconómica
+                    setVal('nivel_madre', e.nivel_madre);
+                    setVal('nivel_padre', e.nivel_padre);
+                    setVal('nivel_apoderado', e.nivel_apoderado);
+                    setVal('ingreso_familiar', e.ingreso_familiar);
+                    setVal('num_integrantes_hogar', e.num_integrantes_hogar);
+
+                    // SEP
+                    setChk('chk_prioritario', e.alumno_prioritario);
+                    setChk('chk_preferente', e.alumno_preferente);
+                    setChk('chk_sep', e.beneficiario_sep);
+
+                    // Cultural
+                    setChk('chk_pueblo', e.pertenece_pueblo_originario);
+                    setVal('pueblo_originario', e.pueblo_originario);
+                    setChk('chk_lengua', e.habla_lengua_indigena);
+                    setVal('lengua_indigena', e.lengua_indigena);
+                    setVal('nacionalidad_extranjera', e.nacionalidad_extranjera);
+
+                    // Transporte
+                    setVal('medio_transporte', e.medio_transporte);
+                    setChk('chk_transporte', e.utiliza_transporte_escolar);
+                    setVal('nombre_transportista', e.nombre_transportista);
+                    setVal('telefono_transportista', e.telefono_transportista);
+                    setVal('tiempo_traslado', e.tiempo_traslado);
+
+                    // Autorizaciones
+                    setChk('chk_fotos', e.autoriza_fotografias);
+                    setChk('chk_redes', e.autoriza_redes_sociales);
+                    setChk('chk_salidas', e.autoriza_salidas);
+                    setChk('chk_traslado', e.autoriza_traslado_medico);
+                    setChk('chk_urgencia', e.autoriza_atencion_urgencia);
+
+                    // Documentación
+                    setChk('doc_nac', e.doc_cert_nacimiento);
+                    setChk('doc_est', e.doc_cert_estudios);
+                    setChk('doc_per', e.doc_informe_personalidad);
+                    setChk('doc_not', e.doc_informe_notas);
+                    setChk('doc_pie', e.doc_informe_pie);
+                    setChk('doc_run_est', e.doc_fotocopia_run_est);
+                    setChk('doc_run_apod', e.doc_fotocopia_run_apod);
+                    setChk('doc_dom', e.doc_comprobante_domicilio);
+                    setChk('doc_med', e.doc_ficha_medica);
+
+                    // Observaciones
+                    setVal('obs_academicas', e.obs_academicas);
+                    setVal('obs_medicas', e.obs_medicas);
+                    setVal('obs_familiares', e.obs_familiares);
+                    setVal('obs_establecimiento', e.obs_establecimiento);
+                }
+
+                // ── Apoderado titular ──
+                if (data.ap_titular) {
+                    const a = data.ap_titular;
+                    setVal('ap_titular_first_name', a.first_name);
+                    setVal('ap_titular_last_name', a.last_name);
+                    setVal('ap_titular_second_last_name', a.second_last_name);
+                    setVal('ap_titular_rut', a.rut);
+                    setVal('ap_titular_telefono', a.telefono);
+                    setVal('ap_titular_email', a.email);
+                    setVal('ap_titular_parentesco', a.parentesco);
+                    setVal('ap_titular_profesion', a.profesion);
+                    setVal('ap_titular_lugar_trabajo', a.lugar_trabajo);
+                    setVal('ap_titular_direccion', a.direccion);
+                    setVal('ap_titular_nivel_educativo', a.nivel);
+                }
+
+                // ── Contactos de emergencia ──
+                if (data.contactos_emergencia) {
+                    data.contactos_emergencia.forEach((c, idx) => {
+                        const i = idx + 1;
+                        setName(`contacto_emergencia_${i}_first_name`, c.first_name);
+                        setName(`contacto_emergencia_${i}_last_name`, c.last_name);
+                        setName(`contacto_emergencia_${i}_second_last_name`, c.second_last_name);
+                        setName(`contacto_emergencia_${i}_run`, c.run);
+                        setName(`contacto_emergencia_${i}_parentesco`, c.parentesco);
+                        setName(`contacto_emergencia_${i}_email`, c.email);
+                        setName(`contacto_emergencia_${i}_telefono`, c.telefono);
+                        setName(`contacto_emergencia_${i}_telefono_alt`, c.telefono_alt);
+                        setName(`contacto_emergencia_${i}_profesion`, c.profesion);
+                        setName(`contacto_emergencia_${i}_nivel_educativo`, c.nivel_educativo);
+                    });
+                }
+
+                // ── Información médica ──
+                if (data.health) {
+                    const h = data.health;
+                    setVal('grupo_sanguineo', h.grupo_sanguineo);
+                    setVal('sistema_salud', h.sistema_salud);
+                    setVal('enfermedades_permanentes', h.enfermedades_permanentes);
+                    setVal('alergias', h.alergias);
+                    setVal('medicamentos_permanentes', h.medicamentos_permanentes);
+                    setVal('restricciones_alimentarias', h.restricciones_alimentarias);
+                    setVal('necesidades_medicas', h.necesidades_medicas);
+                    setVal('obs_medicas_detalle', h.obs_medicas_detalle);
+                    setVal('centro_salud', h.centro_salud);
+                    setVal('medico_tratante', h.medico_tratante);
+                    setVal('telefono_medico', h.telefono_medico);
+                }
+
+                // ── PIE ──
+                if (data.pie) {
+                    setVal('pertenece_pie', data.pie.pertenece_pie ? '1' : '0');
+                    setVal('diagnostico_pie', data.pie.diagnostico_pie);
+                    setVal('fecha_diagnostico_pie', data.pie.fecha_diagnostico_pie);
+                    setVal('profesional_pie', data.pie.profesional_pie);
+                    setVal('observaciones_pie', data.pie.observaciones_pie);
+                }
+
+                // Mostrar confirmación
+                infoPrecarga.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            })
+            .catch(err => {
+                console.error('Error cargando datos:', err);
+                alert('Error al cargar los datos del estudiante');
+            });
+    }
+
+    // Helpers
+    function setVal(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.value = value || '';
+    }
+    function setChk(id, checked) {
+        const el = document.getElementById(id);
+        if (el) el.checked = !!checked;
+    }
+    function setName(name, value) {
+        const el = document.querySelector(`[name="${name}"]`);
+        if (el) el.value = value || '';
+    }
 });
 </script>
 {% endblock %}

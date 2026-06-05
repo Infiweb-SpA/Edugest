@@ -26,7 +26,10 @@ NIVELES_EDUCATIVOS = {
     3: 'Educación Media',
     4: 'Educación Técnico-Profesional',
     5: 'Educación Universitaria',
-    6: 'Postgrado'
+    6: 'Postgrado',
+    7: 'Educación Media Científico-Humanista',
+    8: 'Educación Media Técnico-Profesional (TP)',
+    9: 'Educación Superior'
 }
 
 
@@ -96,7 +99,7 @@ def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
         RefPersonRelationshipId=ref_rel_id
     )
     db.session.add(rel)
-    db.session.flush()  # Necesario para obtener el ID de la relación
+    db.session.flush()
 
     # Guardar detalles adicionales de la relación
     if parentesco or profesion or trabajo or direccion or email:
@@ -213,6 +216,151 @@ def _parse_int(campo):
 
 def _parse_bool(campo):
     return request.form.get(campo) == '1'
+
+
+def _serialize_estudiante(person_id):
+    """Serializa todos los datos de un estudiante existente para precarga vía AJAX."""
+    persona = Person.query.get(person_id)
+    if not persona:
+        return None
+    
+    ids = PersonIdentifier.query.filter_by(PersonId=person_id).all()
+    ids_map = {i.RefPersonIdentificationSystemId: i.Identifier for i in ids}
+    
+    residencia = PersonAddress.query.filter_by(PersonId=person_id).first()
+    
+    # Apoderados
+    apoderados = obtener_apoderados_estudiante(person_id)
+    ap_titular = apoderados[0] if len(apoderados) > 0 else None
+    ap_suplente1 = apoderados[1] if len(apoderados) > 1 else None
+    ap_suplente2 = apoderados[2] if len(apoderados) > 2 else None
+    
+    enrollment = EdugestStudentEnrollment.query.filter_by(PersonId=person_id).first()
+    health = EdugestStudentHealth.query.filter_by(PersonId=person_id).first()
+    pie = EdugestStudentPIE.query.filter_by(PersonId=person_id).first()
+    contactos = EdugestEmergencyContact.query.filter_by(PersonId=person_id).order_by(EdugestEmergencyContact.Orden).all()
+    
+    def ap_json(ap):
+        if not ap:
+            return None
+        return {
+            'first_name': ap['persona'].FirstName,
+            'last_name': ap['persona'].LastName,
+            'second_last_name': ap['persona'].SecondLastName,
+            'rut': ap['rut'],
+            'telefono': ap['telefono'],
+            'email': ap['email'],
+            'direccion': ap['direccion'],
+            'nivel': ap['nivel'],
+            'parentesco': ap['detalle'].Parentesco if ap['detalle'] else None,
+            'profesion': ap['detalle'].ProfesionOcupacion if ap['detalle'] else None,
+            'lugar_trabajo': ap['detalle'].LugarTrabajo if ap['detalle'] else None,
+        }
+    
+    def contacto_json(c):
+        return {
+            'first_name': c.FirstName,
+            'last_name': c.LastName,
+            'second_last_name': c.SecondLastName,
+            'nombre_completo': c.NombreCompleto,
+            'run': c.RUN,
+            'parentesco': c.Parentesco,
+            'telefono': c.TelefonoPrincipal,
+            'telefono_alt': c.TelefonoAlternativo,
+            'email': c.Email,
+            'profesion': c.ProfesionOcupacion,
+            'nivel_educativo': c.NivelEducacional,
+        }
+    
+    return {
+        'persona': {
+            'person_id': persona.PersonId,
+            'first_name': persona.FirstName,
+            'middle_name': persona.MiddleName,
+            'last_name': persona.LastName,
+            'second_last_name': persona.SecondLastName,
+            'ref_sex_id': persona.RefSexId,
+            'birthdate': persona.Birthdate.isoformat() if persona.Birthdate else None,
+        },
+        'identificadores': ids_map,
+        'residencia': residencia.StreetNumberAndName if residencia else None,
+        'ap_titular': ap_json(ap_titular),
+        'ap_suplente1': ap_json(ap_suplente1),
+        'ap_suplente2': ap_json(ap_suplente2),
+        'enrollment': {
+            'nacionalidad': enrollment.Nacionalidad if enrollment else None,
+            'pais_origen': enrollment.PaisOrigen if enrollment else None,
+            'comuna_residencia': enrollment.ComunaResidencia if enrollment else None,
+            'region_residencia': enrollment.RegionResidencia if enrollment else None,
+            'email_estudiante': enrollment.EmailEstudiante if enrollment else None,
+            'telefono_estudiante': enrollment.TelefonoEstudiante if enrollment else None,
+            'colegio_procedencia': enrollment.ColegioProcedencia if enrollment else None,
+            'comuna_colegio_anterior': enrollment.ComunaColegioAnterior if enrollment else None,
+            'region_colegio_anterior': enrollment.RegionColegioAnterior if enrollment else None,
+            'ultimo_curso_aprobado': enrollment.UltimoCursoAprobado if enrollment else None,
+            'anio_ultimo_curso': enrollment.AnioUltimoCursoAprobado if enrollment else None,
+            'motivo_traslado': enrollment.MotivoTraslado if enrollment else None,
+            'fecha_ingreso_establecimiento': enrollment.FechaIngresoEstablecimiento.isoformat() if enrollment and enrollment.FechaIngresoEstablecimiento else None,
+            'nivel_madre': enrollment.NivelEducacionalMadre if enrollment else None,
+            'nivel_padre': enrollment.NivelEducacionalPadre if enrollment else None,
+            'nivel_apoderado': enrollment.NivelEducacionalApoderado if enrollment else None,
+            'ingreso_familiar': enrollment.IngresoFamiliar if enrollment else None,
+            'num_integrantes_hogar': enrollment.NumIntegrantesHogar if enrollment else None,
+            'alumno_prioritario': enrollment.AlumnoPrioritario if enrollment else False,
+            'alumno_preferente': enrollment.AlumnoPreferente if enrollment else False,
+            'beneficiario_sep': enrollment.BeneficiarioSEP if enrollment else False,
+            'pertenece_pueblo_originario': enrollment.PertenecePuebloOriginario if enrollment else False,
+            'pueblo_originario': enrollment.PuebloOriginario if enrollment else None,
+            'habla_lengua_indigena': enrollment.HablaLenguaIndigena if enrollment else False,
+            'lengua_indigena': enrollment.LenguaIndigena if enrollment else None,
+            'nacionalidad_extranjera': enrollment.NacionalidadExtranjera if enrollment else None,
+            'medio_transporte': enrollment.MedioTransporte if enrollment else None,
+            'utiliza_transporte_escolar': enrollment.UtilizaTransporteEscolar if enrollment else False,
+            'nombre_transportista': enrollment.NombreTransportista if enrollment else None,
+            'telefono_transportista': enrollment.TelefonoTransportista if enrollment else None,
+            'tiempo_traslado': enrollment.TiempoEstimadoTraslado if enrollment else None,
+            'autoriza_fotografias': enrollment.AutorizaFotografias if enrollment else False,
+            'autoriza_redes_sociales': enrollment.AutorizaRedesSociales if enrollment else False,
+            'autoriza_salidas': enrollment.AutorizaSalidasPedagogicas if enrollment else False,
+            'autoriza_traslado_medico': enrollment.AutorizaTrasladoCentroAsistencial if enrollment else False,
+            'autoriza_atencion_urgencia': enrollment.AutorizaAtencionMedicaUrgencia if enrollment else False,
+            'doc_cert_nacimiento': enrollment.EntregaCertificadoNacimiento if enrollment else False,
+            'doc_cert_estudios': enrollment.EntregaCertificadoAnualEstudios if enrollment else False,
+            'doc_informe_personalidad': enrollment.EntregaInformePersonalidad if enrollment else False,
+            'doc_informe_notas': enrollment.EntregaInformeNotas if enrollment else False,
+            'doc_informe_pie': enrollment.EntregaInformePIE if enrollment else False,
+            'doc_fotocopia_run_est': enrollment.EntregaFotocopiaRUNEstudiante if enrollment else False,
+            'doc_fotocopia_run_apod': enrollment.EntregaFotocopiaRUNApoderado if enrollment else False,
+            'doc_comprobante_domicilio': enrollment.EntregaComprobanteDomicilio if enrollment else False,
+            'doc_ficha_medica': enrollment.EntregaFichaMedica if enrollment else False,
+            'obs_academicas': enrollment.ObservacionesAcademicas if enrollment else None,
+            'obs_medicas': enrollment.ObservacionesMedicas if enrollment else None,
+            'obs_familiares': enrollment.ObservacionesFamiliares if enrollment else None,
+            'obs_establecimiento': enrollment.ComentariosEstablecimiento if enrollment else None,
+            'es_nuevo': enrollment.EsNuevoEnEstablecimiento if enrollment else True,
+        },
+        'contactos_emergencia': [contacto_json(c) for c in contactos],
+        'health': {
+            'grupo_sanguineo': health.GrupoSanguineo if health else None,
+            'sistema_salud': health.SistemaSalud if health else None,
+            'enfermedades_permanentes': health.EnfermedadesPermanentes if health else None,
+            'alergias': health.Alergias if health else None,
+            'medicamentos_permanentes': health.MedicamentosPermanentes if health else None,
+            'restricciones_alimentarias': health.RestriccionesAlimentarias if health else None,
+            'necesidades_medicas': health.NecesidadesMedicasEspeciales if health else None,
+            'obs_medicas_detalle': health.ObservacionesMedicasDetalle if health else None,
+            'centro_salud': health.CentroSaludHabitual if health else None,
+            'medico_tratante': health.MedicoTratante if health else None,
+            'telefono_medico': health.TelefonoMedicoTratante if health else None,
+        } if health else None,
+        'pie': {
+            'pertenece_pie': pie.PertenecePIE if pie else False,
+            'diagnostico_pie': pie.DiagnosticoPIE if pie else None,
+            'fecha_diagnostico_pie': pie.FechaDiagnostico.isoformat() if pie and pie.FechaDiagnostico else None,
+            'profesional_pie': pie.ProfesionalTratante if pie else None,
+            'observaciones_pie': pie.ObservacionesPIE if pie else None,
+        } if pie else None,
+    }
 
 
 # ============================================================================
@@ -343,6 +491,7 @@ def nuevo_estudiante():
                 AnioUltimoCursoAprobado=_parse_int('anio_ultimo_curso'),
                 MotivoTraslado=request.form.get('motivo_traslado'),
                 FechaIngresoEstablecimiento=_parse_date('fecha_ingreso_establecimiento'),
+                EsNuevoEnEstablecimiento=_parse_bool('es_nuevo'),
                 NivelEducacionalMadre=_parse_int('nivel_madre'),
                 NivelEducacionalPadre=_parse_int('nivel_padre'),
                 NivelEducacionalApoderado=_parse_int('nivel_apoderado'),
@@ -381,18 +530,25 @@ def nuevo_estudiante():
                 ComentariosEstablecimiento=request.form.get('obs_establecimiento')
             ))
 
-            # 7. CONTACTOS DE EMERGENCIA
+            # 7. CONTACTOS DE EMERGENCIA (nueva estructura completa)
             for i in [1, 2]:
-                nombre = request.form.get(f'contacto_emergencia_{i}_nombre')
-                if nombre:
+                first_name_c = request.form.get(f'contacto_emergencia_{i}_first_name')
+                if first_name_c:
+                    nombre_completo = f"{first_name_c} {request.form.get(f'contacto_emergencia_{i}_last_name', '')} {request.form.get(f'contacto_emergencia_{i}_second_last_name', '')}".strip()
                     db.session.add(EdugestEmergencyContact(
                         PersonId=nueva_persona.PersonId,
                         Orden=i,
-                        NombreCompleto=nombre,
+                        FirstName=first_name_c,
+                        LastName=request.form.get(f'contacto_emergencia_{i}_last_name'),
+                        SecondLastName=request.form.get(f'contacto_emergencia_{i}_second_last_name'),
+                        NombreCompleto=nombre_completo or None,
                         RUN=normalizar_rut(request.form.get(f'contacto_emergencia_{i}_run')),
                         Parentesco=request.form.get(f'contacto_emergencia_{i}_parentesco'),
                         TelefonoPrincipal=request.form.get(f'contacto_emergencia_{i}_telefono'),
-                        TelefonoAlternativo=request.form.get(f'contacto_emergencia_{i}_telefono_alt')
+                        TelefonoAlternativo=request.form.get(f'contacto_emergencia_{i}_telefono_alt'),
+                        Email=request.form.get(f'contacto_emergencia_{i}_email'),
+                        ProfesionOcupacion=request.form.get(f'contacto_emergencia_{i}_profesion'),
+                        NivelEducacional=_parse_int(f'contacto_emergencia_{i}_nivel_educativo')
                     ))
 
             # 8. INFORMACIÓN MÉDICA
@@ -477,6 +633,49 @@ def ajax_cursos(grado_id):
         Organization.RefOrganizationTypeId == 21
     ).order_by(Organization.ShortName).all()
     return jsonify([{'id': c.OrganizationId, 'nombre': f"{c.Name} ({c.ShortName})", 'letra': c.ShortName} for c in cursos])
+
+
+# ============================================================================
+# AJAX: BUSCAR ESTUDIANTE EXISTENTE (precarga de matrícula anterior)
+# ============================================================================
+@matricula_bp.route('/ajax/buscar_estudiante')
+def ajax_buscar_estudiante():
+    if not verificar_modulo_habilitado():
+        return jsonify([])
+    q = request.args.get('q', '').strip()
+    if len(q) < 3:
+        return jsonify([])
+    
+    # Buscar por nombre o RUT
+    personas = Person.query.outerjoin(PersonIdentifier, 
+        (PersonIdentifier.PersonId == Person.PersonId) & 
+        (PersonIdentifier.RefPersonIdentificationSystemId == 51)
+    ).filter(
+        db.or_(
+            Person.FirstName.ilike(f'%{q}%'),
+            Person.LastName.ilike(f'%{q}%'),
+            PersonIdentifier.Identifier.ilike(f'%{q}%')
+        )
+    ).limit(10).all()
+    
+    resultado = []
+    for p in personas:
+        rut = PersonIdentifier.query.filter_by(
+            PersonId=p.PersonId, RefPersonIdentificationSystemId=51
+        ).first()
+        resultado.append({
+            'id': p.PersonId,
+            'text': f"{p.FirstName} {p.LastName} {p.SecondLastName or ''} — RUT: {rut.Identifier if rut else 'Sin RUT'}"
+        })
+    return jsonify(resultado)
+
+
+@matricula_bp.route('/ajax/estudiante/<int:person_id>')
+def ajax_datos_estudiante(person_id):
+    if not verificar_modulo_habilitado():
+        return jsonify({})
+    data = _serialize_estudiante(person_id)
+    return jsonify(data or {})
 
 
 # ============================================================================
