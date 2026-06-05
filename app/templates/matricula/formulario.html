@@ -3,38 +3,28 @@
 {% block header_title %}{{ 'Editar' if estudiante else 'Nueva Matrícula' }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-    <h3 class="text-lg font-bold text-gray-900 mb-6 border-b pb-2">Datos del Estudiante</h3>
+<div class="max-w-5xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+    <form method="POST" class="space-y-8" id="form-matricula">
 
-    <form method="POST" class="space-y-6" id="form-matricula">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Nombres -->
+        <!-- ==================== 1. DATOS PERSONALES ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">1. Datos Personales del Estudiante</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre <span class="text-red-500">*</span></label>
-                <input type="text" name="first_name" required 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ estudiante.FirstName if estudiante else '' }}">
+                <input type="text" name="first_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.FirstName if estudiante else '' }}">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Segundo Nombre</label>
-                <input type="text" name="middle_name" 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ estudiante.MiddleName if estudiante else '' }}">
+                <input type="text" name="middle_name" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.MiddleName if estudiante else '' }}">
             </div>
-            <!-- Apellidos -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
-                <input type="text" name="last_name" required 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ estudiante.LastName if estudiante else '' }}">
+                <input type="text" name="last_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.LastName if estudiante else '' }}">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="second_last_name" 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ estudiante.SecondLastName if estudiante else '' }}">
+                <input type="text" name="second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.SecondLastName if estudiante else '' }}">
             </div>
-            <!-- Sexo y Nacimiento -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
                 <select name="ref_sex_id" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
@@ -45,245 +35,657 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
-                <input type="date" name="birthdate" 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2"
-                       value="{{ estudiante.Birthdate if estudiante else '' }}">
+                <input type="date" name="birthdate" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.Birthdate if estudiante else '' }}">
             </div>
         </div>
 
-        <h3 class="text-lg font-bold text-gray-900 mt-8 mb-6 border-b pb-2">Identificadores Oficiales MINEDUC</h3>
+        <!-- ==================== 1b. DATOS ADICIONALES ESTUDIANTE ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">1b. Datos Adicionales del Estudiante</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nacionalidad</label>
+                <input type="text" name="nacionalidad" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Chilena">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">País de Origen</label>
+                <input type="text" name="pais_origen" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Chile">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Comuna de Residencia</label>
+                <input type="text" name="comuna_residencia" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Temuco">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Región de Residencia</label>
+                <input type="text" name="region_residencia" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: La Araucanía">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico (Enseñanza Media)</label>
+                <input type="email" name="email_estudiante" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: alumno@email.com">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono del Estudiante</label>
+                <input type="tel" name="telefono_estudiante" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: +56912345678">
+            </div>
+        </div>
+
+        <!-- ==================== 2. IDENTIFICADORES ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">2. Identificadores Oficiales MINEDUC</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT) <span class="text-red-500">*</span></label>
-                <input type="text" name="rut" placeholder="Ej: 12345678-9, 12.345.678-9, 123456789" required  
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <input type="text" name="rut" required placeholder="Ej: 12345678-9" class="w-full rounded-lg border-gray-300 border px-3 py-2">
                 <p class="text-xs text-gray-400 mt-1">Se acepta con o sin puntos y guion. Se guardará como: 12.345.678-9</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">IPE</label>
-                <input type="text" name="ipe" 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <input type="text" name="ipe" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">N° Correlativo Matrícula</label>
-                <input type="text" name="num_matricula" 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <input type="text" name="num_matricula" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">N° de Lista</label>
-                <input type="text" name="num_lista" 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <input type="text" name="num_lista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
         </div>
 
-        <h3 class="text-lg font-bold text-gray-900 mt-8 mb-6 border-b pb-2">Residencia del Estudiante</h3>
+        <!-- ==================== 3. RESIDENCIA Y MATRÍCULA ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">3. Residencia y Matrícula en Curso</h3>
         <div class="grid grid-cols-1 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Dirección / Residencia <span class="text-red-500">*</span></label>
-                <input type="text" name="residencia" required placeholder="Ej: Av. Alemania 1234, Temuco"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ residencia.StreetNumberAndName if residencia else '' }}">
+                <input type="text" name="residencia" required placeholder="Ej: Av. Alemania 1234, Temuco" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
         </div>
-
-        <h3 class="text-lg font-bold text-gray-900 mt-8 mb-6 border-b pb-2">Matrícula en Curso</h3>
-
-        <!-- Selects encadenados: Nivel → Grado → Letra -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educativo <span class="text-red-500">*</span></label>
-                <select id="select-nivel" required 
-                        class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                <select id="select-nivel" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar nivel --</option>
                     {% for nivel in niveles %}
                     <option value="{{ nivel.OrganizationId }}">{{ nivel.Name }}</option>
                     {% endfor %}
                 </select>
-                {% if not niveles %}
-                <p class="text-xs text-red-500 mt-1">⚠️ No hay niveles configurados.</p>
-                {% endif %}
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Grado / Año <span class="text-red-500">*</span></label>
-                <select id="select-grado" required disabled
-                        class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-400">
+                <select id="select-grado" required disabled class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white disabled:bg-gray-100">
                     <option value="">-- Primero seleccione nivel --</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Letra del Curso <span class="text-red-500">*</span></label>
-                <select id="select-curso" name="curso_id" required disabled
-                        class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-400">
+                <select id="select-curso" name="curso_id" required disabled class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white disabled:bg-gray-100">
                     <option value="">-- Primero seleccione grado --</option>
                 </select>
             </div>
         </div>
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Matrícula <span class="text-red-500">*</span></label>
-                <input type="date" name="entry_date" required 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2">
+                <input type="date" name="entry_date" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Ingreso al Establecimiento</label>
+                <input type="date" name="fecha_ingreso_establecimiento" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
         </div>
 
-        <!-- ==================== APODERADO TITULAR ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 mt-8 mb-6 border-b pb-2">Apoderado Titular <span class="text-red-500">*</span></h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- ==================== 4. APODERADO TITULAR ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">4. Apoderado Titular <span class="text-red-500">*</span></h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre <span class="text-red-500">*</span></label>
-                <input type="text" name="ap_titular_first_name" required
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_titular.persona.FirstName if ap_titular else '' }}">
+                <input type="text" name="ap_titular_first_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
-                <input type="text" name="ap_titular_last_name" required
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_titular.persona.LastName if ap_titular else '' }}">
+                <input type="text" name="ap_titular_last_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="ap_titular_second_last_name"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_titular.persona.SecondLastName if ap_titular else '' }}">
+                <input type="text" name="ap_titular_second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT) <span class="text-red-500">*</span></label>
-                <input type="text" name="ap_titular_rut" required placeholder="Ej: 12.345.678-9"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_titular.rut if ap_titular else '' }}">
+                <input type="text" name="ap_titular_rut" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Parentesco <span class="text-red-500">*</span></label>
+                <select name="ap_titular_parentesco" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="Padre">Padre</option>
+                    <option value="Madre">Madre</option>
+                    <option value="Tutor">Tutor</option>
+                    <option value="Abuelo/a">Abuelo/a</option>
+                    <option value="Tío/a">Tío/a</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                <input type="email" name="ap_titular_email" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono <span class="text-red-500">*</span></label>
-                <input type="tel" name="ap_titular_telefono" required placeholder="Ej: +56912345678"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_titular.telefono if ap_titular else '' }}">
+                <input type="tel" name="ap_titular_telefono" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación</label>
+                <input type="text" name="ap_titular_profesion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Lugar de Trabajo</label>
+                <input type="text" name="ap_titular_lugar_trabajo" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección (si es distinta al estudiante)</label>
+                <input type="text" name="ap_titular_direccion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional <span class="text-red-500">*</span></label>
-                <select name="ap_titular_nivel_educativo" required
-                        class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                <select name="ap_titular_nivel_educativo" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
-                    <option value="1" {{ 'selected' if ap_titular and ap_titular.nivel == 1 else '' }}>Educación Parvularia</option>
-                    <option value="2" {{ 'selected' if ap_titular and ap_titular.nivel == 2 else '' }}>Educación Básica</option>
-                    <option value="3" {{ 'selected' if ap_titular and ap_titular.nivel == 3 else '' }}>Educación Media</option>
-                    <option value="4" {{ 'selected' if ap_titular and ap_titular.nivel == 4 else '' }}>Educación Técnico-Profesional</option>
-                    <option value="5" {{ 'selected' if ap_titular and ap_titular.nivel == 5 else '' }}>Educación Universitaria</option>
-                    <option value="6" {{ 'selected' if ap_titular and ap_titular.nivel == 6 else '' }}>Postgrado</option>
+                    <option value="1">Educación Parvularia</option>
+                    <option value="2">Educación Básica</option>
+                    <option value="3">Educación Media</option>
+                    <option value="4">Educación Técnico-Profesional</option>
+                    <option value="5">Educación Universitaria</option>
+                    <option value="6">Postgrado</option>
                 </select>
             </div>
         </div>
 
-        <!-- ==================== APODERADO SUPLENTE 1 ==================== -->
-        <h3 class="text-lg font-bold text-gray-500 mt-8 mb-6 border-b pb-2">Apoderado Suplente 1 <span class="text-xs font-normal text-gray-400">(Opcional)</span></h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- ==================== 5. APODERADO SUPLENTE 1 ==================== -->
+        <h3 class="text-lg font-bold text-gray-500 border-b pb-2">5. Apoderado Suplente 1 <span class="text-xs font-normal">(Opcional)</span></h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre</label>
-                <input type="text" name="ap_suplente1_first_name"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente1.persona.FirstName if ap_suplente1 else '' }}">
+                <input type="text" name="ap_suplente1_first_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
-                <input type="text" name="ap_suplente1_last_name"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente1.persona.LastName if ap_suplente1 else '' }}">
+                <input type="text" name="ap_suplente1_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="ap_suplente1_second_last_name"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente1.persona.SecondLastName if ap_suplente1 else '' }}">
+                <input type="text" name="ap_suplente1_second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT)</label>
-                <input type="text" name="ap_suplente1_rut" placeholder="Ej: 12.345.678-9"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente1.rut if ap_suplente1 else '' }}">
+                <input type="text" name="ap_suplente1_rut" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Parentesco</label>
+                <select name="ap_suplente1_parentesco" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="Padre">Padre</option>
+                    <option value="Madre">Madre</option>
+                    <option value="Tutor">Tutor</option>
+                    <option value="Abuelo/a">Abuelo/a</option>
+                    <option value="Tío/a">Tío/a</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                <input type="email" name="ap_suplente1_email" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input type="tel" name="ap_suplente1_telefono" placeholder="Ej: +56912345678"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente1.telefono if ap_suplente1 else '' }}">
+                <input type="tel" name="ap_suplente1_telefono" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación</label>
+                <input type="text" name="ap_suplente1_profesion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional</label>
-                <select name="ap_suplente1_nivel_educativo"
-                        class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                <select name="ap_suplente1_nivel_educativo" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
-                    <option value="1" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 1 else '' }}>Educación Parvularia</option>
-                    <option value="2" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 2 else '' }}>Educación Básica</option>
-                    <option value="3" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 3 else '' }}>Educación Media</option>
-                    <option value="4" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 4 else '' }}>Educación Técnico-Profesional</option>
-                    <option value="5" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 5 else '' }}>Educación Universitaria</option>
-                    <option value="6" {{ 'selected' if ap_suplente1 and ap_suplente1.nivel == 6 else '' }}>Postgrado</option>
+                    <option value="1">Educación Parvularia</option>
+                    <option value="2">Educación Básica</option>
+                    <option value="3">Educación Media</option>
+                    <option value="4">Educación Técnico-Profesional</option>
+                    <option value="5">Educación Universitaria</option>
+                    <option value="6">Postgrado</option>
                 </select>
             </div>
         </div>
 
-        <!-- ==================== APODERADO SUPLENTE 2 ==================== -->
-        <h3 class="text-lg font-bold text-gray-500 mt-8 mb-6 border-b pb-2">Apoderado Suplente 2 <span class="text-xs font-normal text-gray-400">(Opcional)</span></h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- ==================== 6. APODERADO SUPLENTE 2 ==================== -->
+        <h3 class="text-lg font-bold text-gray-500 border-b pb-2">6. Apoderado Suplente 2 <span class="text-xs font-normal">(Opcional)</span></h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre</label>
-                <input type="text" name="ap_suplente2_first_name"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente2.persona.FirstName if ap_suplente2 else '' }}">
+                <input type="text" name="ap_suplente2_first_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
-                <input type="text" name="ap_suplente2_last_name"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente2.persona.LastName if ap_suplente2 else '' }}">
+                <input type="text" name="ap_suplente2_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="ap_suplente2_second_last_name"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente2.persona.SecondLastName if ap_suplente2 else '' }}">
+                <input type="text" name="ap_suplente2_second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT)</label>
-                <input type="text" name="ap_suplente2_rut" placeholder="Ej: 12.345.678-9"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente2.rut if ap_suplente2 else '' }}">
+                <input type="text" name="ap_suplente2_rut" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Parentesco</label>
+                <select name="ap_suplente2_parentesco" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="Padre">Padre</option>
+                    <option value="Madre">Madre</option>
+                    <option value="Tutor">Tutor</option>
+                    <option value="Abuelo/a">Abuelo/a</option>
+                    <option value="Tío/a">Tío/a</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                <input type="email" name="ap_suplente2_email" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input type="tel" name="ap_suplente2_telefono" placeholder="Ej: +56912345678"
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       value="{{ ap_suplente2.telefono if ap_suplente2 else '' }}">
+                <input type="tel" name="ap_suplente2_telefono" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación</label>
+                <input type="text" name="ap_suplente2_profesion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional</label>
-                <select name="ap_suplente2_nivel_educativo"
-                        class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                <select name="ap_suplente2_nivel_educativo" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
                     <option value="">-- Seleccionar --</option>
-                    <option value="1" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 1 else '' }}>Educación Parvularia</option>
-                    <option value="2" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 2 else '' }}>Educación Básica</option>
-                    <option value="3" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 3 else '' }}>Educación Media</option>
-                    <option value="4" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 4 else '' }}>Educación Técnico-Profesional</option>
-                    <option value="5" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 5 else '' }}>Educación Universitaria</option>
-                    <option value="6" {{ 'selected' if ap_suplente2 and ap_suplente2.nivel == 6 else '' }}>Postgrado</option>
+                    <option value="1">Educación Parvularia</option>
+                    <option value="2">Educación Básica</option>
+                    <option value="3">Educación Media</option>
+                    <option value="4">Educación Técnico-Profesional</option>
+                    <option value="5">Educación Universitaria</option>
+                    <option value="6">Postgrado</option>
                 </select>
             </div>
         </div>
 
-        <div class="pt-6 flex justify-end space-x-3">
-            <a href="{{ url_for('matricula.listar_estudiantes') }}" 
-               class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancelar</a>
-            <button type="submit" 
-                    class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium">Guardar Matrícula</button>
+        <!-- ==================== 7. CONTACTOS DE EMERGENCIA ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">7. Contactos de Emergencia</h3>
+        {% for i in [1, 2] %}
+        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+            <h4 class="text-sm font-bold text-gray-700 mb-3">Contacto de Emergencia {{ i }}</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Nombre Completo</label>
+                    <input type="text" name="contacto_emergencia_{{ i }}_nombre" class="w-full rounded border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">RUN</label>
+                    <input type="text" name="contacto_emergencia_{{ i }}_run" class="w-full rounded border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Parentesco</label>
+                    <input type="text" name="contacto_emergencia_{{ i }}_parentesco" class="w-full rounded border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Teléfono Principal</label>
+                    <input type="tel" name="contacto_emergencia_{{ i }}_telefono" class="w-full rounded border-gray-300 border px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Teléfono Alternativo</label>
+                    <input type="tel" name="contacto_emergencia_{{ i }}_telefono_alt" class="w-full rounded border-gray-300 border px-3 py-2">
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- ==================== 8. INFORMACIÓN MÉDICA ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">8. Información Médica</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Grupo Sanguíneo</label>
+                <select name="grupo_sanguineo" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sistema de Salud</label>
+                <select name="sistema_salud" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="Fonasa">Fonasa</option>
+                    <option value="Isapre">Isapre</option>
+                    <option value="Particular">Particular</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Centro de Salud Habitual</label>
+                <input type="text" name="centro_salud" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Médico Tratante</label>
+                <input type="text" name="medico_tratante" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono Médico Tratante</label>
+                <input type="tel" name="telefono_medico" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 gap-4 mt-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Enfermedades Permanentes</label>
+                <textarea name="enfermedades_permanentes" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Alergias <span class="text-red-500">*</span></label>
+                <textarea name="alergias" rows="2" required class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Medicamentos Permanentes</label>
+                <textarea name="medicamentos_permanentes" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Restricciones Alimentarias</label>
+                <textarea name="restricciones_alimentarias" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Necesidades Médicas Especiales</label>
+                <textarea name="necesidades_medicas" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Médicas</label>
+                <textarea name="obs_medicas_detalle" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+        </div>
+
+        <!-- ==================== 9. PROGRAMA PIE ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">9. Programa de Integración Escolar (PIE)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Pertenece a PIE</label>
+                <select name="pertenece_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="0">No</option>
+                    <option value="1">Sí</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Diagnóstico</label>
+                <input type="date" name="fecha_diagnostico_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Profesional Tratante</label>
+                <input type="text" name="profesional_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 gap-4 mt-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Diagnóstico PIE</label>
+                <textarea name="diagnostico_pie" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones PIE</label>
+                <textarea name="observaciones_pie" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+        </div>
+
+        <!-- ==================== 10. INFORMACIÓN ACADÉMICA ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">10. Información Académica</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Colegio de Procedencia</label>
+                <input type="text" name="colegio_procedencia" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Comuna Colegio Anterior</label>
+                <input type="text" name="comuna_colegio_anterior" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Región Colegio Anterior</label>
+                <input type="text" name="region_colegio_anterior" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Último Curso Aprobado</label>
+                <input type="text" name="ultimo_curso_aprobado" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Año Último Curso Aprobado</label>
+                <input type="number" name="anio_ultimo_curso" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 2025">
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Motivo de Traslado</label>
+                <textarea name="motivo_traslado" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+        </div>
+
+        <!-- ==================== 11. INFORMACIÓN SOCIOECONÓMICA ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">11. Información Socioeconómica</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional de la Madre</label>
+                <select name="nivel_madre" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="1">Educación Parvularia</option>
+                    <option value="2">Educación Básica</option>
+                    <option value="3">Educación Media</option>
+                    <option value="4">Educación Técnico-Profesional</option>
+                    <option value="5">Educación Universitaria</option>
+                    <option value="6">Postgrado</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional del Padre</label>
+                <select name="nivel_padre" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="1">Educación Parvularia</option>
+                    <option value="2">Educación Básica</option>
+                    <option value="3">Educación Media</option>
+                    <option value="4">Educación Técnico-Profesional</option>
+                    <option value="5">Educación Universitaria</option>
+                    <option value="6">Postgrado</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional del Apoderado</label>
+                <select name="nivel_apoderado" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="1">Educación Parvularia</option>
+                    <option value="2">Educación Básica</option>
+                    <option value="3">Educación Media</option>
+                    <option value="4">Educación Técnico-Profesional</option>
+                    <option value="5">Educación Universitaria</option>
+                    <option value="6">Postgrado</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Ingreso Familiar (Opcional)</label>
+                <input type="text" name="ingreso_familiar" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 800000 - 1200000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">N° Integrantes del Hogar</label>
+                <input type="number" name="num_integrantes_hogar" class="w-full rounded-lg border-gray-300 border px-3 py-2" min="1">
+            </div>
+        </div>
+
+        <!-- ==================== 12. INFORMACIÓN SEP ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">12. Información SEP</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="flex items-center">
+                <input type="checkbox" name="alumno_prioritario" value="1" id="chk_prioritario" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_prioritario" class="ml-2 block text-sm text-gray-700">Alumno Prioritario</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="alumno_preferente" value="1" id="chk_preferente" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_preferente" class="ml-2 block text-sm text-gray-700">Alumno Preferente</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="beneficiario_sep" value="1" id="chk_sep" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_sep" class="ml-2 block text-sm text-gray-700">Beneficiario SEP</label>
+            </div>
+        </div>
+
+        <!-- ==================== 13. INFORMACIÓN CULTURAL ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">13. Información Cultural</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="flex items-center">
+                <input type="checkbox" name="pertenece_pueblo_originario" value="1" id="chk_pueblo" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_pueblo" class="ml-2 block text-sm text-gray-700">Pertenece a Pueblo Originario</label>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Pueblo Originario</label>
+                <input type="text" name="pueblo_originario" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="habla_lengua_indigena" value="1" id="chk_lengua" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_lengua" class="ml-2 block text-sm text-gray-700">Habla Lengua Indígena</label>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Lengua Indígena</label>
+                <input type="text" name="lengua_indigena" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nacionalidad Extranjera</label>
+                <input type="text" name="nacionalidad_extranjera" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+        </div>
+
+        <!-- ==================== 14. TRANSPORTE ESCOLAR ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">14. Transporte Escolar</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Medio de Transporte</label>
+                <select name="medio_transporte" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="Bus público">Bus público</option>
+                    <option value="Bus escolar">Bus escolar</option>
+                    <option value="Auto particular">Auto particular</option>
+                    <option value="Caminando">Caminando</option>
+                    <option value="Bicicleta">Bicicleta</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div class="flex items-center pt-6">
+                <input type="checkbox" name="utiliza_transporte_escolar" value="1" id="chk_transporte" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_transporte" class="ml-2 block text-sm text-gray-700">Utiliza Transporte Escolar</label>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Transportista</label>
+                <input type="text" name="nombre_transportista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono Transportista</label>
+                <input type="tel" name="telefono_transportista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tiempo Estimado de Traslado</label>
+                <input type="text" name="tiempo_traslado" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 30 minutos">
+            </div>
+        </div>
+
+        <!-- ==================== 15. AUTORIZACIONES ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">15. Autorizaciones</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-center">
+                <input type="checkbox" name="autoriza_fotografias" value="1" id="chk_fotos" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_fotos" class="ml-2 block text-sm text-gray-700">Autoriza fotografías institucionales</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="autoriza_redes_sociales" value="1" id="chk_redes" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_redes" class="ml-2 block text-sm text-gray-700">Autoriza publicaciones en redes sociales</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="autoriza_salidas" value="1" id="chk_salidas" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_salidas" class="ml-2 block text-sm text-gray-700">Autoriza participación en actividades externas (salidas pedagógicas)</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="autoriza_traslado_medico" value="1" id="chk_traslado" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_traslado" class="ml-2 block text-sm text-gray-700">Autoriza traslado a centro asistencial</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="autoriza_atencion_urgencia" value="1" id="chk_urgencia" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_urgencia" class="ml-2 block text-sm text-gray-700">Autoriza atención médica de urgencia</label>
+            </div>
+        </div>
+
+        <!-- ==================== 16. DOCUMENTACIÓN ENTREGADA ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">16. Documentación Entregada</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-center">
+                <input type="checkbox" name="doc_cert_nacimiento" value="1" id="doc_nac" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="doc_nac" class="ml-2 block text-sm text-gray-700">Certificado de nacimiento</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="doc_cert_estudios" value="1" id="doc_est" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="doc_est" class="ml-2 block text-sm text-gray-700">Certificado anual de estudios</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="doc_informe_personalidad" value="1" id="doc_per" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="doc_per" class="ml-2 block text-sm text-gray-700">Informe de personalidad</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="doc_informe_notas" value="1" id="doc_not" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="doc_not" class="ml-2 block text-sm text-gray-700">Informe de notas</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="doc_informe_pie" value="1" id="doc_pie" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="doc_pie" class="ml-2 block text-sm text-gray-700">Informe PIE</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="doc_fotocopia_run_est" value="1" id="doc_run_est" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="doc_run_est" class="ml-2 block text-sm text-gray-700">Fotocopia RUN estudiante</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="doc_fotocopia_run_apod" value="1" id="doc_run_apod" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="doc_run_apod" class="ml-2 block text-sm text-gray-700">Fotocopia RUN apoderado</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="doc_comprobante_domicilio" value="1" id="doc_dom" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="doc_dom" class="ml-2 block text-sm text-gray-700">Comprobante de domicilio</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="doc_ficha_medica" value="1" id="doc_med" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="doc_med" class="ml-2 block text-sm text-gray-700">Ficha médica</label>
+            </div>
+        </div>
+
+        <!-- ==================== 17. OBSERVACIONES GENERALES ==================== -->
+        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">17. Observaciones Generales</h3>
+        <div class="grid grid-cols-1 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Académicas</label>
+                <textarea name="obs_academicas" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Médicas</label>
+                <textarea name="obs_medicas" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Familiares</label>
+                <textarea name="obs_familiares" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Comentarios del Establecimiento</label>
+                <textarea name="obs_establecimiento" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
+            </div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="pt-8 flex justify-end space-x-3 border-t">
+            <a href="{{ url_for('matricula.listar_estudiantes') }}" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancelar</a>
+            <button type="submit" class="px-6 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium">Guardar Matrícula Completa</button>
         </div>
     </form>
 </div>
 
 <script>
-// ============================================================================
-// SELECTS DINÁMICOS: Nivel → Grado → Letra
-// ============================================================================
 document.addEventListener('DOMContentLoaded', function() {
     const selectNivel = document.getElementById('select-nivel');
     const selectGrado = document.getElementById('select-grado');
@@ -295,27 +697,20 @@ document.addEventListener('DOMContentLoaded', function() {
         selectGrado.disabled = true;
         selectCurso.innerHTML = '<option value="">-- Primero seleccione grado --</option>';
         selectCurso.disabled = true;
-
         if (!nivelId) {
             selectGrado.innerHTML = '<option value="">-- Primero seleccione nivel --</option>';
             return;
         }
-
         fetch(`/matricula/ajax/grados/${nivelId}`)
-            .then(response => response.json())
+            .then(r => r.json())
             .then(grados => {
                 selectGrado.innerHTML = '<option value="">-- Seleccionar grado --</option>';
-                grados.forEach(grado => {
-                    const option = document.createElement('option');
-                    option.value = grado.id;
-                    option.textContent = grado.nombre;
-                    selectGrado.appendChild(option);
+                grados.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id; opt.textContent = g.nombre;
+                    selectGrado.appendChild(opt);
                 });
                 selectGrado.disabled = false;
-            })
-            .catch(error => {
-                console.error('Error cargando grados:', error);
-                selectGrado.innerHTML = '<option value="">Error al cargar grados</option>';
             });
     });
 
@@ -323,27 +718,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const gradoId = this.value;
         selectCurso.innerHTML = '<option value="">Cargando cursos...</option>';
         selectCurso.disabled = true;
-
         if (!gradoId) {
             selectCurso.innerHTML = '<option value="">-- Primero seleccione grado --</option>';
             return;
         }
-
         fetch(`/matricula/ajax/cursos/${gradoId}`)
-            .then(response => response.json())
+            .then(r => r.json())
             .then(cursos => {
                 selectCurso.innerHTML = '<option value="">-- Seleccionar letra --</option>';
-                cursos.forEach(curso => {
-                    const option = document.createElement('option');
-                    option.value = curso.id;
-                    option.textContent = curso.letra;
-                    selectCurso.appendChild(option);
+                cursos.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id; opt.textContent = c.letra;
+                    selectCurso.appendChild(opt);
                 });
                 selectCurso.disabled = false;
-            })
-            .catch(error => {
-                console.error('Error cargando cursos:', error);
-                selectCurso.innerHTML = '<option value="">Error al cargar cursos</option>';
             });
     });
 });

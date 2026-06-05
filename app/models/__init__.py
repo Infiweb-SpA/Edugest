@@ -13,8 +13,13 @@ from app.models.mineduc import (
     Incident, IncidentPerson, K12StudentDiscipline
 )
 from app.models.edugest import (
-    EdugestModule, EdugestRolePermission, EdugestCurriculumPlan,
+    EdugestModule, EdugestRolePermission, EdugestOrganizationConfig,
+    EdugestCurriculumPlan, EdugestSessionAttendance,
     EdugestAssessmentInstrument, EdugestAssessmentQuestion, 
     EdugestQuestionOption, EdugestStudentResponse, 
-    EdugestBook, EdugestBookLoan, EdugestChatMessage, EdugestAnnouncement
+    EdugestBook, EdugestBookLoan, EdugestChatMessage, EdugestAnnouncement,
+    # NUEVOS: Extensión de matrícula
+    EdugestStudentEnrollment, EdugestEmergencyContact,
+    EdugestStudentHealth, EdugestStudentPIE,
+    EdugestPersonRelationshipDetail
 )

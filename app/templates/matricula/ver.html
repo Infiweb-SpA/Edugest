@@ -3,8 +3,9 @@
 {% block header_title %}Ficha del Estudiante{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-6">
-    <!-- Tarjeta Identidad -->
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Identidad -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div class="flex justify-between items-start">
             <div>
@@ -14,11 +15,8 @@
                 </h2>
                 <p class="text-sm text-gray-500 mt-1">ID Interno: {{ persona.PersonId }}</p>
             </div>
-            <span class="inline-flex items-center rounded-md bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
-                Estudiante
-            </span>
+            <span class="inline-flex items-center rounded-md bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">Estudiante</span>
         </div>
-
         <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div class="bg-gray-50 p-3 rounded-lg">
                 <span class="block text-xs text-gray-500 uppercase">RUN</span>
@@ -39,15 +37,44 @@
         </div>
     </div>
 
+    <!-- Datos Adicionales del Estudiante -->
+    {% if enrollment %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Datos Personales Adicionales</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Nacionalidad</span>
+                <span class="font-medium text-gray-900">{{ enrollment.Nacionalidad or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">País de Origen</span>
+                <span class="font-medium text-gray-900">{{ enrollment.PaisOrigen or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Comuna</span>
+                <span class="font-medium text-gray-900">{{ enrollment.ComunaResidencia or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Región</span>
+                <span class="font-medium text-gray-900">{{ enrollment.RegionResidencia or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Email</span>
+                <span class="font-medium text-gray-900">{{ enrollment.EmailEstudiante or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Teléfono</span>
+                <span class="font-medium text-gray-900">{{ enrollment.TelefonoEstudiante or '—' }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Residencia -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 class="text-lg font-bold text-gray-900 mb-4">Residencia</h3>
         <p class="text-sm text-gray-700">
-            {% if residencia %}
-                {{ residencia.StreetNumberAndName }}
-            {% else %}
-                <span class="text-gray-400 italic">Sin dirección registrada</span>
-            {% endif %}
+            {% if residencia %}{{ residencia.StreetNumberAndName }}{% else %}<<span class="text-gray-400 italic">Sin dirección registrada</span>{% endif %}
         </p>
     </div>
 
@@ -61,9 +88,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
                 <span class="block text-xs text-gray-500 uppercase">Nombre Completo</span>
-                <span class="font-medium text-gray-900">
-                    {{ ap_titular.persona.FirstName }} {{ ap_titular.persona.LastName }} {{ ap_titular.persona.SecondLastName or '' }}
-                </span>
+                <span class="font-medium text-gray-900">{{ ap_titular.persona.FirstName }} {{ ap_titular.persona.LastName }} {{ ap_titular.persona.SecondLastName or '' }}</span>
             </div>
             <div class="bg-gray-50 p-3 rounded-lg">
                 <span class="block text-xs text-gray-500 uppercase">RUN</span>
@@ -73,7 +98,27 @@
                 <span class="block text-xs text-gray-500 uppercase">Teléfono</span>
                 <span class="font-medium text-gray-900">{{ ap_titular.telefono or '—' }}</span>
             </div>
-            <div class="bg-gray-50 p-3 rounded-lg md:col-span-4">
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Parentesco</span>
+                <span class="font-medium text-gray-900">{{ ap_titular.detalle.Parentesco if ap_titular.detalle else '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Correo</span>
+                <span class="font-medium text-gray-900">{{ ap_titular.email or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Profesión</span>
+                <span class="font-medium text-gray-900">{{ ap_titular.detalle.ProfesionOcupacion if ap_titular.detalle else '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Lugar Trabajo</span>
+                <span class="font-medium text-gray-900">{{ ap_titular.detalle.LugarTrabajo if ap_titular.detalle else '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
+                <span class="block text-xs text-gray-500 uppercase">Dirección</span>
+                <span class="font-medium text-gray-900">{{ ap_titular.direccion or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
                 <span class="block text-xs text-gray-500 uppercase">Nivel Educacional</span>
                 <span class="font-medium text-gray-900">{{ niveles_map.get(ap_titular.nivel, '—') if ap_titular.nivel else '—' }}</span>
             </div>
@@ -81,7 +126,7 @@
     </div>
     {% endif %}
 
-    <!-- Apoderados Suplentes -->
+    <!-- Suplentes -->
     {% if ap_suplente1 %}
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div class="flex justify-between items-center mb-4">
@@ -90,23 +135,14 @@
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
-                <span class="block text-xs text-gray-500 uppercase">Nombre Completo</span>
-                <span class="font-medium text-gray-900">
-                    {{ ap_suplente1.persona.FirstName }} {{ ap_suplente1.persona.LastName }} {{ ap_suplente1.persona.SecondLastName or '' }}
-                </span>
+                <span class="block text-xs text-gray-500 uppercase">Nombre</span>
+                <span class="font-medium text-gray-900">{{ ap_suplente1.persona.FirstName }} {{ ap_suplente1.persona.LastName }} {{ ap_suplente1.persona.SecondLastName or '' }}</span>
             </div>
-            <div class="bg-gray-50 p-3 rounded-lg">
-                <span class="block text-xs text-gray-500 uppercase">RUN</span>
-                <span class="font-mono font-medium text-gray-900">{{ ap_suplente1.rut or '—' }}</span>
-            </div>
-            <div class="bg-gray-50 p-3 rounded-lg">
-                <span class="block text-xs text-gray-500 uppercase">Teléfono</span>
-                <span class="font-medium text-gray-900">{{ ap_suplente1.telefono or '—' }}</span>
-            </div>
-            <div class="bg-gray-50 p-3 rounded-lg md:col-span-4">
-                <span class="block text-xs text-gray-500 uppercase">Nivel Educacional</span>
-                <span class="font-medium text-gray-900">{{ niveles_map.get(ap_suplente1.nivel, '—') if ap_suplente1.nivel else '—' }}</span>
-            </div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">RUN</span><span class="font-mono font-medium text-gray-900">{{ ap_suplente1.rut or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Teléfono</span><span class="font-medium text-gray-900">{{ ap_suplente1.telefono or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Parentesco</span><span class="font-medium text-gray-900">{{ ap_suplente1.detalle.Parentesco if ap_suplente1.detalle else '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Correo</span><span class="font-medium text-gray-900">{{ ap_suplente1.email or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-2"><span class="block text-xs text-gray-500 uppercase">Nivel</span><span class="font-medium text-gray-900">{{ niveles_map.get(ap_suplente1.nivel, '—') if ap_suplente1.nivel else '—' }}</span></div>
         </div>
     </div>
     {% endif %}
@@ -119,28 +155,205 @@
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
-                <span class="block text-xs text-gray-500 uppercase">Nombre Completo</span>
-                <span class="font-medium text-gray-900">
-                    {{ ap_suplente2.persona.FirstName }} {{ ap_suplente2.persona.LastName }} {{ ap_suplente2.persona.SecondLastName or '' }}
-                </span>
+                <span class="block text-xs text-gray-500 uppercase">Nombre</span>
+                <span class="font-medium text-gray-900">{{ ap_suplente2.persona.FirstName }} {{ ap_suplente2.persona.LastName }} {{ ap_suplente2.persona.SecondLastName or '' }}</span>
             </div>
-            <div class="bg-gray-50 p-3 rounded-lg">
-                <span class="block text-xs text-gray-500 uppercase">RUN</span>
-                <span class="font-mono font-medium text-gray-900">{{ ap_suplente2.rut or '—' }}</span>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">RUN</span><span class="font-mono font-medium text-gray-900">{{ ap_suplente2.rut or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Teléfono</span><span class="font-medium text-gray-900">{{ ap_suplente2.telefono or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Parentesco</span><span class="font-medium text-gray-900">{{ ap_suplente2.detalle.Parentesco if ap_suplente2.detalle else '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Correo</span><span class="font-medium text-gray-900">{{ ap_suplente2.email or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-2"><span class="block text-xs text-gray-500 uppercase">Nivel</span><span class="font-medium text-gray-900">{{ niveles_map.get(ap_suplente2.nivel, '—') if ap_suplente2.nivel else '—' }}</span></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contactos de Emergencia -->
+    {% if contactos_emergencia %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Contactos de Emergencia</h3>
+        <div class="space-y-3">
+            {% for contacto in contactos_emergencia %}
+            <div class="bg-gray-50 p-4 rounded-lg grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div><span class="block text-xs text-gray-500 uppercase">Nombre</span><span class="font-medium text-gray-900">{{ contacto.NombreCompleto }}</span></div>
+                <div><span class="block text-xs text-gray-500 uppercase">RUN</span><span class="font-mono font-medium text-gray-900">{{ contacto.RUN or '—' }}</span></div>
+                <div><span class="block text-xs text-gray-500 uppercase">Parentesco</span><span class="font-medium text-gray-900">{{ contacto.Parentesco or '—' }}</span></div>
+                <div><span class="block text-xs text-gray-500 uppercase">Tel. Principal</span><span class="font-medium text-gray-900">{{ contacto.TelefonoPrincipal or '—' }}</span></div>
+                <div><span class="block text-xs text-gray-500 uppercase">Tel. Alternativo</span><span class="font-medium text-gray-900">{{ contacto.TelefonoAlternativo or '—' }}</span></div>
             </div>
-            <div class="bg-gray-50 p-3 rounded-lg">
-                <span class="block text-xs text-gray-500 uppercase">Teléfono</span>
-                <span class="font-medium text-gray-900">{{ ap_suplente2.telefono or '—' }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Información Médica -->
+    {% if health %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Información Médica</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Grupo Sanguíneo</span><span class="font-medium text-gray-900">{{ health.GrupoSanguineo or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Sistema de Salud</span><span class="font-medium text-gray-900">{{ health.SistemaSalud or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Centro Salud</span><span class="font-medium text-gray-900">{{ health.CentroSaludHabitual or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Médico Tratante</span><span class="font-medium text-gray-900">{{ health.MedicoTratante or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Tel. Médico</span><span class="font-medium text-gray-900">{{ health.TelefonoMedicoTratante or '—' }}</span></div>
+        </div>
+        <div class="space-y-2 text-sm">
+            {% if health.EnfermedadesPermanentes %}<<div class="bg-red-50 p-3 rounded-lg border border-red-100"><span class="block text-xs text-red-600 uppercase font-bold">Enfermedades Permanentes</span><p class="text-gray-800">{{ health.EnfermedadesPermanentes }}</p></div>{% endif %}
+            {% if health.Alergias %}<<div class="bg-red-50 p-3 rounded-lg border border-red-100"><span class="block text-xs text-red-600 uppercase font-bold">Alergias</span><p class="text-gray-800">{{ health.Alergias }}</p></div>{% endif %}
+            {% if health.MedicamentosPermanentes %}<<div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100"><span class="block text-xs text-yellow-700 uppercase font-bold">Medicamentos Permanentes</span><p class="text-gray-800">{{ health.MedicamentosPermanentes }}</p></div>{% endif %}
+            {% if health.RestriccionesAlimentarias %}<<div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100"><span class="block text-xs text-yellow-700 uppercase font-bold">Restricciones Alimentarias</span><p class="text-gray-800">{{ health.RestriccionesAlimentarias }}</p></div>{% endif %}
+            {% if health.NecesidadesMedicasEspeciales %}<<div class="bg-orange-50 p-3 rounded-lg border border-orange-100"><span class="block text-xs text-orange-700 uppercase font-bold">Necesidades Especiales</span><p class="text-gray-800">{{ health.NecesidadesMedicasEspeciales }}</p></div>{% endif %}
+            {% if health.ObservacionesMedicasDetalle %}<<div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Observaciones</span><p class="text-gray-800">{{ health.ObservacionesMedicasDetalle }}</p></div>{% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- PIE -->
+    {% if pie and pie.PertenecePIE %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Programa de Integración Escolar (PIE)</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Pertenece PIE</span><span class="font-medium text-green-700">Sí</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Fecha Diagnóstico</span><span class="font-medium text-gray-900">{{ pie.FechaDiagnostico or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Profesional</span><span class="font-medium text-gray-900">{{ pie.ProfesionalTratante or '—' }}</span></div>
+        </div>
+        {% if pie.DiagnosticoPIE %}<<div class="bg-gray-50 p-3 rounded-lg mb-2 text-sm"><span class="block text-xs text-gray-500 uppercase mb-1">Diagnóstico</span><p class="text-gray-800">{{ pie.DiagnosticoPIE }}</p></div>{% endif %}
+        {% if pie.ObservacionesPIE %}<<div class="bg-gray-50 p-3 rounded-lg text-sm"><span class="block text-xs text-gray-500 uppercase mb-1">Observaciones</span><p class="text-gray-800">{{ pie.ObservacionesPIE }}</p></div>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Información Académica -->
+    {% if enrollment %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Información Académica</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Colegio Procedencia</span><span class="font-medium text-gray-900">{{ enrollment.ColegioProcedencia or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Comuna Colegio</span><span class="font-medium text-gray-900">{{ enrollment.ComunaColegioAnterior or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Región Colegio</span><span class="font-medium text-gray-900">{{ enrollment.RegionColegioAnterior or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Último Curso Aprobado</span><span class="font-medium text-gray-900">{{ enrollment.UltimoCursoAprobado or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Año Último Curso</span><span class="font-medium text-gray-900">{{ enrollment.AnioUltimoCursoAprobado or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Fecha Ingreso</span><span class="font-medium text-gray-900">{{ enrollment.FechaIngresoEstablecimiento or '—' }}</span></div>
+        </div>
+        {% if enrollment.MotivoTraslado %}
+        <div class="mt-4 bg-gray-50 p-3 rounded-lg text-sm"><span class="block text-xs text-gray-500 uppercase mb-1">Motivo de Traslado</span><p class="text-gray-800">{{ enrollment.MotivoTraslado }}</p></div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Socioeconómica + SEP + Cultural -->
+    {% if enrollment %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Socioeconómica</h3>
+            <div class="space-y-3 text-sm">
+                <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Nivel Madre</span><span class="font-medium text-gray-900">{{ niveles_map.get(enrollment.NivelEducacionalMadre, '—') if enrollment.NivelEducacionalMadre else '—' }}</span></div>
+                <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Nivel Padre</span><span class="font-medium text-gray-900">{{ niveles_map.get(enrollment.NivelEducacionalPadre, '—') if enrollment.NivelEducacionalPadre else '—' }}</span></div>
+                <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Nivel Apoderado</span><span class="font-medium text-gray-900">{{ niveles_map.get(enrollment.NivelEducacionalApoderado, '—') if enrollment.NivelEducacionalApoderado else '—' }}</span></div>
+                <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Ingreso Familiar</span><span class="font-medium text-gray-900">{{ enrollment.IngresoFamiliar or '—' }}</span></div>
+                <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Integrantes Hogar</span><span class="font-medium text-gray-900">{{ enrollment.NumIntegrantesHogar or '—' }}</span></div>
             </div>
-            <div class="bg-gray-50 p-3 rounded-lg md:col-span-4">
-                <span class="block text-xs text-gray-500 uppercase">Nivel Educacional</span>
-                <span class="font-medium text-gray-900">{{ niveles_map.get(ap_suplente2.nivel, '—') if ap_suplente2.nivel else '—' }}</span>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Información SEP</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 uppercase">Alumno Prioritario</span>
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {{ 'bg-green-50 text-green-700 ring-1 ring-green-600/20' if enrollment.AlumnoPrioritario else 'bg-gray-100 text-gray-600' }}">{{ 'Sí' if enrollment.AlumnoPrioritario else 'No' }}</span>
+                </div>
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 uppercase">Alumno Preferente</span>
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {{ 'bg-green-50 text-green-700 ring-1 ring-green-600/20' if enrollment.AlumnoPreferente else 'bg-gray-100 text-gray-600' }}">{{ 'Sí' if enrollment.AlumnoPreferente else 'No' }}</span>
+                </div>
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 uppercase">Beneficiario SEP</span>
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {{ 'bg-green-50 text-green-700 ring-1 ring-green-600/20' if enrollment.BeneficiarioSEP else 'bg-gray-100 text-gray-600' }}">{{ 'Sí' if enrollment.BeneficiarioSEP else 'No' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Información Cultural</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 uppercase">Pueblo Originario</span>
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {{ 'bg-green-50 text-green-700 ring-1 ring-green-600/20' if enrollment.PertenecePuebloOriginario else 'bg-gray-100 text-gray-600' }}">{{ 'Sí' if enrollment.PertenecePuebloOriginario else 'No' }}</span>
+                </div>
+                {% if enrollment.PertenecePuebloOriginario %}
+                <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Pueblo</span><span class="font-medium text-gray-900">{{ enrollment.PuebloOriginario or '—' }}</span></div>
+                {% endif %}
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 uppercase">Lengua Indígena</span>
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {{ 'bg-green-50 text-green-700 ring-1 ring-green-600/20' if enrollment.HablaLenguaIndigena else 'bg-gray-100 text-gray-600' }}">{{ 'Sí' if enrollment.HablaLenguaIndigena else 'No' }}</span>
+                </div>
+                {% if enrollment.HablaLenguaIndigena %}
+                <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Lengua</span><span class="font-medium text-gray-900">{{ enrollment.LenguaIndigena or '—' }}</span></div>
+                {% endif %}
+                <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Nacionalidad Extranjera</span><span class="font-medium text-gray-900">{{ enrollment.NacionalidadExtranjera or '—' }}</span></div>
             </div>
         </div>
     </div>
     {% endif %}
 
-    <!-- Matrículas activas -->
+    <!-- Transporte -->
+    {% if enrollment %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Transporte Escolar</h3>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Medio</span><span class="font-medium text-gray-900">{{ enrollment.MedioTransporte or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Transporte Escolar</span><span class="font-medium text-gray-900">{{ 'Sí' if enrollment.UtilizaTransporteEscolar else 'No' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Transportista</span><span class="font-medium text-gray-900">{{ enrollment.NombreTransportista or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Tel. Transportista</span><span class="font-medium text-gray-900">{{ enrollment.TelefonoTransportista or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Tiempo Traslado</span><span class="font-medium text-gray-900">{{ enrollment.TiempoEstimadoTraslado or '—' }}</span></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Autorizaciones -->
+    {% if enrollment %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Autorizaciones</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Fotografías</span><span class="font-medium {{ 'text-green-700' if enrollment.AutorizaFotografias else 'text-gray-400' }}">{{ 'Autorizado' if enrollment.AutorizaFotografias else 'No autorizado' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Redes Sociales</span><span class="font-medium {{ 'text-green-700' if enrollment.AutorizaRedesSociales else 'text-gray-400' }}">{{ 'Autorizado' if enrollment.AutorizaRedesSociales else 'No autorizado' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Salidas Pedagógicas</span><span class="font-medium {{ 'text-green-700' if enrollment.AutorizaSalidasPedagogicas else 'text-gray-400' }}">{{ 'Autorizado' if enrollment.AutorizaSalidasPedagogicas else 'No autorizado' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Traslado Médico</span><span class="font-medium {{ 'text-green-700' if enrollment.AutorizaTrasladoCentroAsistencial else 'text-gray-400' }}">{{ 'Autorizado' if enrollment.AutorizaTrasladoCentroAsistencial else 'No autorizado' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Atención Urgencia</span><span class="font-medium {{ 'text-green-700' if enrollment.AutorizaAtencionMedicaUrgencia else 'text-gray-400' }}">{{ 'Autorizado' if enrollment.AutorizaAtencionMedicaUrgencia else 'No autorizado' }}</span></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Documentación -->
+    {% if enrollment %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Documentación Entregada</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Cert. Nacimiento</span><span class="font-medium {{ 'text-green-700' if enrollment.EntregaCertificadoNacimiento else 'text-gray-400' }}">{{ 'Entregado' if enrollment.EntregaCertificadoNacimiento else 'Pendiente' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Cert. Estudios</span><span class="font-medium {{ 'text-green-700' if enrollment.EntregaCertificadoAnualEstudios else 'text-gray-400' }}">{{ 'Entregado' if enrollment.EntregaCertificadoAnualEstudios else 'Pendiente' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Inf. Personalidad</span><span class="font-medium {{ 'text-green-700' if enrollment.EntregaInformePersonalidad else 'text-gray-400' }}">{{ 'Entregado' if enrollment.EntregaInformePersonalidad else 'Pendiente' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Inf. Notas</span><span class="font-medium {{ 'text-green-700' if enrollment.EntregaInformeNotas else 'text-gray-400' }}">{{ 'Entregado' if enrollment.EntregaInformeNotas else 'Pendiente' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Inf. PIE</span><span class="font-medium {{ 'text-green-700' if enrollment.EntregaInformePIE else 'text-gray-400' }}">{{ 'Entregado' if enrollment.EntregaInformePIE else 'Pendiente' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Fotocopia RUN Est.</span><span class="font-medium {{ 'text-green-700' if enrollment.EntregaFotocopiaRUNEstudiante else 'text-gray-400' }}">{{ 'Entregado' if enrollment.EntregaFotocopiaRUNEstudiante else 'Pendiente' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Fotocopia RUN Apod.</span><span class="font-medium {{ 'text-green-700' if enrollment.EntregaFotocopiaRUNApoderado else 'text-gray-400' }}">{{ 'Entregado' if enrollment.EntregaFotocopiaRUNApoderado else 'Pendiente' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Comprobante Dom.</span><span class="font-medium {{ 'text-green-700' if enrollment.EntregaComprobanteDomicilio else 'text-gray-400' }}">{{ 'Entregado' if enrollment.EntregaComprobanteDomicilio else 'Pendiente' }}</span></div>
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg"><span class="text-xs text-gray-500 uppercase">Ficha Médica</span><span class="font-medium {{ 'text-green-700' if enrollment.EntregaFichaMedica else 'text-gray-400' }}">{{ 'Entregado' if enrollment.EntregaFichaMedica else 'Pendiente' }}</span></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Observaciones -->
+    {% if enrollment %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Observaciones Generales</h3>
+        <div class="space-y-3 text-sm">
+            {% if enrollment.ObservacionesAcademicas %}<<div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase mb-1">Académicas</span><p class="text-gray-800">{{ enrollment.ObservacionesAcademicas }}</p></div>{% endif %}
+            {% if enrollment.ObservacionesMedicas %}<<div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase mb-1">Médicas</span><p class="text-gray-800">{{ enrollment.ObservacionesMedicas }}</p></div>{% endif %}
+            {% if enrollment.ObservacionesFamiliares %}<<div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase mb-1">Familiares</span><p class="text-gray-800">{{ enrollment.ObservacionesFamiliares }}</p></div>{% endif %}
+            {% if enrollment.ComentariosEstablecimiento %}<<div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase mb-1">Establecimiento</span><p class="text-gray-800">{{ enrollment.ComentariosEstablecimiento }}</p></div>{% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Matrículas Activas -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 class="text-lg font-bold text-gray-900 mb-4">Cursos Matriculados</h3>
         {% if matriculas %}
@@ -151,20 +364,13 @@
             <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
                 <div>
                     <div class="flex items-center space-x-2 mb-1">
-                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
-                            {{ j.grado or '' }} {{ j.letra or '' }}
-                        </span>
+                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">{{ j.grado or '' }} {{ j.letra or '' }}</span>
                         <span class="text-xs text-gray-400">|</span>
                         <span class="text-xs text-gray-500">{{ j.nivel or '' }}</span>
                     </div>
-                    <p class="text-xs text-gray-500">
-                        Ingreso: {{ m.EntryDate }} 
-                        {% if m.ExitDate %} | Retiro: {{ m.ExitDate }}{% endif %}
-                    </p>
+                    <p class="text-xs text-gray-500">Ingreso: {{ m.EntryDate }} {% if m.ExitDate %}| Retiro: {{ m.ExitDate }}{% endif %}</p>
                 </div>
-                <span class="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-800">
-                    Activo
-                </span>
+                <span class="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-800">Activo</span>
             </div>
             {% endfor %}
         </div>
@@ -174,8 +380,7 @@
     </div>
 
     <div class="flex justify-start">
-        <a href="{{ url_for('matricula.listar_estudiantes') }}" 
-           class="text-sm text-indigo-600 hover:text-indigo-900 font-medium">← Volver al listado</a>
+        <a href="{{ url_for('matricula.listar_estudiantes') }}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium">← Volver al listado</a>
     </div>
 </div>
 {% endblock %}

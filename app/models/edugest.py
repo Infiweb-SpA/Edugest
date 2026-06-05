@@ -191,3 +191,143 @@ class EdugestAnnouncement(db.Model):
     Content = db.Column(db.Text, nullable=False)
     AttachmentUrl = db.Column(db.String(500), nullable=True)
     CreatedAt = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+# ============================================================================
+# MÓDULO F: EXTENSIÓN DE MATRÍCULA (Datos adicionales MINEDUC)
+# ============================================================================
+
+class EdugestStudentEnrollment(db.Model):
+    """Datos adicionales de matrícula del estudiante (1:1 con Person)"""
+    __tablename__ = 'edugest_student_enrollment'
+    
+    EnrollmentId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    PersonId = db.Column(db.Integer, db.ForeignKey('Person.PersonId', ondelete='CASCADE'), nullable=False, unique=True)
+    
+    # Datos personales adicionales
+    Nacionalidad = db.Column(db.String(100), nullable=True)
+    PaisOrigen = db.Column(db.String(100), nullable=True)
+    ComunaResidencia = db.Column(db.String(100), nullable=True)
+    RegionResidencia = db.Column(db.String(100), nullable=True)
+    EmailEstudiante = db.Column(db.String(255), nullable=True)
+    TelefonoEstudiante = db.Column(db.String(50), nullable=True)
+    
+    # Información académica
+    ColegioProcedencia = db.Column(db.String(255), nullable=True)
+    ComunaColegioAnterior = db.Column(db.String(100), nullable=True)
+    RegionColegioAnterior = db.Column(db.String(100), nullable=True)
+    UltimoCursoAprobado = db.Column(db.String(50), nullable=True)
+    AnioUltimoCursoAprobado = db.Column(db.Integer, nullable=True)
+    MotivoTraslado = db.Column(db.Text, nullable=True)
+    FechaIngresoEstablecimiento = db.Column(db.Date, nullable=True)
+    
+    # Información socioeconómica
+    NivelEducacionalMadre = db.Column(db.Integer, nullable=True)
+    NivelEducacionalPadre = db.Column(db.Integer, nullable=True)
+    NivelEducacionalApoderado = db.Column(db.Integer, nullable=True)
+    IngresoFamiliar = db.Column(db.String(50), nullable=True)
+    NumIntegrantesHogar = db.Column(db.Integer, nullable=True)
+    
+    # Información SEP
+    AlumnoPrioritario = db.Column(db.Boolean, default=False, nullable=False)
+    AlumnoPreferente = db.Column(db.Boolean, default=False, nullable=False)
+    BeneficiarioSEP = db.Column(db.Boolean, default=False, nullable=False)
+    
+    # Información cultural
+    PertenecePuebloOriginario = db.Column(db.Boolean, default=False, nullable=False)
+    PuebloOriginario = db.Column(db.String(100), nullable=True)
+    HablaLenguaIndigena = db.Column(db.Boolean, default=False, nullable=False)
+    LenguaIndigena = db.Column(db.String(100), nullable=True)
+    NacionalidadExtranjera = db.Column(db.String(100), nullable=True)
+    
+    # Transporte escolar
+    MedioTransporte = db.Column(db.String(100), nullable=True)
+    UtilizaTransporteEscolar = db.Column(db.Boolean, default=False, nullable=False)
+    NombreTransportista = db.Column(db.String(255), nullable=True)
+    TelefonoTransportista = db.Column(db.String(50), nullable=True)
+    TiempoEstimadoTraslado = db.Column(db.String(50), nullable=True)
+    
+    # Autorizaciones
+    AutorizaFotografias = db.Column(db.Boolean, default=False, nullable=False)
+    AutorizaRedesSociales = db.Column(db.Boolean, default=False, nullable=False)
+    AutorizaSalidasPedagogicas = db.Column(db.Boolean, default=False, nullable=False)
+    AutorizaTrasladoCentroAsistencial = db.Column(db.Boolean, default=False, nullable=False)
+    AutorizaAtencionMedicaUrgencia = db.Column(db.Boolean, default=False, nullable=False)
+    
+    # Documentación entregada
+    EntregaCertificadoNacimiento = db.Column(db.Boolean, default=False, nullable=False)
+    EntregaCertificadoAnualEstudios = db.Column(db.Boolean, default=False, nullable=False)
+    EntregaInformePersonalidad = db.Column(db.Boolean, default=False, nullable=False)
+    EntregaInformeNotas = db.Column(db.Boolean, default=False, nullable=False)
+    EntregaInformePIE = db.Column(db.Boolean, default=False, nullable=False)
+    EntregaFotocopiaRUNEstudiante = db.Column(db.Boolean, default=False, nullable=False)
+    EntregaFotocopiaRUNApoderado = db.Column(db.Boolean, default=False, nullable=False)
+    EntregaComprobanteDomicilio = db.Column(db.Boolean, default=False, nullable=False)
+    EntregaFichaMedica = db.Column(db.Boolean, default=False, nullable=False)
+    
+    # Observaciones generales
+    ObservacionesAcademicas = db.Column(db.Text, nullable=True)
+    ObservacionesMedicas = db.Column(db.Text, nullable=True)
+    ObservacionesFamiliares = db.Column(db.Text, nullable=True)
+    ComentariosEstablecimiento = db.Column(db.Text, nullable=True)
+
+
+class EdugestEmergencyContact(db.Model):
+    """Contactos de emergencia del estudiante (1:N)"""
+    __tablename__ = 'edugest_emergency_contact'
+    
+    ContactId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    PersonId = db.Column(db.Integer, db.ForeignKey('Person.PersonId', ondelete='CASCADE'), nullable=False)
+    Orden = db.Column(db.Integer, nullable=False, default=1)
+    NombreCompleto = db.Column(db.String(255), nullable=False)
+    RUN = db.Column(db.String(20), nullable=True)
+    Parentesco = db.Column(db.String(50), nullable=True)
+    TelefonoPrincipal = db.Column(db.String(50), nullable=True)
+    TelefonoAlternativo = db.Column(db.String(50), nullable=True)
+
+
+class EdugestStudentHealth(db.Model):
+    """Información médica detallada del estudiante (1:1)"""
+    __tablename__ = 'edugest_student_health'
+    
+    HealthId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    PersonId = db.Column(db.Integer, db.ForeignKey('Person.PersonId', ondelete='CASCADE'), nullable=False, unique=True)
+    
+    GrupoSanguineo = db.Column(db.String(10), nullable=True)
+    SistemaSalud = db.Column(db.String(20), nullable=True)
+    EnfermedadesPermanentes = db.Column(db.Text, nullable=True)
+    Alergias = db.Column(db.Text, nullable=True)
+    MedicamentosPermanentes = db.Column(db.Text, nullable=True)
+    RestriccionesAlimentarias = db.Column(db.Text, nullable=True)
+    NecesidadesMedicasEspeciales = db.Column(db.Text, nullable=True)
+    ObservacionesMedicasDetalle = db.Column(db.Text, nullable=True)
+    CentroSaludHabitual = db.Column(db.String(255), nullable=True)
+    MedicoTratante = db.Column(db.String(255), nullable=True)
+    TelefonoMedicoTratante = db.Column(db.String(50), nullable=True)
+
+
+class EdugestStudentPIE(db.Model):
+    """Programa de Integración Escolar (1:1)"""
+    __tablename__ = 'edugest_student_pie'
+    
+    PieId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    PersonId = db.Column(db.Integer, db.ForeignKey('Person.PersonId', ondelete='CASCADE'), nullable=False, unique=True)
+    
+    PertenecePIE = db.Column(db.Boolean, default=False, nullable=False)
+    DiagnosticoPIE = db.Column(db.Text, nullable=True)
+    FechaDiagnostico = db.Column(db.Date, nullable=True)
+    ProfesionalTratante = db.Column(db.String(255), nullable=True)
+    ObservacionesPIE = db.Column(db.Text, nullable=True)
+
+
+class EdugestPersonRelationshipDetail(db.Model):
+    """Detalles adicionales de la relación apoderado-estudiante (1:1 con PersonRelationship)"""
+    __tablename__ = 'edugest_person_relationship_detail'
+    
+    DetailId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    PersonRelationshipId = db.Column(db.Integer, db.ForeignKey('PersonRelationship.PersonRelationshipId', ondelete='CASCADE'), nullable=False, unique=True)
+    
+    Parentesco = db.Column(db.String(50), nullable=True)
+    ProfesionOcupacion = db.Column(db.String(255), nullable=True)
+    LugarTrabajo = db.Column(db.String(255), nullable=True)
+    Direccion = db.Column(db.Text, nullable=True)
+    CorreoElectronico = db.Column(db.String(255), nullable=True)
