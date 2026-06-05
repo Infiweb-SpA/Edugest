@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Comunicaciones - Contactos{% endblock %}
+{% block header_title %}Comunicación con Apoderados{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    
+    <!-- Filtro de cursos -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
+        <form method="GET" action="{{ url_for('comunicacion.contactos') }}" class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Curso / Letra</label>
+                <select name="curso_id" onchange="this.form.submit()" 
+                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm">
+                    <option value="">Seleccione un curso...</option>
+                    {% for c in cursos %}
+                    <option value="{{ c.OrganizationId }}" {{ 'selected' if curso_id == c.OrganizationId else '' }}>
+                        {{ c.grado_nombre }} {{ c.Name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <a href="{{ url_for('comunicacion.contactos') }}" 
+                   class="inline-block px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition">
+                    Limpiar filtro
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {% if curso_id %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h3 class="font-bold text-gray-800">Listado de Estudiantes y Apoderados</h3>
+            <span class="text-xs font-semibold text-gray-500">{{ contactos|length }} registros</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="px-6 py-3 border-b">Nombre del Alumno</th>
+                        <th class="px-6 py-3 border-b">Apoderado / Tutor</th>
+                        <th class="px-6 py-3 border-b text-center">Datos de Contacto</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for item in contactos %}
+                    <tr class="hover:bg-indigo-50/40 transition">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
+                                    {{ item.estudiante.FirstName[0] }}{{ item.estudiante.LastName[0] }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-800">
+                                        {{ item.estudiante.FirstName }} {{ item.estudiante.MiddleName or '' }} {{ item.estudiante.LastName }} {{ item.estudiante.SecondLastName or '' }}
+                                    </p>
+                                    {% set run = item.estudiante.identifiers|selectattr('RefPersonIdentificationSystemId', 'equalto', 51)|first %}
+                                    <p class="text-xs text-gray-400">RUN: {{ run.Identifier if run else 'N/A' }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if item.apoderado %}
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
+                                    {{ item.apoderado.FirstName[0] }}{{ item.apoderado.LastName[0] }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-700">
+                                        {{ item.apoderado.FirstName }} {{ item.apoderado.LastName }}
+                                    </p>
+                                    {% if item.telefono_apoderado %}
+                                    <p class="text-xs text-gray-500 flex items-center gap-1">
+                                        <span>📱</span> {{ item.telefono_apoderado }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-xs text-gray-400 italic">Sin apoderado registrado</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <a href="{{ url_for('comunicacion.contacto_detalle', person_id=item.estudiante.PersonId) }}" 
+                               class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition shadow-sm">
+                                <span>👁️</span> Ver Contacto
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <div class="text-5xl mb-4">🎒</div>
+        <h3 class="text-lg font-bold text-gray-700 mb-2">Selecciona un curso</h3>
+        <p class="text-sm text-gray-500 max-w-md mx-auto">
+            Utiliza el filtro superior para seleccionar un curso y visualizar la lista de estudiantes con sus apoderados.
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

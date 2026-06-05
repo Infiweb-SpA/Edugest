@@ -30,13 +30,18 @@
                         <span>📖</span>
                         <span>Libro Digital</span>
                     </a>
-                    <a href="{{ url_for('evaluaciones.listar_grados') }}" class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
+                    <a href="{{ url_for('evaluaciones.listar_grados') }}"
+                        class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
                         <span>📝</span>
                         <span>Evaluaciones</span>
                     </a>
+                    <a href="{{ url_for('comunicacion.anuncios') }}"
+                        class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
+                        <span>📢</span>
+                        <span>Comunicaciones</span>
                     </a>
                     <a href="{{ url_for('biblioteca.index') }}"
-                       class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
+                        class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
                         <span>📚</span>
                         <span>Biblioteca CRA</span>
                     </a>
@@ -72,6 +77,18 @@
             </header>
 
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 bg-slate-50">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for category, message in messages %}
+                    <div
+                        class="px-4 py-3 rounded-lg text-sm font-semibold {{ 'bg-red-100 text-red-700 border border-red-200' if category == 'error' else 'bg-green-100 text-green-700 border border-green-200' }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
                 {% block content %}{% endblock %}
             </main>
         </div>

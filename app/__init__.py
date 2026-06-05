@@ -42,7 +42,7 @@ def create_app():
     from app.modules.evaluaciones.routes import evaluaciones_bp
     app.register_blueprint(evaluaciones_bp)
 
-     # 4. Módulo de Matrícula
+    # 4. Módulo de Matrícula
     from app.modules.matricula.routes import matricula_bp
     app.register_blueprint(matricula_bp)
 
@@ -50,12 +50,16 @@ def create_app():
     from app.modules.biblioteca import biblioteca_bp
     app.register_blueprint(biblioteca_bp)
     
+    # 6. Módulo de Comunicaciones
+    from app.modules.comunicacion.routes import comunicacion_bp
+    app.register_blueprint(comunicacion_bp)
+
     # Redirección de la raíz al panel de administración por defecto
     @app.route('/')
     def index():
         return redirect(url_for('admin.dashboard'))
 
-# Filtro Jinja para transformar índices (0, 1, 2, 3) en letras (A, B, C, D)
+    # Filtro Jinja para transformar índices (0, 1, 2, 3) en letras (A, B, C, D)
     @app.template_filter('tochar')
     def tochar(number):
         return chr(65 + number) # 65 es el código ASCII para la letra 'A'
