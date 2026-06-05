@@ -4,15 +4,15 @@
 
 {% block content %}
 <div class="max-w-5xl mx-auto">
-    
+
     <a href="{{ url_for('comunicacion.contactos', curso_id=curso.OrganizationId if curso else '') }}" 
        class="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 mb-6 transition">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
         Volver al listado
     </a>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
         <!-- Tarjeta del Estudiante -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-blue-600 px-6 py-4">
@@ -34,7 +34,7 @@
                         {% endif %}
                     </div>
                 </div>
-                
+
                 <div class="space-y-3 text-sm">
                     {% if run %}
                     <div class="flex justify-between py-2 border-b border-gray-100">
@@ -87,10 +87,16 @@
                         <h4 class="text-lg font-bold text-gray-800">
                             {{ apoderado.FirstName }} {{ apoderado.MiddleName or '' }} {{ apoderado.LastName }} {{ apoderado.SecondLastName or '' }}
                         </h4>
-                        <p class="text-sm text-gray-500">Apoderado/a principal</p>
+                        <p class="text-sm text-gray-500">
+                            {% if detalle_apoderado and detalle_apoderado.Parentesco %}
+                                {{ detalle_apoderado.Parentesco }}
+                            {% else %}
+                                Apoderado/a principal
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
-                
+
                 <div class="space-y-3 text-sm">
                     {% if telefono_apoderado %}
                     <div class="flex justify-between py-2 border-b border-gray-100">
@@ -104,13 +110,22 @@
                         <span class="font-semibold text-gray-800">{{ email_apoderado }}</span>
                     </div>
                     {% endif %}
+                    {% if detalle_apoderado and detalle_apoderado.ProfesionOcupacion %}
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-500 font-medium">Profesión</span>
+                        <span class="font-semibold text-gray-800">{{ detalle_apoderado.ProfesionOcupacion }}</span>
+                    </div>
+                    {% endif %}
+                    {% if detalle_apoderado and detalle_apoderado.LugarTrabajo %}
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-500 font-medium">Lugar de Trabajo</span>
+                        <span class="font-semibold text-gray-800">{{ detalle_apoderado.LugarTrabajo }}</span>
+                    </div>
+                    {% endif %}
                     {% if direccion_apoderado %}
                     <div class="py-2 border-b border-gray-100">
                         <span class="text-gray-500 font-medium block mb-1">Dirección</span>
-                        <span class="font-semibold text-gray-800">{{ direccion_apoderado.calle }}</span>
-                        {% if direccion_apoderado.comuna %}
-                        <span class="text-gray-500 text-xs block">{{ direccion_apoderado.comuna }}</span>
-                        {% endif %}
+                        <span class="font-semibold text-gray-800">{{ direccion_apoderado }}</span>
                     </div>
                     {% endif %}
                 </div>
@@ -122,7 +137,7 @@
                     Contactar por WhatsApp
                 </a>
                 {% endif %}
-                
+
                 {% else %}
                 <div class="text-center py-8 text-gray-400">
                     <p class="text-4xl mb-3">👤</p>
@@ -132,5 +147,290 @@
             </div>
         </div>
     </div>
+
+    <!-- Contactos de Emergencia -->
+    {% if contactos_emergencia and contactos_emergencia|length > 0 %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div class="bg-red-600 px-6 py-4">
+            <h3 class="text-white font-bold flex items-center gap-2">
+                <span>🚨</span> Contactos de Emergencia
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for contacto in contactos_emergencia %}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold">
+                            {{ contacto.Orden }}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-800">
+                                {% if contacto.FirstName %}
+                                    {{ contacto.FirstName }} {{ contacto.LastName or '' }} {{ contacto.SecondLastName or '' }}
+                                {% else %}
+                                    {{ contacto.NombreCompleto or 'Sin nombre' }}
+                                {% endif %}
+                            </h4>
+                            {% if contacto.Parentesco %}
+                            <p class="text-xs text-red-600 font-medium">{{ contacto.Parentesco }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        {% if contacto.RUN %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">RUN:</span>
+                            <span class="font-mono text-gray-800">{{ contacto.RUN }}</span>
+                        </div>
+                        {% endif %}
+                        {% if contacto.TelefonoPrincipal %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500">Teléfono:</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-gray-800">{{ contacto.TelefonoPrincipal }}</span>
+                                {% set wa_emergencia = 'https://wa.me/' + contacto.TelefonoPrincipal|replace(' ', '')|replace('-', '')|replace('+', '') %}
+                                <a href="{{ wa_emergencia }}" target="_blank" class="text-green-600 hover:text-green-800">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if contacto.TelefonoAlternativo %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Tel. Alternativo:</span>
+                            <span class="text-gray-800">{{ contacto.TelefonoAlternativo }}</span>
+                        </div>
+                        {% endif %}
+                        {% if contacto.Email %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Email:</span>
+                            <span class="text-gray-800">{{ contacto.Email }}</span>
+                        </div>
+                        {% endif %}
+                        {% if contacto.ProfesionOcupacion %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Profesión:</span>
+                            <span class="text-gray-800">{{ contacto.ProfesionOcupacion }}</span>
+                        </div>
+                        {% endif %}
+                        {% if contacto.NivelEducacional %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Nivel Educ.:</span>
+                            <span class="text-gray-800">
+                                {% if contacto.NivelEducacional == 1 %}Parvularia
+                                {% elif contacto.NivelEducacional == 2 %}Básica
+                                {% elif contacto.NivelEducacional == 3 %}Media
+                                {% elif contacto.NivelEducacional == 4 %}Técnico-Profesional
+                                {% elif contacto.NivelEducacional == 5 %}Universitaria
+                                {% elif contacto.NivelEducacional == 6 %}Postgrado
+                                {% elif contacto.NivelEducacional == 7 %}Media Científico-Humanista
+                                {% elif contacto.NivelEducacional == 8 %}Media TP
+                                {% elif contacto.NivelEducacional == 9 %}Superior
+                                {% else %}Nivel {{ contacto.NivelEducacional }}{% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Información Médica -->
+    {% if health %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div class="bg-rose-600 px-6 py-4">
+            <h3 class="text-white font-bold flex items-center gap-2">
+                <span>🏥</span> Información Médica
+            </h3>
+        </div>
+        <div class="p-6">
+            <!-- Datos básicos médicos -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {% if health.GrupoSanguineo %}
+                <div class="bg-gray-50 p-3 rounded-lg text-center">
+                    <span class="block text-xs text-gray-500 uppercase mb-1">Grupo Sanguíneo</span>
+                    <span class="font-bold text-lg text-rose-700">{{ health.GrupoSanguineo }}</span>
+                </div>
+                {% endif %}
+                {% if health.SistemaSalud %}
+                <div class="bg-gray-50 p-3 rounded-lg text-center">
+                    <span class="block text-xs text-gray-500 uppercase mb-1">Sistema de Salud</span>
+                    <span class="font-bold text-lg text-rose-700">{{ health.SistemaSalud }}</span>
+                </div>
+                {% endif %}
+                {% if health.CentroSaludHabitual %}
+                <div class="bg-gray-50 p-3 rounded-lg text-center">
+                    <span class="block text-xs text-gray-500 uppercase mb-1">Centro Salud</span>
+                    <span class="font-bold text-sm text-rose-700">{{ health.CentroSaludHabitual }}</span>
+                </div>
+                {% endif %}
+                {% if health.MedicoTratante %}
+                <div class="bg-gray-50 p-3 rounded-lg text-center">
+                    <span class="block text-xs text-gray-500 uppercase mb-1">Médico Tratante</span>
+                    <span class="font-bold text-sm text-rose-700">{{ health.MedicoTratante }}</span>
+                </div>
+                {% endif %}
+                {% if health.TelefonoMedicoTratante %}
+                <div class="bg-gray-50 p-3 rounded-lg text-center">
+                    <span class="block text-xs text-gray-500 uppercase mb-1">Tel. Médico</span>
+                    <span class="font-bold text-sm text-rose-700">{{ health.TelefonoMedicoTratante }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Condiciones médicas importantes -->
+            <div class="space-y-3">
+                {% if health.Alergias %}
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl">⚠️</span>
+                        <div>
+                            <h4 class="font-bold text-red-800 text-sm uppercase">Alergias</h4>
+                            <p class="text-red-700 text-sm mt-1">{{ health.Alergias }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if health.EnfermedadesPermanentes %}
+                <div class="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl">🩺</span>
+                        <div>
+                            <h4 class="font-bold text-orange-800 text-sm uppercase">Enfermedades Permanentes</h4>
+                            <p class="text-orange-700 text-sm mt-1">{{ health.EnfermedadesPermanentes }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if health.MedicamentosPermanentes %}
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl">💊</span>
+                        <div>
+                            <h4 class="font-bold text-yellow-800 text-sm uppercase">Medicamentos Permanentes</h4>
+                            <p class="text-yellow-700 text-sm mt-1">{{ health.MedicamentosPermanentes }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if health.RestriccionesAlimentarias %}
+                <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl">🍽️</span>
+                        <div>
+                            <h4 class="font-bold text-amber-800 text-sm uppercase">Restricciones Alimentarias</h4>
+                            <p class="text-amber-700 text-sm mt-1">{{ health.RestriccionesAlimentarias }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if health.NecesidadesMedicasEspeciales %}
+                <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl">♿</span>
+                        <div>
+                            <h4 class="font-bold text-purple-800 text-sm uppercase">Necesidades Médicas Especiales</h4>
+                            <p class="text-purple-700 text-sm mt-1">{{ health.NecesidadesMedicasEspeciales }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if health.ObservacionesMedicasDetalle %}
+                <div class="bg-gray-50 border-l-4 border-gray-400 p-4 rounded-r-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl">📝</span>
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-sm uppercase">Observaciones Médicas</h4>
+                            <p class="text-gray-700 text-sm mt-1">{{ health.ObservacionesMedicasDetalle }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-gray-50 rounded-xl border border-gray-200 p-8 text-center mb-6">
+        <p class="text-4xl mb-3">🏥</p>
+        <h3 class="text-lg font-bold text-gray-700 mb-2">Sin información médica registrada</h3>
+        <p class="text-sm text-gray-500">Este estudiante no tiene datos médicos en el sistema.</p>
+    </div>
+    {% endif %}
+
+    <!-- Información Adicional del Estudiante (Enrollment) -->
+    {% if enrollment %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="bg-indigo-600 px-6 py-4">
+            <h3 class="text-white font-bold flex items-center gap-2">
+                <span>📋</span> Información Adicional
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                {% if enrollment.Nacionalidad %}
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <span class="block text-xs text-gray-500 uppercase">Nacionalidad</span>
+                    <span class="font-medium text-gray-900">{{ enrollment.Nacionalidad }}</span>
+                </div>
+                {% endif %}
+                {% if enrollment.PaisOrigen %}
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <span class="block text-xs text-gray-500 uppercase">País de Origen</span>
+                    <span class="font-medium text-gray-900">{{ enrollment.PaisOrigen }}</span>
+                </div>
+                {% endif %}
+                {% if enrollment.ComunaResidencia %}
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <span class="block text-xs text-gray-500 uppercase">Comuna</span>
+                    <span class="font-medium text-gray-900">{{ enrollment.ComunaResidencia }}</span>
+                </div>
+                {% endif %}
+                {% if enrollment.RegionResidencia %}
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <span class="block text-xs text-gray-500 uppercase">Región</span>
+                    <span class="font-medium text-gray-900">{{ enrollment.RegionResidencia }}</span>
+                </div>
+                {% endif %}
+                {% if enrollment.EmailEstudiante %}
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <span class="block text-xs text-gray-500 uppercase">Email Estudiante</span>
+                    <span class="font-medium text-gray-900">{{ enrollment.EmailEstudiante }}</span>
+                </div>
+                {% endif %}
+                {% if enrollment.TelefonoEstudiante %}
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <span class="block text-xs text-gray-500 uppercase">Teléfono Estudiante</span>
+                    <span class="font-medium text-gray-900">{{ enrollment.TelefonoEstudiante }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- SEP -->
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 uppercase">Alumno Prioritario</span>
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {{ 'bg-green-50 text-green-700 ring-1 ring-green-600/20' if enrollment.AlumnoPrioritario else 'bg-gray-100 text-gray-600' }}">{{ 'Sí' if enrollment.AlumnoPrioritario else 'No' }}</span>
+                </div>
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 uppercase">Alumno Preferente</span>
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {{ 'bg-green-50 text-green-700 ring-1 ring-green-600/20' if enrollment.AlumnoPreferente else 'bg-gray-100 text-gray-600' }}">{{ 'Sí' if enrollment.AlumnoPreferente else 'No' }}</span>
+                </div>
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 uppercase">Beneficiario SEP</span>
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {{ 'bg-green-50 text-green-700 ring-1 ring-green-600/20' if enrollment.BeneficiarioSEP else 'bg-gray-100 text-gray-600' }}">{{ 'Sí' if enrollment.BeneficiarioSEP else 'No' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

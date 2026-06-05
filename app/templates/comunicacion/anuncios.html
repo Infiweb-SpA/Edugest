@@ -8,7 +8,7 @@
     <!-- ============================================ -->
     <!-- BLOQUE 1: TABLERO DE ANUNCIOS               -->
     <!-- ============================================ -->
-    
+
     <section>
         <div class="flex items-center gap-3 mb-6">
             <span class="text-2xl">📢</span>
@@ -95,13 +95,13 @@
                             </span>
                         {% endif %}
                     </div>
-                    
+
                     <h4 class="text-base font-bold text-gray-800 mb-2">{{ a.Title }}</h4>
-                    
+
                     <div id="content-{{ a.AnnouncementId }}" class="text-sm text-gray-600 leading-relaxed overflow-hidden transition-all duration-500 ease-in-out" style="max-height: 60px;">
                         {{ a.Content }}
                     </div>
-                    
+
                     {% if a.Content and a.Content|length > 120 %}
                     <button onclick="toggleAnuncio({{ a.AnnouncementId }})" 
                             id="btn-{{ a.AnnouncementId }}"
@@ -127,7 +127,7 @@
     <!-- ============================================ -->
     <!-- BLOQUE 2: COMUNICACIÓN CON APODERADOS       -->
     <!-- ============================================ -->
-    
+
     <section>
         <div class="flex items-center gap-3 mb-6">
             <span class="text-2xl">👨‍👩‍👧</span>
@@ -171,7 +171,7 @@
                         <tr class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             <th class="px-6 py-3 border-b">Nombre del Alumno</th>
                             <th class="px-6 py-3 border-b">Apoderado / Tutor</th>
-                            <th class="px-6 py-3 border-b text-center">Datos de Contacto</th>
+                            <th class="px-6 py-3 border-b text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -215,7 +215,7 @@
                             <td class="px-6 py-4 text-center">
                                 <a href="{{ url_for('comunicacion.contacto_detalle', person_id=item.estudiante.PersonId) }}" 
                                    class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition shadow-sm">
-                                    <span>👁️</span> Ver Contacto
+                                    <span>👁️</span> Ver Ficha Completa
                                 </a>
                             </td>
                         </tr>
@@ -243,7 +243,7 @@ function toggleAnuncio(id) {
     const btn = document.getElementById('btn-' + id);
     const icon = document.getElementById('icon-' + id);
     const span = btn.querySelector('span');
-    
+
     if (content.style.maxHeight === '60px') {
         content.style.maxHeight = content.scrollHeight + 'px';
         span.textContent = 'Ver menos';
