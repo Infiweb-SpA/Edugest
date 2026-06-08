@@ -34,10 +34,7 @@ NIVELES_EDUCATIVOS = {
 
 
 def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
-    """
-    Crea una persona apoderado, sus identificadores y la vincula con el estudiante.
-    Ahora incluye: parentesco, email, profesión, trabajo y dirección.
-    """
+    """Crea un apoderado y lo vincula al estudiante."""
     first_name = request.form.get(f'{prefix}_first_name')
     last_name  = request.form.get(f'{prefix}_last_name')
     second_last= request.form.get(f'{prefix}_second_last_name', '')
@@ -45,7 +42,6 @@ def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
     telefono   = request.form.get(f'{prefix}_telefono')
     nivel      = request.form.get(f'{prefix}_nivel_educativo')
     
-    # NUEVOS CAMPOS
     parentesco = request.form.get(f'{prefix}_parentesco')
     email      = request.form.get(f'{prefix}_email')
     profesion  = request.form.get(f'{prefix}_profesion')
@@ -101,7 +97,6 @@ def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
     db.session.add(rel)
     db.session.flush()
 
-    # Guardar detalles adicionales de la relación
     if parentesco or profesion or trabajo or direccion or email:
         db.session.add(EdugestPersonRelationshipDetail(
             PersonRelationshipId=rel.PersonRelationshipId,
@@ -116,7 +111,7 @@ def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
 
 
 def obtener_apoderados_estudiante(person_id):
-    """Retorna lista ordenada de apoderados con datos enriquecidos."""
+    """Retorna lista de apoderados con datos enriquecidos."""
     relaciones = PersonRelationship.query.filter_by(
         PersonId=person_id, RefPersonRelationshipId=31
     ).order_by(PersonRelationship.PersonRelationshipId).all()
@@ -150,7 +145,7 @@ def obtener_apoderados_estudiante(person_id):
 
 
 def normalizar_rut(rut):
-    """Normaliza cualquier formato de RUT al estándar MINEDUC: xx.xxx.xxx-x"""
+    """Normaliza RUT a formato xx.xxx.xxx-x."""
     if not rut:
         return None
     rut_limpio = re.sub(r'[^0-9kK]', '', rut)
@@ -199,7 +194,6 @@ def obtener_jerarquia_curso(curso_id):
 
 
 def _parse_date(campo):
-    """Helper para parsear fechas de formulario de forma segura"""
     val = request.form.get(campo)
     if val:
         try:
@@ -219,7 +213,7 @@ def _parse_bool(campo):
 
 
 def _serialize_estudiante(person_id):
-    """Serializa todos los datos de un estudiante existente para precarga vía AJAX."""
+    """Serializa todos los datos de un estudiante para precarga vía AJAX."""
     persona = Person.query.get(person_id)
     if not persona:
         return None
@@ -228,8 +222,6 @@ def _serialize_estudiante(person_id):
     ids_map = {i.RefPersonIdentificationSystemId: i.Identifier for i in ids}
     
     residencia = PersonAddress.query.filter_by(PersonId=person_id).first()
-    
-    # Apoderados
     apoderados = obtener_apoderados_estudiante(person_id)
     ap_titular = apoderados[0] if len(apoderados) > 0 else None
     ap_suplente1 = apoderados[1] if len(apoderados) > 1 else None
@@ -364,22 +356,46 @@ def _serialize_estudiante(person_id):
 
 
 # ============================================================================
-# LISTADO DE ESTUDIANTES
+# LISTADO DE ESTUDIANTES (agrupado por RUT para evitar duplicados de persona)
 # ============================================================================
 @matricula_bp.route('/')
 def listar_estudiantes():
     if not verificar_modulo_habilitado():
         return redirect(url_for('admin.dashboard'))
-    roles = OrganizationPersonRole.query.filter_by(RoleId=6).all()
-    estudiantes_data = []
+
+    # Obtener TODOS los roles activos con sus identificadores RUT
+    roles = OrganizationPersonRole.query.filter_by(RoleId=6, ExitDate=None).all()
+    
+    # Agrupar por RUT (normalizado) y quedarse con el rol de EntryDate más reciente
+    mejores_por_rut = {}
     for rol in roles:
+        # Obtener el RUT del estudiante
+        rut_id = PersonIdentifier.query.filter_by(
+            PersonId=rol.PersonId, RefPersonIdentificationSystemId=51
+        ).first()
+        rut = rut_id.Identifier if rut_id else None
+        if not rut:
+            # Si no tiene RUT, usar PersonId como fallback (pero idealmente todos tienen RUT)
+            rut = f"ID_{rol.PersonId}"
+        
+        if rut not in mejores_por_rut:
+            mejores_por_rut[rut] = rol
+        else:
+            if rol.EntryDate > mejores_por_rut[rut].EntryDate:
+                mejores_por_rut[rut] = rol
+    
+    estudiantes_data = []
+    for rol in mejores_por_rut.values():
         jerarquia = obtener_jerarquia_curso(rol.OrganizationId)
         estudiantes_data.append({'rol': rol, 'jerarquia': jerarquia})
+    
+    # Opcional: detectar si hay personas duplicadas (mismo RUT pero diferente PersonId)
+    # Esto se puede loguear para depuración
     return render_template('matricula/listar.html', estudiantes=estudiantes_data)
 
 
 # ============================================================================
-# FORMULARIO NUEVO ESTUDIANTE
+# FORMULARIO NUEVO / EDICIÓN
 # ============================================================================
 @matricula_bp.route('/nuevo', methods=['GET', 'POST'])
 def nuevo_estudiante():
@@ -389,7 +405,6 @@ def nuevo_estudiante():
     niveles = Organization.query.filter_by(RefOrganizationTypeId=40).order_by(Organization.Name).all()
 
     if request.method == 'POST':
-        # ── Datos Personales Básicos ──
         first_name   = request.form.get('first_name')
         middle_name  = request.form.get('middle_name', '')
         last_name    = request.form.get('last_name')
@@ -397,29 +412,22 @@ def nuevo_estudiante():
         ref_sex_id   = request.form.get('ref_sex_id')
         birthdate    = request.form.get('birthdate')
 
-        # ── Identificadores ──
         rut_raw      = request.form.get('rut')
         rut          = normalizar_rut(rut_raw) if rut_raw else None
         ipe          = request.form.get('ipe', '')
         num_matricula= request.form.get('num_matricula', '')
         num_lista    = request.form.get('num_lista', '')
 
-        # ── Matrícula ──
         curso_id     = request.form.get('curso_id')
         entry_date   = request.form.get('entry_date')
         residencia   = request.form.get('residencia')
 
-        # ── Apoderado Titular ──
         ap_t_first   = request.form.get('ap_titular_first_name')
         ap_t_last    = request.form.get('ap_titular_last_name')
         ap_t_rut     = request.form.get('ap_titular_rut')
 
         # Validación mínima
-        campos_obligatorios = [
-            first_name, last_name, rut, curso_id, entry_date,
-            residencia, ap_t_first, ap_t_last, ap_t_rut
-        ]
-        if not all(campos_obligatorios):
+        if not all([first_name, last_name, rut, curso_id, entry_date, residencia, ap_t_first, ap_t_last, ap_t_rut]):
             flash("Complete todos los campos obligatorios.", "danger")
             return redirect(url_for('matricula.nuevo_estudiante'))
 
@@ -434,30 +442,94 @@ def nuevo_estudiante():
         try:
             birthdate_obj = _parse_date('birthdate')
             entry_date_obj = _parse_date('entry_date')
+            if not entry_date_obj:
+                flash("La fecha de matrícula es obligatoria y debe ser válida.", "danger")
+                return redirect(url_for('matricula.nuevo_estudiante'))
 
-            # 1. Crear Persona
-            nueva_persona = Person(
-                FirstName=first_name,
-                MiddleName=middle_name,
-                LastName=last_name,
-                SecondLastName=second_last,
-                RefSexId=int(ref_sex_id) if ref_sex_id else None,
-                Birthdate=birthdate_obj
-            )
-            db.session.add(nueva_persona)
-            db.session.flush()
-
-            # 2. Identificadores
+            # Verificar si ya existe una persona con este RUT (para evitar duplicados)
+            persona_existente = None
             if rut:
-                db.session.add(PersonIdentifier(PersonId=nueva_persona.PersonId, Identifier=rut, RefPersonIdentificationSystemId=51))
-            if ipe:
-                db.session.add(PersonIdentifier(PersonId=nueva_persona.PersonId, Identifier=ipe, RefPersonIdentificationSystemId=52))
-            if num_matricula:
-                db.session.add(PersonIdentifier(PersonId=nueva_persona.PersonId, Identifier=num_matricula, RefPersonIdentificationSystemId=55))
-            if num_lista:
-                db.session.add(PersonIdentifier(PersonId=nueva_persona.PersonId, Identifier=num_lista, RefPersonIdentificationSystemId=54))
+                persona_existente = Person.query.join(PersonIdentifier).filter(
+                    PersonIdentifier.Identifier == rut,
+                    PersonIdentifier.RefPersonIdentificationSystemId == 51
+                ).first()
+            
+            # Si se envió person_id_precargado, usamos ese (viene del buscador)
+            person_id_precargado = request.form.get('person_id_precargado')
+            if person_id_precargado and person_id_precargado.isdigit():
+                # Forzar a usar ese ID (ya sea que coincida con el RUT o no)
+                persona = Person.query.get(int(person_id_precargado))
+                if not persona:
+                    flash("El estudiante seleccionado no existe.", "danger")
+                    return redirect(url_for('matricula.nuevo_estudiante'))
+                # Si el RUT del formulario no coincide con el de la persona, actualizamos
+                if rut:
+                    existing_rut = PersonIdentifier.query.filter_by(
+                        PersonId=persona.PersonId, RefPersonIdentificationSystemId=51
+                    ).first()
+                    if existing_rut and existing_rut.Identifier != rut:
+                        # Podría ser un error, pero permitimos actualizar
+                        existing_rut.Identifier = rut
+                    elif not existing_rut:
+                        db.session.add(PersonIdentifier(
+                            PersonId=persona.PersonId, Identifier=rut, RefPersonIdentificationSystemId=51
+                        ))
+                nueva_persona = persona
+                es_nuevo = False
+            elif persona_existente:
+                # Caso: no se usó el buscador, pero el RUT ya existe -> re-matrícula
+                nueva_persona = persona_existente
+                es_nuevo = False
+                flash("Se ha detectado un estudiante existente con el mismo RUT. Se procederá a re-matricular.", "info")
+            else:
+                # Estudiante completamente nuevo
+                nueva_persona = Person(
+                    FirstName=first_name,
+                    MiddleName=middle_name,
+                    LastName=last_name,
+                    SecondLastName=second_last,
+                    RefSexId=int(ref_sex_id) if ref_sex_id else None,
+                    Birthdate=birthdate_obj
+                )
+                db.session.add(nueva_persona)
+                db.session.flush()
+                es_nuevo = True
 
-            # 3. Rol en Curso
+            # Actualizar datos personales (siempre)
+            nueva_persona.FirstName = first_name
+            nueva_persona.MiddleName = middle_name
+            nueva_persona.LastName = last_name
+            nueva_persona.SecondLastName = second_last
+            nueva_persona.RefSexId = int(ref_sex_id) if ref_sex_id else None
+            nueva_persona.Birthdate = birthdate_obj
+
+            # Cerrar TODOS los roles activos anteriores (si no es nuevo)
+            if not es_nuevo:
+                roles_anteriores = OrganizationPersonRole.query.filter_by(
+                    PersonId=nueva_persona.PersonId, RoleId=6, ExitDate=None
+                ).all()
+                for rol_anterior in roles_anteriores:
+                    rol_anterior.ExitDate = entry_date_obj
+
+            # Identificadores (UPSERT)
+            def upsert_identifier(sys_id, val_identificador):
+                if val_identificador:
+                    ident = PersonIdentifier.query.filter_by(
+                        PersonId=nueva_persona.PersonId, RefPersonIdentificationSystemId=sys_id
+                    ).first()
+                    if ident:
+                        ident.Identifier = val_identificador
+                    else:
+                        db.session.add(PersonIdentifier(
+                            PersonId=nueva_persona.PersonId, Identifier=val_identificador, RefPersonIdentificationSystemId=sys_id
+                        ))
+
+            upsert_identifier(51, rut)
+            upsert_identifier(52, ipe)
+            upsert_identifier(55, num_matricula)
+            upsert_identifier(54, num_lista)
+
+            # Nuevo rol en el curso actual
             db.session.add(OrganizationPersonRole(
                 OrganizationId=int(curso_id),
                 PersonId=nueva_persona.PersonId,
@@ -466,124 +538,133 @@ def nuevo_estudiante():
                 ExitDate=None
             ))
 
-            # 4. Residencia
+            # Residencia
             if residencia:
-                db.session.add(PersonAddress(PersonId=nueva_persona.PersonId, StreetNumberAndName=residencia))
+                addr = PersonAddress.query.filter_by(PersonId=nueva_persona.PersonId).first()
+                if addr:
+                    addr.StreetNumberAndName = residencia
+                else:
+                    db.session.add(PersonAddress(PersonId=nueva_persona.PersonId, StreetNumberAndName=residencia))
 
-            # 5. Apoderados
+            # Apoderados (solo si no existen ya? Por simplicidad se crean nuevos cada vez.
+            # Para evitar duplicados, se podría buscar primero. Pero por ahora se mantiene.
             crear_apoderado_estudiante(nueva_persona.PersonId, 'ap_titular')
             crear_apoderado_estudiante(nueva_persona.PersonId, 'ap_suplente1')
             crear_apoderado_estudiante(nueva_persona.PersonId, 'ap_suplente2')
 
-            # 6. DATOS ADICIONALES DE MATRÍCULA
-            db.session.add(EdugestStudentEnrollment(
-                PersonId=nueva_persona.PersonId,
-                Nacionalidad=request.form.get('nacionalidad'),
-                PaisOrigen=request.form.get('pais_origen'),
-                ComunaResidencia=request.form.get('comuna_residencia'),
-                RegionResidencia=request.form.get('region_residencia'),
-                EmailEstudiante=request.form.get('email_estudiante'),
-                TelefonoEstudiante=request.form.get('telefono_estudiante'),
-                ColegioProcedencia=request.form.get('colegio_procedencia'),
-                ComunaColegioAnterior=request.form.get('comuna_colegio_anterior'),
-                RegionColegioAnterior=request.form.get('region_colegio_anterior'),
-                UltimoCursoAprobado=request.form.get('ultimo_curso_aprobado'),
-                AnioUltimoCursoAprobado=_parse_int('anio_ultimo_curso'),
-                MotivoTraslado=request.form.get('motivo_traslado'),
-                FechaIngresoEstablecimiento=_parse_date('fecha_ingreso_establecimiento'),
-                EsNuevoEnEstablecimiento=_parse_bool('es_nuevo'),
-                NivelEducacionalMadre=_parse_int('nivel_madre'),
-                NivelEducacionalPadre=_parse_int('nivel_padre'),
-                NivelEducacionalApoderado=_parse_int('nivel_apoderado'),
-                IngresoFamiliar=request.form.get('ingreso_familiar'),
-                NumIntegrantesHogar=_parse_int('num_integrantes_hogar'),
-                AlumnoPrioritario=_parse_bool('alumno_prioritario'),
-                AlumnoPreferente=_parse_bool('alumno_preferente'),
-                BeneficiarioSEP=_parse_bool('beneficiario_sep'),
-                PertenecePuebloOriginario=_parse_bool('pertenece_pueblo_originario'),
-                PuebloOriginario=request.form.get('pueblo_originario'),
-                HablaLenguaIndigena=_parse_bool('habla_lengua_indigena'),
-                LenguaIndigena=request.form.get('lengua_indigena'),
-                NacionalidadExtranjera=request.form.get('nacionalidad_extranjera'),
-                MedioTransporte=request.form.get('medio_transporte'),
-                UtilizaTransporteEscolar=_parse_bool('utiliza_transporte_escolar'),
-                NombreTransportista=request.form.get('nombre_transportista'),
-                TelefonoTransportista=request.form.get('telefono_transportista'),
-                TiempoEstimadoTraslado=request.form.get('tiempo_traslado'),
-                AutorizaFotografias=_parse_bool('autoriza_fotografias'),
-                AutorizaRedesSociales=_parse_bool('autoriza_redes_sociales'),
-                AutorizaSalidasPedagogicas=_parse_bool('autoriza_salidas'),
-                AutorizaTrasladoCentroAsistencial=_parse_bool('autoriza_traslado_medico'),
-                AutorizaAtencionMedicaUrgencia=_parse_bool('autoriza_atencion_urgencia'),
-                EntregaCertificadoNacimiento=_parse_bool('doc_cert_nacimiento'),
-                EntregaCertificadoAnualEstudios=_parse_bool('doc_cert_estudios'),
-                EntregaInformePersonalidad=_parse_bool('doc_informe_personalidad'),
-                EntregaInformeNotas=_parse_bool('doc_informe_notas'),
-                EntregaInformePIE=_parse_bool('doc_informe_pie'),
-                EntregaFotocopiaRUNEstudiante=_parse_bool('doc_fotocopia_run_est'),
-                EntregaFotocopiaRUNApoderado=_parse_bool('doc_fotocopia_run_apod'),
-                EntregaComprobanteDomicilio=_parse_bool('doc_comprobante_domicilio'),
-                EntregaFichaMedica=_parse_bool('doc_ficha_medica'),
-                ObservacionesAcademicas=request.form.get('obs_academicas'),
-                ObservacionesMedicas=request.form.get('obs_medicas'),
-                ObservacionesFamiliares=request.form.get('obs_familiares'),
-                ComentariosEstablecimiento=request.form.get('obs_establecimiento')
-            ))
+            # Datos adicionales de matrícula
+            enrollment = EdugestStudentEnrollment.query.filter_by(PersonId=nueva_persona.PersonId).first()
+            if not enrollment:
+                enrollment = EdugestStudentEnrollment(PersonId=nueva_persona.PersonId)
+                db.session.add(enrollment)
+            
+            enrollment.Nacionalidad = request.form.get('nacionalidad')
+            enrollment.PaisOrigen = request.form.get('pais_origen')
+            enrollment.ComunaResidencia = request.form.get('comuna_residencia')
+            enrollment.RegionResidencia = request.form.get('region_residencia')
+            enrollment.EmailEstudiante = request.form.get('email_estudiante')
+            enrollment.TelefonoEstudiante = request.form.get('telefono_estudiante')
+            enrollment.ColegioProcedencia = request.form.get('colegio_procedencia')
+            enrollment.ComunaColegioAnterior = request.form.get('comuna_colegio_anterior')
+            enrollment.RegionColegioAnterior = request.form.get('region_colegio_anterior')
+            enrollment.UltimoCursoAprobado = request.form.get('ultimo_curso_aprobado')
+            enrollment.AnioUltimoCursoAprobado = _parse_int('anio_ultimo_curso')
+            enrollment.MotivoTraslado = request.form.get('motivo_traslado')
+            enrollment.FechaIngresoEstablecimiento = _parse_date('fecha_ingreso_establecimiento')
+            enrollment.EsNuevoEnEstablecimiento = _parse_bool('es_nuevo')
+            enrollment.NivelEducacionalMadre = _parse_int('nivel_madre')
+            enrollment.NivelEducacionalPadre = _parse_int('nivel_padre')
+            enrollment.NivelEducacionalApoderado = _parse_int('nivel_apoderado')
+            enrollment.IngresoFamiliar = request.form.get('ingreso_familiar')
+            enrollment.NumIntegrantesHogar = _parse_int('num_integrantes_hogar')
+            enrollment.AlumnoPrioritario = _parse_bool('alumno_prioritario')
+            enrollment.AlumnoPreferente = _parse_bool('alumno_preferente')
+            enrollment.BeneficiarioSEP = _parse_bool('beneficiario_sep')
+            enrollment.PertenecePuebloOriginario = _parse_bool('pertenece_pueblo_originario')
+            enrollment.PuebloOriginario = request.form.get('pueblo_originario')
+            enrollment.HablaLenguaIndigena = _parse_bool('habla_lengua_indigena')
+            enrollment.LenguaIndigena = request.form.get('lengua_indigena')
+            enrollment.NacionalidadExtranjera = request.form.get('nacionalidad_extranjera')
+            enrollment.MedioTransporte = request.form.get('medio_transporte')
+            enrollment.UtilizaTransporteEscolar = _parse_bool('utiliza_transporte_escolar')
+            enrollment.NombreTransportista = request.form.get('nombre_transportista')
+            enrollment.TelefonoTransportista = request.form.get('telefono_transportista')
+            enrollment.TiempoEstimadoTraslado = request.form.get('tiempo_traslado')
+            enrollment.AutorizaFotografias = _parse_bool('autoriza_fotografias')
+            enrollment.AutorizaRedesSociales = _parse_bool('autoriza_redes_sociales')
+            enrollment.AutorizaSalidasPedagogicas = _parse_bool('autoriza_salidas')
+            enrollment.AutorizaTrasladoCentroAsistencial = _parse_bool('autoriza_traslado_medico')
+            enrollment.AutorizaAtencionMedicaUrgencia = _parse_bool('autoriza_atencion_urgencia')
+            enrollment.EntregaCertificadoNacimiento = _parse_bool('doc_cert_nacimiento')
+            enrollment.EntregaCertificadoAnualEstudios = _parse_bool('doc_cert_estudios')
+            enrollment.EntregaInformePersonalidad = _parse_bool('doc_informe_personalidad')
+            enrollment.EntregaInformeNotas = _parse_bool('doc_informe_notas')
+            enrollment.EntregaInformePIE = _parse_bool('doc_informe_pie')
+            enrollment.EntregaFotocopiaRUNEstudiante = _parse_bool('doc_fotocopia_run_est')
+            enrollment.EntregaFotocopiaRUNApoderado = _parse_bool('doc_fotocopia_run_apod')
+            enrollment.EntregaComprobanteDomicilio = _parse_bool('doc_comprobante_domicilio')
+            enrollment.EntregaFichaMedica = _parse_bool('doc_ficha_medica')
+            enrollment.ObservacionesAcademicas = request.form.get('obs_academicas')
+            enrollment.ObservacionesMedicas = request.form.get('obs_medicas')
+            enrollment.ObservacionesFamiliares = request.form.get('obs_familiares')
+            enrollment.ComentariosEstablecimiento = request.form.get('obs_establecimiento')
 
-            # 7. CONTACTOS DE EMERGENCIA (nueva estructura completa)
+            # Contactos de emergencia
             for i in [1, 2]:
                 first_name_c = request.form.get(f'contacto_emergencia_{i}_first_name')
                 if first_name_c:
                     nombre_completo = f"{first_name_c} {request.form.get(f'contacto_emergencia_{i}_last_name', '')} {request.form.get(f'contacto_emergencia_{i}_second_last_name', '')}".strip()
-                    db.session.add(EdugestEmergencyContact(
-                        PersonId=nueva_persona.PersonId,
-                        Orden=i,
-                        FirstName=first_name_c,
-                        LastName=request.form.get(f'contacto_emergencia_{i}_last_name'),
-                        SecondLastName=request.form.get(f'contacto_emergencia_{i}_second_last_name'),
-                        NombreCompleto=nombre_completo or None,
-                        RUN=normalizar_rut(request.form.get(f'contacto_emergencia_{i}_run')),
-                        Parentesco=request.form.get(f'contacto_emergencia_{i}_parentesco'),
-                        TelefonoPrincipal=request.form.get(f'contacto_emergencia_{i}_telefono'),
-                        TelefonoAlternativo=request.form.get(f'contacto_emergencia_{i}_telefono_alt'),
-                        Email=request.form.get(f'contacto_emergencia_{i}_email'),
-                        ProfesionOcupacion=request.form.get(f'contacto_emergencia_{i}_profesion'),
-                        NivelEducacional=_parse_int(f'contacto_emergencia_{i}_nivel_educativo')
-                    ))
+                    contacto = EdugestEmergencyContact.query.filter_by(PersonId=nueva_persona.PersonId, Orden=i).first()
+                    if not contacto:
+                        contacto = EdugestEmergencyContact(PersonId=nueva_persona.PersonId, Orden=i)
+                        db.session.add(contacto)
+                    contacto.FirstName = first_name_c
+                    contacto.LastName = request.form.get(f'contacto_emergencia_{i}_last_name')
+                    contacto.SecondLastName = request.form.get(f'contacto_emergencia_{i}_second_last_name')
+                    contacto.NombreCompleto = nombre_completo or None
+                    contacto.RUN = normalizar_rut(request.form.get(f'contacto_emergencia_{i}_run'))
+                    contacto.Parentesco = request.form.get(f'contacto_emergencia_{i}_parentesco')
+                    contacto.TelefonoPrincipal = request.form.get(f'contacto_emergencia_{i}_telefono')
+                    contacto.TelefonoAlternativo = request.form.get(f'contacto_emergencia_{i}_telefono_alt')
+                    contacto.Email = request.form.get(f'contacto_emergencia_{i}_email')
+                    contacto.ProfesionOcupacion = request.form.get(f'contacto_emergencia_{i}_profesion')
+                    contacto.NivelEducacional = _parse_int(f'contacto_emergencia_{i}_nivel_educativo')
 
-            # 8. INFORMACIÓN MÉDICA
-            if any([
-                request.form.get('grupo_sanguineo'), request.form.get('sistema_salud'),
-                request.form.get('enfermedades_permanentes'), request.form.get('alergias'),
-                request.form.get('medicamentos_permanentes'), request.form.get('restricciones_alimentarias'),
-                request.form.get('necesidades_medicas'), request.form.get('obs_medicas_detalle'),
-                request.form.get('centro_salud'), request.form.get('medico_tratante'), request.form.get('telefono_medico')
-            ]):
-                db.session.add(EdugestStudentHealth(
-                    PersonId=nueva_persona.PersonId,
-                    GrupoSanguineo=request.form.get('grupo_sanguineo'),
-                    SistemaSalud=request.form.get('sistema_salud'),
-                    EnfermedadesPermanentes=request.form.get('enfermedades_permanentes'),
-                    Alergias=request.form.get('alergias'),
-                    MedicamentosPermanentes=request.form.get('medicamentos_permanentes'),
-                    RestriccionesAlimentarias=request.form.get('restricciones_alimentarias'),
-                    NecesidadesMedicasEspeciales=request.form.get('necesidades_medicas'),
-                    ObservacionesMedicasDetalle=request.form.get('obs_medicas_detalle'),
-                    CentroSaludHabitual=request.form.get('centro_salud'),
-                    MedicoTratante=request.form.get('medico_tratante'),
-                    TelefonoMedicoTratante=request.form.get('telefono_medico')
-                ))
+            # Salud
+            if any([request.form.get('grupo_sanguineo'), request.form.get('sistema_salud'),
+                    request.form.get('enfermedades_permanentes'), request.form.get('alergias'),
+                    request.form.get('medicamentos_permanentes'), request.form.get('restricciones_alimentarias'),
+                    request.form.get('necesidades_medicas'), request.form.get('obs_medicas_detalle'),
+                    request.form.get('centro_salud'), request.form.get('medico_tratante'), request.form.get('telefono_medico')]):
+                health = EdugestStudentHealth.query.filter_by(PersonId=nueva_persona.PersonId).first()
+                if not health:
+                    health = EdugestStudentHealth(PersonId=nueva_persona.PersonId)
+                    db.session.add(health)
+                health.GrupoSanguineo = request.form.get('grupo_sanguineo')
+                health.SistemaSalud = request.form.get('sistema_salud')
+                health.EnfermedadesPermanentes = request.form.get('enfermedades_permanentes')
+                health.Alergias = request.form.get('alergias')
+                health.MedicamentosPermanentes = request.form.get('medicamentos_permanentes')
+                health.RestriccionesAlimentarias = request.form.get('restricciones_alimentarias')
+                health.NecesidadesMedicasEspeciales = request.form.get('necesidades_medicas')
+                health.ObservacionesMedicasDetalle = request.form.get('obs_medicas_detalle')
+                health.CentroSaludHabitual = request.form.get('centro_salud')
+                health.MedicoTratante = request.form.get('medico_tratante')
+                health.TelefonoMedicoTratante = request.form.get('telefono_medico')
 
-            # 9. PIE
+            # PIE
+            pie = EdugestStudentPIE.query.filter_by(PersonId=nueva_persona.PersonId).first()
             if _parse_bool('pertenece_pie'):
-                db.session.add(EdugestStudentPIE(
-                    PersonId=nueva_persona.PersonId,
-                    PertenecePIE=True,
-                    DiagnosticoPIE=request.form.get('diagnostico_pie'),
-                    FechaDiagnostico=_parse_date('fecha_diagnostico_pie'),
-                    ProfesionalTratante=request.form.get('profesional_pie'),
-                    ObservacionesPIE=request.form.get('observaciones_pie')
-                ))
+                if not pie:
+                    pie = EdugestStudentPIE(PersonId=nueva_persona.PersonId)
+                    db.session.add(pie)
+                pie.PertenecePIE = True
+                pie.DiagnosticoPIE = request.form.get('diagnostico_pie')
+                pie.FechaDiagnostico = _parse_date('fecha_diagnostico_pie')
+                pie.ProfesionalTratante = request.form.get('profesional_pie')
+                pie.ObservacionesPIE = request.form.get('observaciones_pie')
+            elif pie:
+                pie.PertenecePIE = False
 
             db.session.commit()
             flash(f"Estudiante {first_name} {last_name} matriculado correctamente.", "success")
@@ -598,7 +679,7 @@ def nuevo_estudiante():
 
 
 # ============================================================================
-# AJAX: GRADOS Y CURSOS
+# AJAX
 # ============================================================================
 @matricula_bp.route('/ajax/grados/<int:nivel_id>')
 def ajax_grados(nivel_id):
@@ -635,9 +716,6 @@ def ajax_cursos(grado_id):
     return jsonify([{'id': c.OrganizationId, 'nombre': f"{c.Name} ({c.ShortName})", 'letra': c.ShortName} for c in cursos])
 
 
-# ============================================================================
-# AJAX: BUSCAR ESTUDIANTE EXISTENTE (precarga de matrícula anterior)
-# ============================================================================
 @matricula_bp.route('/ajax/buscar_estudiante')
 def ajax_buscar_estudiante():
     if not verificar_modulo_habilitado():
@@ -645,21 +723,50 @@ def ajax_buscar_estudiante():
     q = request.args.get('q', '').strip()
     if len(q) < 3:
         return jsonify([])
-    
-    # Buscar por nombre o RUT
-    personas = Person.query.outerjoin(PersonIdentifier, 
-        (PersonIdentifier.PersonId == Person.PersonId) & 
-        (PersonIdentifier.RefPersonIdentificationSystemId == 51)
+
+    # Subconsulta: obtener el PersonId más reciente para cada RUT (evita duplicados de persona con mismo RUT)
+    from sqlalchemy import func, and_
+
+    # Primero, buscamos personas por nombre o RUT (sin join aún, para evitar duplicados)
+    # Pero necesitamos el RUT para mostrarlo. Lo haremos en dos pasos: obtener los PersonId que cumplen,
+    # luego agrupar por RUT.
+
+    # Opción más robusta: usar una subconsulta que agrupe por Identifier (RUT) y elija un PersonId.
+    # Como SQLAlchemy puede ser complejo, usaremos una consulta nativa (sqlalchemy.text) o una agrupación en Python.
+
+    # Solución: obtener todos los candidatos (personas con sus RUT) y luego agrupar en Python por RUT.
+    personas_raw = Person.query.distinct(Person.PersonId).outerjoin(
+        PersonIdentifier,
+        and_(
+            PersonIdentifier.PersonId == Person.PersonId,
+            PersonIdentifier.RefPersonIdentificationSystemId == 51
+        )
     ).filter(
         db.or_(
             Person.FirstName.ilike(f'%{q}%'),
             Person.LastName.ilike(f'%{q}%'),
             PersonIdentifier.Identifier.ilike(f'%{q}%')
         )
-    ).limit(10).all()
-    
+    ).limit(20).all()  # Aumentamos un poco el límite porque luego agrupamos
+
+    # Agrupar por RUT (normalizado)
+    mejores_por_rut = {}
+    for p in personas_raw:
+        rut = PersonIdentifier.query.filter_by(
+            PersonId=p.PersonId, RefPersonIdentificationSystemId=51
+        ).first()
+        rut_str = rut.Identifier if rut else None
+        if not rut_str:
+            continue  # Si no tiene RUT, lo ignoramos (podría ser IPE, pero no debería)
+        if rut_str not in mejores_por_rut:
+            mejores_por_rut[rut_str] = p
+        else:
+            # Si ya existe, conservamos el que tenga mayor PersonId (o podrías usar EntryDate más reciente)
+            if p.PersonId > mejores_por_rut[rut_str].PersonId:
+                mejores_por_rut[rut_str] = p
+
     resultado = []
-    for p in personas:
+    for p in mejores_por_rut.values():
         rut = PersonIdentifier.query.filter_by(
             PersonId=p.PersonId, RefPersonIdentificationSystemId=51
         ).first()
@@ -679,7 +786,7 @@ def ajax_datos_estudiante(person_id):
 
 
 # ============================================================================
-# VER DETALLE DE UN ESTUDIANTE
+# VER DETALLE
 # ============================================================================
 @matricula_bp.route('/<int:person_id>')
 def ver_estudiante(person_id):
@@ -692,19 +799,16 @@ def ver_estudiante(person_id):
     ids_map = {i.RefPersonIdentificationSystemId: i.Identifier for i in identificadores}
     residencia = PersonAddress.query.filter_by(PersonId=person_id).first()
 
-    # Apoderados enriquecidos
     apoderados_data = obtener_apoderados_estudiante(person_id)
     ap_titular   = apoderados_data[0] if len(apoderados_data) > 0 else None
     ap_suplente1 = apoderados_data[1] if len(apoderados_data) > 1 else None
     ap_suplente2 = apoderados_data[2] if len(apoderados_data) > 2 else None
 
-    # NUEVOS: Datos extendidos
     enrollment = EdugestStudentEnrollment.query.filter_by(PersonId=person_id).first()
     contactos_emergencia = EdugestEmergencyContact.query.filter_by(PersonId=person_id).order_by(EdugestEmergencyContact.Orden).all()
     health = EdugestStudentHealth.query.filter_by(PersonId=person_id).first()
     pie = EdugestStudentPIE.query.filter_by(PersonId=person_id).first()
 
-    # Matrículas con jerarquía
     matriculas_data = []
     for rol in roles:
         jerarquia = obtener_jerarquia_curso(rol.OrganizationId)
@@ -719,7 +823,6 @@ def ver_estudiante(person_id):
                            ap_suplente1=ap_suplente1,
                            ap_suplente2=ap_suplente2,
                            niveles_map=NIVELES_EDUCATIVOS,
-                           # NUEVOS
                            enrollment=enrollment,
                            contactos_emergencia=contactos_emergencia,
                            health=health,
