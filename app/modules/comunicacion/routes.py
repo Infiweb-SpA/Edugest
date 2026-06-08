@@ -131,6 +131,7 @@ def anuncios():
         OrganizationPersonRole, Organization.OrganizationId == OrganizationPersonRole.OrganizationId
     ).filter(
         OrganizationPersonRole.RoleId == 6,
+        OrganizationPersonRole.ExitDate == None,
         Organization.RefOrganizationTypeId == 21
     ).distinct().order_by(Organization.Name).all()
 
@@ -209,6 +210,7 @@ def contactos():
         OrganizationPersonRole, Organization.OrganizationId == OrganizationPersonRole.OrganizationId
     ).filter(
         OrganizationPersonRole.RoleId == 6,
+        OrganizationPersonRole.ExitDate == None,
         Organization.RefOrganizationTypeId == 21
     ).distinct().order_by(Organization.Name).all()
 
