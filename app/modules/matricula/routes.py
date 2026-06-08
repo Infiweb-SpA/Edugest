@@ -34,80 +34,228 @@ NIVELES_EDUCATIVOS = {
 
 
 def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
-    """Crea un apoderado y lo vincula al estudiante."""
-    first_name = request.form.get(f'{prefix}_first_name')
-    last_name  = request.form.get(f'{prefix}_last_name')
-    second_last= request.form.get(f'{prefix}_second_last_name', '')
-    rut_raw    = request.form.get(f'{prefix}_rut')
-    telefono   = request.form.get(f'{prefix}_telefono')
-    nivel      = request.form.get(f'{prefix}_nivel_educativo')
-    
-    parentesco = request.form.get(f'{prefix}_parentesco')
-    email      = request.form.get(f'{prefix}_email')
-    profesion  = request.form.get(f'{prefix}_profesion')
-    trabajo    = request.form.get(f'{prefix}_lugar_trabajo')
-    direccion  = request.form.get(f'{prefix}_direccion')
+    """
+    PASO 1: Recoge los datos del formulario.
+    PASO 2: Si ya existe un apoderado en ese "slot" (titular/suplente), lo actualiza.
+    PASO 3: Si no existe, crea uno nuevo.
+    """
+
+    # =========================================================================
+    # PASO 1: LEER DATOS DEL FORMULARIO (sin cambios)
+    # =========================================================================
+    first_name  = request.form.get(f'{prefix}_first_name')
+    last_name   = request.form.get(f'{prefix}_last_name')
+    second_last = request.form.get(f'{prefix}_second_last_name', '')
+    rut_raw     = request.form.get(f'{prefix}_rut')
+    telefono    = request.form.get(f'{prefix}_telefono')
+    nivel       = request.form.get(f'{prefix}_nivel_educativo')
+
+    parentesco  = request.form.get(f'{prefix}_parentesco')
+    email       = request.form.get(f'{prefix}_email')
+    profesion   = request.form.get(f'{prefix}_profesion')
+    trabajo     = request.form.get(f'{prefix}_lugar_trabajo')
+    direccion   = request.form.get(f'{prefix}_direccion')
 
     if not first_name or not last_name:
         return None
 
     rut = normalizar_rut(rut_raw) if rut_raw else None
 
-    apoderado = Person(
-        FirstName=first_name,
-        MiddleName='',
-        LastName=last_name,
-        SecondLastName=second_last
-    )
-    db.session.add(apoderado)
-    db.session.flush()
+    # =========================================================================
+    # PASO 2: DETERMINAR EL "SLOT" DEL APODERADO
+    #   - ap_titular   → posición 0
+    #   - ap_suplente1 → posición 1
+    #   - ap_suplente2 → posición 2
+    # Esto permite saber cuál de los apoderados del estudiante estamos
+    # procesando, para buscar el existente correspondiente.
+    # =========================================================================
+    slot_map = {
+        'ap_titular': 0,
+        'ap_suplente1': 1,
+        'ap_suplente2': 2
+    }
+    slot_index = slot_map.get(prefix, 0)
 
-    if rut:
-        db.session.add(PersonIdentifier(
-            PersonId=apoderado.PersonId,
-            Identifier=rut,
-            RefPersonIdentificationSystemId=51
-        ))
-    if telefono:
-        db.session.add(PersonTelephone(
-            PersonId=apoderado.PersonId,
-            TelephoneNumber=telefono
-        ))
-    if email:
-        db.session.add(PersonEmailAddress(
-            PersonId=apoderado.PersonId,
-            EmailAddress=email
-        ))
-    if direccion:
-        db.session.add(PersonAddress(
-            PersonId=apoderado.PersonId,
-            StreetNumberAndName=direccion
-        ))
-    if nivel:
-        db.session.add(PersonDegreeOrCertificate(
-            PersonId=apoderado.PersonId,
-            RefDegreeOrCertificateTypeId=int(nivel)
-        ))
-
-    rel = PersonRelationship(
+    # =========================================================================
+    # PASO 3: BUSCAR SI YA EXISTE UN APODERADO EN ESE SLOT
+    #   Consultamos todas las relaciones de apoderado (RefPersonRelationshipId=31)
+    #   ordenadas por PersonRelationshipId (orden de creación).
+    #   El que esté en la posición slot_index es el que debemos actualizar.
+    # =========================================================================
+    relaciones_existentes = PersonRelationship.query.filter_by(
         PersonId=estudiante_id,
-        RelatedPersonId=apoderado.PersonId,
         RefPersonRelationshipId=ref_rel_id
-    )
-    db.session.add(rel)
-    db.session.flush()
+    ).order_by(PersonRelationship.PersonRelationshipId).all()
 
-    if parentesco or profesion or trabajo or direccion or email:
-        db.session.add(EdugestPersonRelationshipDetail(
-            PersonRelationshipId=rel.PersonRelationshipId,
-            Parentesco=parentesco,
-            ProfesionOcupacion=profesion,
-            LugarTrabajo=trabajo,
-            Direccion=direccion,
-            CorreoElectronico=email
-        ))
+    relacion_existente = None
+    if slot_index < len(relaciones_existentes):
+        relacion_existente = relaciones_existentes[slot_index]
 
-    return apoderado
+    if relacion_existente:
+        # =====================================================================
+        # CASO A: YA EXISTE → ACTUALIZAR (en lugar de crear uno nuevo)
+        # =====================================================================
+        apoderado = Person.query.get(relacion_existente.RelatedPersonId)
+        if not apoderado:
+            # Si por algún motivo la persona ya no existe, crear una nueva
+            apoderado = Person(
+                FirstName=first_name,
+                MiddleName='',
+                LastName=last_name,
+                SecondLastName=second_last
+            )
+            db.session.add(apoderado)
+            db.session.flush()
+            relacion_existente.RelatedPersonId = apoderado.PersonId
+        else:
+            # Actualizar datos personales del apoderado existente
+            apoderado.FirstName = first_name
+            apoderado.MiddleName = ''
+            apoderado.LastName = last_name
+            apoderado.SecondLastName = second_last
+
+        # Actualizar RUT (upsert)
+        if rut:
+            ident = PersonIdentifier.query.filter_by(
+                PersonId=apoderado.PersonId,
+                RefPersonIdentificationSystemId=51
+            ).first()
+            if ident:
+                ident.Identifier = rut
+            else:
+                db.session.add(PersonIdentifier(
+                    PersonId=apoderado.PersonId,
+                    Identifier=rut,
+                    RefPersonIdentificationSystemId=51
+                ))
+
+        # Actualizar teléfono (upsert)
+        if telefono:
+            tel = PersonTelephone.query.filter_by(PersonId=apoderado.PersonId).first()
+            if tel:
+                tel.TelephoneNumber = telefono
+            else:
+                db.session.add(PersonTelephone(
+                    PersonId=apoderado.PersonId,
+                    TelephoneNumber=telefono
+                ))
+
+        # Actualizar email (upsert)
+        if email:
+            em = PersonEmailAddress.query.filter_by(PersonId=apoderado.PersonId).first()
+            if em:
+                em.EmailAddress = email
+            else:
+                db.session.add(PersonEmailAddress(
+                    PersonId=apoderado.PersonId,
+                    EmailAddress=email
+                ))
+
+        # Actualizar dirección (upsert)
+        if direccion:
+            addr = PersonAddress.query.filter_by(PersonId=apoderado.PersonId).first()
+            if addr:
+                addr.StreetNumberAndName = direccion
+            else:
+                db.session.add(PersonAddress(
+                    PersonId=apoderado.PersonId,
+                    StreetNumberAndName=direccion
+                ))
+
+        # Actualizar nivel educativo (upsert)
+        if nivel:
+            deg = PersonDegreeOrCertificate.query.filter_by(PersonId=apoderado.PersonId).first()
+            if deg:
+                deg.RefDegreeOrCertificateTypeId = int(nivel)
+            else:
+                db.session.add(PersonDegreeOrCertificate(
+                    PersonId=apoderado.PersonId,
+                    RefDegreeOrCertificateTypeId=int(nivel)
+                ))
+
+        # Actualizar detalle de relación (upsert)
+        if parentesco or profesion or trabajo or direccion or email:
+            detalle = EdugestPersonRelationshipDetail.query.filter_by(
+                PersonRelationshipId=relacion_existente.PersonRelationshipId
+            ).first()
+            if detalle:
+                detalle.Parentesco = parentesco
+                detalle.ProfesionOcupacion = profesion
+                detalle.LugarTrabajo = trabajo
+                detalle.Direccion = direccion
+                detalle.CorreoElectronico = email
+            else:
+                db.session.add(EdugestPersonRelationshipDetail(
+                    PersonRelationshipId=relacion_existente.PersonRelationshipId,
+                    Parentesco=parentesco,
+                    ProfesionOcupacion=profesion,
+                    LugarTrabajo=trabajo,
+                    Direccion=direccion,
+                    CorreoElectronico=email
+                ))
+
+        return apoderado
+
+    else:
+        # =====================================================================
+        # CASO B: NO EXISTE → CREAR NUEVO (lógica original sin cambios)
+        # =====================================================================
+        apoderado = Person(
+            FirstName=first_name,
+            MiddleName='',
+            LastName=last_name,
+            SecondLastName=second_last
+        )
+        db.session.add(apoderado)
+        db.session.flush()
+
+        if rut:
+            db.session.add(PersonIdentifier(
+                PersonId=apoderado.PersonId,
+                Identifier=rut,
+                RefPersonIdentificationSystemId=51
+            ))
+        if telefono:
+            db.session.add(PersonTelephone(
+                PersonId=apoderado.PersonId,
+                TelephoneNumber=telefono
+            ))
+        if email:
+            db.session.add(PersonEmailAddress(
+                PersonId=apoderado.PersonId,
+                EmailAddress=email
+            ))
+        if direccion:
+            db.session.add(PersonAddress(
+                PersonId=apoderado.PersonId,
+                StreetNumberAndName=direccion
+            ))
+        if nivel:
+            db.session.add(PersonDegreeOrCertificate(
+                PersonId=apoderado.PersonId,
+                RefDegreeOrCertificateTypeId=int(nivel)
+            ))
+
+        rel = PersonRelationship(
+            PersonId=estudiante_id,
+            RelatedPersonId=apoderado.PersonId,
+            RefPersonRelationshipId=ref_rel_id
+        )
+        db.session.add(rel)
+        db.session.flush()
+
+        if parentesco or profesion or trabajo or direccion or email:
+            db.session.add(EdugestPersonRelationshipDetail(
+                PersonRelationshipId=rel.PersonRelationshipId,
+                Parentesco=parentesco,
+                ProfesionOcupacion=profesion,
+                LugarTrabajo=trabajo,
+                Direccion=direccion,
+                CorreoElectronico=email
+            ))
+
+        return apoderado
+
 
 
 def obtener_apoderados_estudiante(person_id):
