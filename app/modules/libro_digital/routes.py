@@ -296,7 +296,7 @@ def exportar_lista(org_id):
     
     # Obtener alumnos del curso
     alumnos_roles = OrganizationPersonRole.query.filter_by(
-        OrganizationId=curso.OrganizationId, RoleId=6
+        OrganizationId=curso.OrganizationId, RoleId=6, ExitDate=None
     ).all()
     
     # Obtener fecha de hoy
