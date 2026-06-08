@@ -51,7 +51,8 @@ def listar_grados():
             .filter(
                 OrganizationRelationship.ParentOrganizationId == g.OrganizationId,
                 Organization.RefOrganizationTypeId == 21,   # Garantiza que solo sean cursos
-                OrganizationPersonRole.RoleId == 6            # Solo estudiantes
+                OrganizationPersonRole.RoleId == 6,
+                OrganizationPersonRole.ExitDate == None,    # Solo estudiantes activos
             ).scalar() or 0
         
         grados_data.append({
@@ -192,7 +193,7 @@ def registrar_clase_dinamica(org_id):
     lista_estudiantes = []
     if curso:
         alumnos_roles = OrganizationPersonRole.query.filter_by(
-            OrganizationId=curso.OrganizationId, RoleId=6
+            OrganizationId=curso.OrganizationId, RoleId=6, ExitDate=None
         ).all()
         for rol in alumnos_roles:
             persona = Person.query.get(rol.PersonId)

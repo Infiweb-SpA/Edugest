@@ -364,7 +364,8 @@ def rendir(inst_id, alumno_id):
         mat = OrganizationPersonRole.query.filter_by(
             PersonId=alumno_id,
             OrganizationId=curso.OrganizationId,
-            RoleId=6
+            RoleId=6,
+            ExitDate=None
         ).first()
         if mat:
             matricula = mat
@@ -466,7 +467,8 @@ def resultados(inst_id):
         for curso in cursos:
             mats = OrganizationPersonRole.query.filter_by(
                 OrganizationId=curso.OrganizationId,
-                RoleId=6
+                RoleId=6,
+                ExitDate=None
             ).all()
             matriculas.extend(mats)
 
