@@ -139,7 +139,7 @@ def anuncios():
     contactos_data = []
     if curso_id_contacto:
         estudiantes_roles = OrganizationPersonRole.query.filter_by(
-            OrganizationId=curso_id_contacto, RoleId=6
+            OrganizationId=curso_id_contacto, RoleId=6, ExitDate=None
         ).join(Person).order_by(Person.LastName, Person.FirstName).all()
 
         for er in estudiantes_roles:
@@ -217,7 +217,7 @@ def contactos():
     contactos_data = []
     if curso_id:
         estudiantes_roles = OrganizationPersonRole.query.filter_by(
-            OrganizationId=curso_id, RoleId=6
+            OrganizationId=curso_id, RoleId=6, ExitDate=None
         ).join(Person).order_by(Person.LastName, Person.FirstName).all()
 
         for er in estudiantes_roles:
@@ -243,7 +243,7 @@ def contacto_detalle(person_id):
 
     # Curso actual
     rol_estudiante = OrganizationPersonRole.query.filter_by(
-        PersonId=person_id, RoleId=6
+        PersonId=person_id, RoleId=6, ExitDate=None
     ).first()
     curso = None
     if rol_estudiante:
