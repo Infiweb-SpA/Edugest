@@ -66,6 +66,22 @@
                 <span class="block text-xs text-gray-500 uppercase">Teléfono</span>
                 <span class="font-medium text-gray-900">{{ enrollment.TelefonoEstudiante or '—' }}</span>
             </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Religión</span>
+                <span class="font-medium text-gray-900">{{ enrollment.Religion or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Acepta Religión</span>
+                <span class="font-medium text-gray-900">{{ 'Sí' if enrollment.AceptaReligionEnColegio else 'No' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Vive con</span>
+                <span class="font-medium text-gray-900">{{ enrollment.ViveCon or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Computadores</span>
+                <span class="font-medium text-gray-900">{{ enrollment.CantidadComputadores if enrollment.TieneComputadores else 'No posee' }}</span>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -121,6 +137,14 @@
             <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
                 <span class="block text-xs text-gray-500 uppercase">Nivel Educacional</span>
                 <span class="font-medium text-gray-900">{{ niveles_map.get(ap_titular.nivel, '—') if ap_titular.nivel else '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <span class="block text-xs text-gray-500 uppercase">Estado Civil</span>
+                <span class="font-medium text-gray-900">{{ ap_titular.detalle.EstadoCivil or '—' }}</span>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg md:col-span-2">
+                <span class="block text-xs text-gray-500 uppercase">Autorizado Retirar</span>
+                <span class="font-medium text-gray-900">{{ 'Sí' if ap_titular.detalle.AutorizadoRetirarEstablecimiento else 'No' }}</span>
             </div>
         </div>
     </div>
@@ -195,6 +219,9 @@
             <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Centro Salud</span><span class="font-medium text-gray-900">{{ health.CentroSaludHabitual or '—' }}</span></div>
             <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Médico Tratante</span><span class="font-medium text-gray-900">{{ health.MedicoTratante or '—' }}</span></div>
             <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Tel. Médico</span><span class="font-medium text-gray-900">{{ health.TelefonoMedicoTratante or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Estatura</span><span class="font-medium text-gray-900">{{ health.Estatura or '—' }} cm</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Peso</span><span class="font-medium text-gray-900">{{ health.Peso or '—' }} kg</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Apto EF</span><span class="font-medium text-gray-900">{{ 'Sí' if health.AptoEducacionFisica else 'No' }}</span></div>
         </div>
         <div class="space-y-2 text-sm">
             {% if health.EnfermedadesPermanentes %}<<div class="bg-red-50 p-3 rounded-lg border border-red-100"><span class="block text-xs text-red-600 uppercase font-bold">Enfermedades Permanentes</span><p class="text-gray-800">{{ health.EnfermedadesPermanentes }}</p></div>{% endif %}
@@ -215,6 +242,7 @@
             <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Pertenece PIE</span><span class="font-medium text-green-700">Sí</span></div>
             <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Fecha Diagnóstico</span><span class="font-medium text-gray-900">{{ pie.FechaDiagnostico or '—' }}</span></div>
             <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Profesional</span><span class="font-medium text-gray-900">{{ pie.ProfesionalTratante or '—' }}</span></div>
+            <div class="bg-gray-50 p-3 rounded-lg"><span class="block text-xs text-gray-500 uppercase">Tipo Permanencia</span><span class="font-medium text-gray-900">{{ pie.TipoPermanencia or '—' }}</span></div>
         </div>
         {% if pie.DiagnosticoPIE %}<<div class="bg-gray-50 p-3 rounded-lg mb-2 text-sm"><span class="block text-xs text-gray-500 uppercase mb-1">Diagnóstico</span><p class="text-gray-800">{{ pie.DiagnosticoPIE }}</p></div>{% endif %}
         {% if pie.ObservacionesPIE %}<<div class="bg-gray-50 p-3 rounded-lg text-sm"><span class="block text-xs text-gray-500 uppercase mb-1">Observaciones</span><p class="text-gray-800">{{ pie.ObservacionesPIE }}</p></div>{% endif %}

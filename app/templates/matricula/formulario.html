@@ -104,6 +104,26 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono del Estudiante</label>
                 <input type="tel" name="telefono_estudiante" id="telefono_estudiante" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: +56912345678">
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Religión</label>
+                <input type="text" name="religion" id="religion" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Católica, Evangélica, etc.">
+            </div>
+            <div class="flex items-center pt-6">
+                <input type="checkbox" name="acepta_religion" value="1" id="chk_acepta_religion" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_acepta_religion" class="ml-2 block text-sm text-gray-700">Aceptaría religión en el colegio</label>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Vive con</label>
+                <input type="text" name="vive_con" id="vive_con" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Padre, Madre, Abuelos, etc.">
+            </div>
+            <div class="flex items-center pt-6">
+                <input type="checkbox" name="tiene_computadores" value="1" id="chk_tiene_computadores" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_tiene_computadores" class="ml-2 block text-sm text-gray-700">¿Tiene computadoras en la casa?</label>
+            </div>
+            <div id="campo-cantidad-computadores" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad de computadores</label>
+                <input type="number" name="cantidad_computadores" id="cantidad_computadores" class="w-full rounded-lg border-gray-300 border px-3 py-2" min="0">
+            </div>
         </div>
 
         <!-- ==================== 2. IDENTIFICADORES ==================== -->
@@ -246,6 +266,22 @@
                     <option value="6">Postgrado</option>
                 </select>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Estado Civil</label>
+                <select name="ap_titular_estado_civil" id="ap_titular_estado_civil" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="Soltero/a">Soltero/a</option>
+                    <option value="Casado/a">Casado/a</option>
+                    <option value="Divorciado/a">Divorciado/a</option>
+                    <option value="Viudo/a">Viudo/a</option>
+                    <option value="Conviviente">Conviviente</option>
+                    <option value="Separado/a">Separado/a</option>
+                </select>
+            </div>
+            <div class="flex items-center pt-6 md:col-span-2">
+                <input type="checkbox" name="ap_titular_autorizado_retirar" value="1" id="chk_autorizado_retirar" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_autorizado_retirar" class="ml-2 block text-sm text-gray-700">Posee autorización para retirar al alumno del establecimiento</label>
+            </div>
         </div>
 
         <!-- ==================== 5. APODERADO SUPLENTE 1 ==================== -->
@@ -306,6 +342,10 @@
                     <option value="6">Postgrado</option>
                 </select>
             </div>
+            <div class="flex items-center pt-6">
+                <input type="checkbox" name="ap_suplente1_autorizado_retirar" value="1" id="chk_autorizado_retirar_s1" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_autorizado_retirar_s1" class="ml-2 block text-sm text-gray-700">Posee autorización para retirar al alumno del establecimiento</label>
+            </div>
         </div>
 
         <!-- ==================== 6. APODERADO SUPLENTE 2 ==================== -->
@@ -365,6 +405,10 @@
                     <option value="9">Educación Superior</option>
                     <option value="6">Postgrado</option>
                 </select>
+            </div>
+            <div class="flex items-center pt-6">
+                <input type="checkbox" name="ap_suplente2_autorizado_retirar" value="1" id="chk_autorizado_retirar_s2" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_autorizado_retirar_s2" class="ml-2 block text-sm text-gray-700">Posee autorización para retirar al alumno del establecimiento</label>
             </div>
         </div>
 
@@ -475,6 +519,18 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono Médico Tratante</label>
                 <input type="tel" name="telefono_medico" id="telefono_medico" class="w-full rounded-lg border-gray-300 border px-3 py-2">
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Estatura (cm)</label>
+                <input type="text" name="estatura" id="estatura" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 145">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Peso (KG)</label>
+                <input type="text" name="peso" id="peso" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 45.5">
+            </div>
+            <div class="flex items-center pt-6">
+                <input type="checkbox" name="apto_educacion_fisica" value="1" id="chk_apto_ef" checked class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="chk_apto_ef" class="ml-2 block text-sm text-gray-700">Apto para educación física</label>
+            </div>
         </div>
         <div class="grid grid-cols-1 gap-4 mt-4">
             <div>
@@ -520,6 +576,10 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Profesional Tratante</label>
                 <input type="text" name="profesional_pie" id="profesional_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2">
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Permanencia <span class="text-xs text-gray-500">(Solo PIE)</span></label>
+                <input type="text" name="tipo_permanencia" id="tipo_permanencia" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Parcial, Total, etc.">
             </div>
         </div>
         <div class="grid grid-cols-1 gap-4 mt-4">
@@ -772,27 +832,6 @@
             </div>
         </div>
 
-        <!-- ==================== 17. OBSERVACIONES GENERALES ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">17. Observaciones Generales</h3>
-        <div class="grid grid-cols-1 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Académicas</label>
-                <textarea name="obs_academicas" id="obs_academicas" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Médicas</label>
-                <textarea name="obs_medicas" id="obs_medicas" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Familiares</label>
-                <textarea name="obs_familiares" id="obs_familiares" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Comentarios del Establecimiento</label>
-                <textarea name="obs_establecimiento" id="obs_establecimiento" rows="3" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-        </div>
-
         <!-- BOTONES -->
         <div class="pt-8 flex justify-end space-x-3 border-t">
             <a href="{{ url_for('matricula.listar_estudiantes') }}" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancelar</a>
@@ -894,6 +933,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     chkEsNuevo.addEventListener('change', toggleAcademica);
     toggleAcademica();
+
+    // ── Computadoras dinámico ──
+    const chkComputadores = document.getElementById('chk_tiene_computadores');
+    const divCantidadComputadores = document.getElementById('campo-cantidad-computadores');
+    const inputCantidadComputadores = document.getElementById('cantidad_computadores');
+    function toggleComputadores() {
+        if (chkComputadores.checked) {
+            divCantidadComputadores.classList.remove('hidden');
+        } else {
+            divCantidadComputadores.classList.add('hidden');
+            inputCantidadComputadores.value = '';
+        }
+    }
+    chkComputadores.addEventListener('change', toggleComputadores);
+    toggleComputadores();
 
     // ═══════════════════════════════════════════════════════════════
     // AUTOCOMPLETE DE MATRÍCULA ANTERIOR
@@ -1062,6 +1116,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('obs_medicas', e.obs_medicas);
                     setVal('obs_familiares', e.obs_familiares);
                     setVal('obs_establecimiento', e.obs_establecimiento);
+
+                    // Nuevos campos
+                    setVal('religion', e.religion);
+                    setChk('chk_acepta_religion', e.acepta_religion);
+                    setChk('chk_tiene_computadores', e.tiene_computadores);
+                    setVal('cantidad_computadores', e.cantidad_computadores);
+                    setVal('vive_con', e.vive_con);
                 }
 
                 // ── Apoderado titular ──
@@ -1078,6 +1139,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('ap_titular_lugar_trabajo', a.lugar_trabajo);
                     setVal('ap_titular_direccion', a.direccion);
                     setVal('ap_titular_nivel_educativo', a.nivel);
+                    setVal('ap_titular_estado_civil', a.estado_civil);
+                    setChk('chk_autorizado_retirar', a.autorizado_retirar);
                 }
 
                 // ── Contactos de emergencia ──
@@ -1111,6 +1174,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('centro_salud', h.centro_salud);
                     setVal('medico_tratante', h.medico_tratante);
                     setVal('telefono_medico', h.telefono_medico);
+                    setVal('estatura', h.estatura);
+                    setVal('peso', h.peso);
+                    setChk('chk_apto_ef', h.apto_educacion_fisica);
                 }
 
                 // ── PIE ──
@@ -1120,6 +1186,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('fecha_diagnostico_pie', data.pie.fecha_diagnostico_pie);
                     setVal('profesional_pie', data.pie.profesional_pie);
                     setVal('observaciones_pie', data.pie.observaciones_pie);
+                    setVal('tipo_permanencia', data.pie.tipo_permanencia);
                 }
 
                 // Mostrar confirmación

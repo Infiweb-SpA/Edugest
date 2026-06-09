@@ -184,6 +184,8 @@ def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
                 detalle.LugarTrabajo = trabajo
                 detalle.Direccion = direccion
                 detalle.CorreoElectronico = email
+                detalle.EstadoCivil = request.form.get(f'{prefix}_estado_civil')
+                detalle.AutorizadoRetirarEstablecimiento = _parse_bool(f'{prefix}_autorizado_retirar')
             else:
                 db.session.add(EdugestPersonRelationshipDetail(
                     PersonRelationshipId=relacion_existente.PersonRelationshipId,
@@ -191,7 +193,9 @@ def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
                     ProfesionOcupacion=profesion,
                     LugarTrabajo=trabajo,
                     Direccion=direccion,
-                    CorreoElectronico=email
+                    CorreoElectronico=email,
+                    EstadoCivil=request.form.get(f'{prefix}_estado_civil'),
+                    AutorizadoRetirarEstablecimiento=_parse_bool(f'{prefix}_autorizado_retirar')
                 ))
 
         return apoderado
@@ -251,7 +255,8 @@ def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
                 ProfesionOcupacion=profesion,
                 LugarTrabajo=trabajo,
                 Direccion=direccion,
-                CorreoElectronico=email
+                CorreoElectronico=email,
+                AutorizadoRetirarEstablecimiento=_parse_bool(f'{prefix}_autorizado_retirar')
             ))
 
         return apoderado
@@ -395,6 +400,8 @@ def _serialize_estudiante(person_id):
             'parentesco': ap['detalle'].Parentesco if ap['detalle'] else None,
             'profesion': ap['detalle'].ProfesionOcupacion if ap['detalle'] else None,
             'lugar_trabajo': ap['detalle'].LugarTrabajo if ap['detalle'] else None,
+            'estado_civil': ap['detalle'].EstadoCivil if ap['detalle'] else None,
+            'autorizado_retirar': ap['detalle'].AutorizadoRetirarEstablecimiento if ap['detalle'] else False,
         }
     
     def contacto_json(c):
@@ -477,6 +484,11 @@ def _serialize_estudiante(person_id):
             'obs_medicas': enrollment.ObservacionesMedicas if enrollment else None,
             'obs_familiares': enrollment.ObservacionesFamiliares if enrollment else None,
             'obs_establecimiento': enrollment.ComentariosEstablecimiento if enrollment else None,
+            'religion': enrollment.Religion if enrollment else None,
+            'acepta_religion': enrollment.AceptaReligionEnColegio if enrollment else False,
+            'tiene_computadores': enrollment.TieneComputadores if enrollment else False,
+            'cantidad_computadores': enrollment.CantidadComputadores if enrollment else None,
+            'vive_con': enrollment.ViveCon if enrollment else None,
             'es_nuevo': enrollment.EsNuevoEnEstablecimiento if enrollment else True,
         },
         'contactos_emergencia': [contacto_json(c) for c in contactos],
@@ -492,6 +504,9 @@ def _serialize_estudiante(person_id):
             'centro_salud': health.CentroSaludHabitual if health else None,
             'medico_tratante': health.MedicoTratante if health else None,
             'telefono_medico': health.TelefonoMedicoTratante if health else None,
+            'estatura': health.Estatura if health else None,
+            'peso': health.Peso if health else None,
+            'apto_educacion_fisica': health.AptoEducacionFisica if health else True,
         } if health else None,
         'pie': {
             'pertenece_pie': pie.PertenecePIE if pie else False,
@@ -499,6 +514,7 @@ def _serialize_estudiante(person_id):
             'fecha_diagnostico_pie': pie.FechaDiagnostico.isoformat() if pie and pie.FechaDiagnostico else None,
             'profesional_pie': pie.ProfesionalTratante if pie else None,
             'observaciones_pie': pie.ObservacionesPIE if pie else None,
+            'tipo_permanencia': pie.TipoPermanencia if pie else None,
         } if pie else None,
     }
 
@@ -756,6 +772,12 @@ def nuevo_estudiante():
             enrollment.ObservacionesMedicas = request.form.get('obs_medicas')
             enrollment.ObservacionesFamiliares = request.form.get('obs_familiares')
             enrollment.ComentariosEstablecimiento = request.form.get('obs_establecimiento')
+                        # Nuevos campos matrícula
+            enrollment.Religion = request.form.get('religion')
+            enrollment.AceptaReligionEnColegio = _parse_bool('acepta_religion')
+            enrollment.TieneComputadores = _parse_bool('tiene_computadores')
+            enrollment.CantidadComputadores = _parse_int('cantidad_computadores')
+            enrollment.ViveCon = request.form.get('vive_con')
 
             # Contactos de emergencia
             for i in [1, 2]:
@@ -799,6 +821,9 @@ def nuevo_estudiante():
                 health.CentroSaludHabitual = request.form.get('centro_salud')
                 health.MedicoTratante = request.form.get('medico_tratante')
                 health.TelefonoMedicoTratante = request.form.get('telefono_medico')
+                health.Estatura = request.form.get('estatura')
+                health.Peso = request.form.get('peso')
+                health.AptoEducacionFisica = _parse_bool('apto_educacion_fisica')
 
             # PIE
             pie = EdugestStudentPIE.query.filter_by(PersonId=nueva_persona.PersonId).first()
@@ -811,6 +836,7 @@ def nuevo_estudiante():
                 pie.FechaDiagnostico = _parse_date('fecha_diagnostico_pie')
                 pie.ProfesionalTratante = request.form.get('profesional_pie')
                 pie.ObservacionesPIE = request.form.get('observaciones_pie')
+                pie.TipoPermanencia = request.form.get('tipo_permanencia')
             elif pie:
                 pie.PertenecePIE = False
 

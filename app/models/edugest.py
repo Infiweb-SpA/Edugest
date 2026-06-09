@@ -272,6 +272,12 @@ class EdugestStudentEnrollment(db.Model):
     ObservacionesMedicas = db.Column(db.Text, nullable=True)
     ObservacionesFamiliares = db.Column(db.Text, nullable=True)
     ComentariosEstablecimiento = db.Column(db.Text, nullable=True)
+    # Campos adicionales matrícula 2026
+    Religion = db.Column(db.String(100), nullable=True)
+    AceptaReligionEnColegio = db.Column(db.Boolean, default=False, nullable=False)
+    TieneComputadores = db.Column(db.Boolean, default=False, nullable=False)
+    CantidadComputadores = db.Column(db.Integer, nullable=True)
+    ViveCon = db.Column(db.String(255), nullable=True)
 
 
 class EdugestEmergencyContact(db.Model):
@@ -314,6 +320,10 @@ class EdugestStudentHealth(db.Model):
     CentroSaludHabitual = db.Column(db.String(255), nullable=True)
     MedicoTratante = db.Column(db.String(255), nullable=True)
     TelefonoMedicoTratante = db.Column(db.String(50), nullable=True)
+        # Campos físicos y deportivos
+    Estatura = db.Column(db.String(20), nullable=True)
+    Peso = db.Column(db.String(20), nullable=True)
+    AptoEducacionFisica = db.Column(db.Boolean, default=True, nullable=False)
 
 
 class EdugestStudentPIE(db.Model):
@@ -328,6 +338,8 @@ class EdugestStudentPIE(db.Model):
     FechaDiagnostico = db.Column(db.Date, nullable=True)
     ProfesionalTratante = db.Column(db.String(255), nullable=True)
     ObservacionesPIE = db.Column(db.Text, nullable=True)
+        # Tipo de permanencia (solo PIE)
+    TipoPermanencia = db.Column(db.String(100), nullable=True)
 
 
 class EdugestPersonRelationshipDetail(db.Model):
@@ -342,3 +354,6 @@ class EdugestPersonRelationshipDetail(db.Model):
     LugarTrabajo = db.Column(db.String(255), nullable=True)
     Direccion = db.Column(db.Text, nullable=True)
     CorreoElectronico = db.Column(db.String(255), nullable=True)
+        # Campos adicionales apoderado
+    EstadoCivil = db.Column(db.String(50), nullable=True)
+    AutorizadoRetirarEstablecimiento = db.Column(db.Boolean, default=False, nullable=False)
