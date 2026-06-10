@@ -3,852 +3,1332 @@
 {% block header_title %}{{ 'Editar' if estudiante else 'Nueva Matrícula' }}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-    <form method="POST" class="space-y-8" id="form-matricula">
+<style>
+  /* ══════════════════════════════════════════════════════ */
+  /* NAVEGACIÓN STICKY + PROGRESO                          */
+  /* ══════════════════════════════════════════════════════ */
+  .form-nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .form-nav-inner {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0.625rem 1rem;
+  }
+  .form-nav-links {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    padding-bottom: 0.375rem;
+  }
+  .form-nav-links::-webkit-scrollbar { display: none; }
+  .form-nav-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: #6b7280;
+    border-radius: 0.375rem;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .form-nav-links a:hover { background: #eef2ff; color: #4338ca; }
+  .form-nav-links a .nav-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.5625rem;
+    font-weight: 700;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #6b7280;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+  .form-nav-links a.nav-completo .nav-num {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .form-nav-links a.nav-activo {
+    background: #eef2ff;
+    color: #4338ca;
+    font-weight: 600;
+  }
+  .form-nav-links a.nav-activo .nav-num {
+    background: #4338ca;
+    color: #fff;
+  }
 
-        <!-- ==================== 0. BUSCAR MATRÍCULA ANTERIOR ==================== -->
-        <h3 class="text-lg font-bold text-indigo-900 border-b pb-2">0. Precargar desde Matrícula Anterior</h3>
-        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 relative">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Buscar estudiante matriculado anteriormente</label>
-            <div class="relative">
-                <input type="text" id="input-buscar-estudiante" 
-                       class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white pr-10" 
-                       placeholder="Escriba nombre o RUT (mínimo 3 caracteres)..." 
-                       autocomplete="off">
-                <div id="resultados-busqueda" class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
-                    <!-- Resultados se inyectan aquí -->
-                </div>
-            </div>
-            <input type="hidden" id="person-id-seleccionado" name="person_id_precargado" value="">
-            <p class="text-xs text-gray-500 mt-1">Al seleccionar un estudiante se precargarán sus datos personales. Podrá modificarlos antes de guardar.</p>
-            <div id="info-precarga" class="hidden mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
-                <p class="text-sm text-green-800 font-medium">✓ Datos precargados. Puede modificar cualquier campo antes de guardar.</p>
-                
-                <div id="opciones-suplentes" class="mt-3 pt-3 border-t border-green-300 hidden flex-col gap-2">
-                    <label id="label-mantener-s1" class="hidden items-center text-sm text-green-800 cursor-pointer">
-                        <input type="checkbox" id="chk_mantener_s1" checked class="mr-2 h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-500">
-                        Mantener Apoderado Suplente 1 (<span id="nombre-s1" class="font-semibold"></span>)
-                    </label>
-                    <label id="label-mantener-s2" class="hidden items-center text-sm text-green-800 cursor-pointer">
-                        <input type="checkbox" id="chk_mantener_s2" checked class="mr-2 h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-500">
-                        Mantener Apoderado Suplente 2 (<span id="nombre-s2" class="font-semibold"></span>)
-                    </label>
-                </div>
-            </div>
-        </div>
+  /* Barra de progreso */
+  .progress-bar-track {
+    width: 100%;
+    height: 3px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 0.375rem;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4338ca, #6366f1);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-text {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    text-align: right;
+  }
 
-        <!-- ==================== 1. DATOS PERSONALES ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">1. Datos Personales del Estudiante</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre <span class="text-red-500">*</span></label>
-                <input type="text" name="first_name" id="first_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.FirstName if estudiante else '' }}">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Segundo Nombre</label>
-                <input type="text" name="middle_name" id="middle_name" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.MiddleName if estudiante else '' }}">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
-                <input type="text" name="last_name" id="last_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.LastName if estudiante else '' }}">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="second_last_name" id="second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.SecondLastName if estudiante else '' }}">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
-                <select name="ref_sex_id" id="ref_sex_id" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="1" {{ 'selected' if estudiante and estudiante.RefSexId == 1 else '' }}>Masculino</option>
-                    <option value="2" {{ 'selected' if estudiante and estudiante.RefSexId == 2 else '' }}>Femenino</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
-                <input type="date" name="birthdate" id="birthdate" class="w-full rounded-lg border-gray-300 border px-3 py-2" value="{{ estudiante.Birthdate if estudiante else '' }}">
-            </div>
-        </div>
+  /* ══════════════════════════════════════════════════════ */
+  /* SECCIONES DEL FORMULARIO                              */
+  /* ══════════════════════════════════════════════════════ */
+  .form-section {
+    border-left: 4px solid transparent;
+    transition: box-shadow 0.2s ease, border-left-color 0.3s ease;
+  }
+  .form-section:focus-within {
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
+  }
 
-        <!-- ==================== 1b. DATOS ADICIONALES ESTUDIANTE ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">1b. Datos Adicionales del Estudiante</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nacionalidad</label>
-                <input type="text" name="nacionalidad" id="nacionalidad" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Chilena">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">País de Origen</label>
-                <input type="text" name="pais_origen" id="pais_origen" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Chile">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Comuna de Residencia</label>
-                <input type="text" name="comuna_residencia" id="comuna_residencia" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Temuco">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Región de Residencia</label>
-                <select name="region_residencia" id="region_residencia" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar región --</option>
-                    <option value="Arica y Parinacota">Arica y Parinacota</option>
-                    <option value="Tarapacá">Tarapacá</option>
-                    <option value="Antofagasta">Antofagasta</option>
-                    <option value="Atacama">Atacama</option>
-                    <option value="Coquimbo">Coquimbo</option>
-                    <option value="Valparaíso">Valparaíso</option>
-                    <option value="Metropolitana de Santiago">Metropolitana de Santiago</option>
-                    <option value="Libertador General Bernardo O'Higgins">Libertador General Bernardo O'Higgins</option>
-                    <option value="Maule">Maule</option>
-                    <option value="Ñuble">Ñuble</option>
-                    <option value="Biobío">Biobío</option>
-                    <option value="La Araucanía">La Araucanía</option>
-                    <option value="Los Ríos">Los Ríos</option>
-                    <option value="Los Lagos">Los Lagos</option>
-                    <option value="Aysén del General Carlos Ibáñez del Campo">Aysén del General Carlos Ibáñez del Campo</option>
-                    <option value="Magallanes y de la Antártica Chilena">Magallanes y de la Antártica Chilena</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico (Enseñanza Media)</label>
-                <input type="email" name="email_estudiante" id="email_estudiante" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: alumno@email.com">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono del Estudiante</label>
-                <input type="tel" name="telefono_estudiante" id="telefono_estudiante" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: +56912345678">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Religión</label>
-                <input type="text" name="religion" id="religion" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Católica, Evangélica, etc.">
-            </div>
-            <div class="flex items-center pt-6">
-                <input type="checkbox" name="acepta_religion" value="1" id="chk_acepta_religion" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_acepta_religion" class="ml-2 block text-sm text-gray-700">Aceptaría religión en el colegio</label>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Vive con</label>
-                <input type="text" name="vive_con" id="vive_con" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Padre, Madre, Abuelos, etc.">
-            </div>
-            <div class="flex items-center pt-6">
-                <input type="checkbox" name="tiene_computadores" value="1" id="chk_tiene_computadores" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_tiene_computadores" class="ml-2 block text-sm text-gray-700">¿Tiene computadoras en la casa?</label>
-            </div>
-            <div id="campo-cantidad-computadores" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad de computadores</label>
-                <input type="number" name="cantidad_computadores" id="cantidad_computadores" class="w-full rounded-lg border-gray-300 border px-3 py-2" min="0">
-            </div>
-        </div>
+  /* Colores por categoría */
+  .form-section.sec-buscar    { border-left-color: #6366f1; }
+  .form-section.sec-identidad { border-left-color: #4f46e5; }
+  .form-section.sec-adicional { border-left-color: #818cf8; }
+  .form-section.sec-ids       { border-left-color: #2563eb; }
+  .form-section.sec-residencia{ border-left-color: #8b5cf6; }
+  .form-section.sec-ap-titular{ border-left-color: #059669; }
+  .form-section.sec-ap-sup1   { border-left-color: #10b981; }
+  .form-section.sec-ap-sup2   { border-left-color: #10b981; }
+  .form-section.sec-emergencia{ border-left-color: #d97706; }
+  .form-section.sec-medica    { border-left-color: #dc2626; }
+  .form-section.sec-pie       { border-left-color: #7c3aed; }
+  .form-section.sec-academica { border-left-color: #0284c7; }
+  .form-section.sec-socio     { border-left-color: #0891b2; }
+  .form-section.sec-sep       { border-left-color: #16a34a; }
+  .form-section.sec-cultural  { border-left-color: #a855f7; }
+  .form-section.sec-transporte{ border-left-color: #ea580c; }
+  .form-section.sec-autoriza  { border-left-color: #0d9488; }
+  .form-section.sec-docs      { border-left-color: #475569; }
 
-        <!-- ==================== 2. IDENTIFICADORES ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">2. Identificadores Oficiales MINEDUC</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT) <span class="text-red-500">*</span></label>
-                <input type="text" name="rut" id="rut" required placeholder="Ej: 12345678-9" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-                <p class="text-xs text-gray-400 mt-1">Se acepta con o sin puntos y guion. Se guardará como: 12.345.678-9</p>
-            </div>
-            <div>
-                <div class="flex items-center mb-2">
-                    <input type="checkbox" name="es_extranjero" id="chk_extranjero" value="1" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                    <label for="chk_extranjero" class="ml-2 block text-sm text-gray-700">Estudiante extranjero (sin RUN chileno)</label>
-                </div>
-                <div id="campo-ipe" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">IPE <span class="text-xs text-gray-500">(Identificador Provisional de Extranjero)</span></label>
-                    <input type="text" name="ipe" id="ipe" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">N° Correlativo Matrícula</label>
-                <input type="text" name="num_matricula" id="num_matricula" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">N° de Lista</label>
-                <input type="text" name="num_lista" id="num_lista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-        </div>
+  /* Badge de categoría */
+  .sec-badge {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.5625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-radius: 0.25rem;
+    margin-bottom: 0.375rem;
+  }
+  .sec-badge.badge-buscar    { background: #eef2ff; color: #4338ca; }
+  .sec-badge.badge-identidad { background: #eef2ff; color: #4f46e5; }
+  .sec-badge.badge-adicional { background: #eef2ff; color: #6366f1; }
+  .sec-badge.badge-ids       { background: #eff6ff; color: #2563eb; }
+  .sec-badge.badge-residencia{ background: #f5f3ff; color: #7c3aed; }
+  .sec-badge.badge-apoderado { background: #ecfdf5; color: #059669; }
+  .sec-badge.badge-emergencia{ background: #fffbeb; color: #d97706; }
+  .sec-badge.badge-medica    { background: #fef2f2; color: #dc2626; }
+  .sec-badge.badge-pie       { background: #f5f3ff; color: #7c3aed; }
+  .sec-badge.badge-academica { background: #eff6ff; color: #0284c7; }
+  .sec-badge.badge-socio     { background: #ecfeff; color: #0891b2; }
+  .sec-badge.badge-sep       { background: #f0fdf4; color: #16a34a; }
+  .sec-badge.badge-cultural  { background: #faf5ff; color: #a855f7; }
+  .sec-badge.badge-transporte{ background: #fff7ed; color: #ea580c; }
+  .sec-badge.badge-autoriza  { background: #f0fdfa; color: #0d9488; }
+  .sec-badge.badge-docs      { background: #f1f5f9; color: #475569; }
 
-        <!-- ==================== 3. RESIDENCIA Y MATRÍCULA EN CURSO ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">3. Residencia y Matrícula en Curso</h3>
-        <div class="grid grid-cols-1 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección / Residencia <span class="text-red-500">*</span></label>
-                <input type="text" name="residencia" id="residencia" required placeholder="Ej: Av. Alemania 1234, Temuco" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educativo <span class="text-red-500">*</span></label>
-                <select id="select-nivel" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar nivel --</option>
-                    {% for nivel in niveles %}
-                    <option value="{{ nivel.OrganizationId }}">{{ nivel.Name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Grado / Año <span class="text-red-500">*</span></label>
-                <select id="select-grado" required disabled class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white disabled:bg-gray-100">
-                    <option value="">-- Primero seleccione nivel --</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Letra del Curso <span class="text-red-500">*</span></label>
-                <select id="select-curso" name="curso_id" required disabled class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white disabled:bg-gray-100">
-                    <option value="">-- Primero seleccione grado --</option>
-                </select>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Matrícula <span class="text-red-500">*</span></label>
-                <input type="date" name="entry_date" id="entry_date" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Ingreso al Establecimiento</label>
-                <input type="date" name="fecha_ingreso_establecimiento" id="fecha_ingreso_establecimiento" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-        </div>
+  /* Secciones opcionales */
+  .form-section.opcional {
+    background: #fafbfc;
+  }
+  .opcional-label {
+    display: inline-block;
+    padding: 0.0625rem 0.375rem;
+    font-size: 0.5625rem;
+    font-weight: 600;
+    background: #f3f4f6;
+    color: #9ca3af;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
 
-        <!-- ==================== 4. APODERADO TITULAR ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">4. Apoderado Titular <span class="text-red-500">*</span></h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre <span class="text-red-500">*</span></label>
-                <input type="text" name="ap_titular_first_name" id="ap_titular_first_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
-                <input type="text" name="ap_titular_last_name" id="ap_titular_last_name" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="ap_titular_second_last_name" id="ap_titular_second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT) <span class="text-red-500">*</span></label>
-                <input type="text" name="ap_titular_rut" id="ap_titular_rut" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Parentesco <span class="text-red-500">*</span></label>
-                <select name="ap_titular_parentesco" id="ap_titular_parentesco" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="Padre">Padre</option>
-                    <option value="Madre">Madre</option>
-                    <option value="Tutor">Tutor</option>
-                    <option value="Abuelo/a">Abuelo/a</option>
-                    <option value="Tío/a">Tío/a</option>
-                    <option value="Otro">Otro</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                <input type="email" name="ap_titular_email" id="ap_titular_email" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono <span class="text-red-500">*</span></label>
-                <input type="tel" name="ap_titular_telefono" id="ap_titular_telefono" required class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación</label>
-                <input type="text" name="ap_titular_profesion" id="ap_titular_profesion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Lugar de Trabajo</label>
-                <input type="text" name="ap_titular_lugar_trabajo" id="ap_titular_lugar_trabajo" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div class="md:col-span-3">
-                <div class="flex items-center mb-2">
-                    <input type="checkbox" id="chk_misma_direccion" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                    <label for="chk_misma_direccion" class="ml-2 block text-sm text-gray-700">La dirección es la misma que la del estudiante</label>
-                </div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección (si es distinta al estudiante)</label>
-                <input type="text" name="ap_titular_direccion" id="ap_titular_direccion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional <span class="text-red-500">*</span></label>
-                <select name="ap_titular_nivel_educativo" id="ap_titular_nivel_educativo" required class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="1">Educación Parvularia</option>
-                    <option value="2">Educación Básica</option>
-                    <option value="3">Educación Media</option>
-                    <option value="7">Educación Media Científico-Humanista</option>
-                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
-                    <option value="4">Educación Técnico-Profesional</option>
-                    <option value="5">Educación Universitaria</option>
-                    <option value="9">Educación Superior</option>
-                    <option value="6">Postgrado</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Estado Civil</label>
-                <select name="ap_titular_estado_civil" id="ap_titular_estado_civil" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="Soltero/a">Soltero/a</option>
-                    <option value="Casado/a">Casado/a</option>
-                    <option value="Divorciado/a">Divorciado/a</option>
-                    <option value="Viudo/a">Viudo/a</option>
-                    <option value="Conviviente">Conviviente</option>
-                    <option value="Separado/a">Separado/a</option>
-                </select>
-            </div>
-            <div class="flex items-center pt-6 md:col-span-2">
-                <input type="checkbox" name="ap_titular_autorizado_retirar" value="1" id="chk_autorizado_retirar" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_autorizado_retirar" class="ml-2 block text-sm text-gray-700">Posee autorización para retirar al alumno del establecimiento</label>
-            </div>
-        </div>
+  /* ══════════════════════════════════════════════════════ */
+  /* CAMPOS DE FORMULARIO                                  */
+  /* ══════════════════════════════════════════════════════ */
+  .form-input {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    min-height: 44px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background: #fff;
+  }
+  .form-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  }
+  .form-input::placeholder { color: #9ca3af; }
+  .form-input.bg-disabled {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
 
-        <!-- ==================== 5. APODERADO SUPLENTE 1 ==================== -->
-        <h3 class="text-lg font-bold text-gray-500 border-b pb-2">5. Apoderado Suplente 1 <span class="text-xs font-normal">(Opcional)</span></h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre</label>
-                <input type="text" name="ap_suplente1_first_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
-                <input type="text" name="ap_suplente1_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="ap_suplente1_second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT)</label>
-                <input type="text" name="ap_suplente1_rut" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Parentesco</label>
-                <select name="ap_suplente1_parentesco" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="Padre">Padre</option>
-                    <option value="Madre">Madre</option>
-                    <option value="Tutor">Tutor</option>
-                    <option value="Abuelo/a">Abuelo/a</option>
-                    <option value="Tío/a">Tío/a</option>
-                    <option value="Otro">Otro</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                <input type="email" name="ap_suplente1_email" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input type="tel" name="ap_suplente1_telefono" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación</label>
-                <input type="text" name="ap_suplente1_profesion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional</label>
-                <select name="ap_suplente1_nivel_educativo" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="1">Educación Parvularia</option>
-                    <option value="2">Educación Básica</option>
-                    <option value="3">Educación Media</option>
-                    <option value="7">Educación Media Científico-Humanista</option>
-                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
-                    <option value="4">Educación Técnico-Profesional</option>
-                    <option value="5">Educación Universitaria</option>
-                    <option value="9">Educación Superior</option>
-                    <option value="6">Postgrado</option>
-                </select>
-            </div>
-            <div class="flex items-center pt-6">
-                <input type="checkbox" name="ap_suplente1_autorizado_retirar" value="1" id="chk_autorizado_retirar_s1" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_autorizado_retirar_s1" class="ml-2 block text-sm text-gray-700">Posee autorización para retirar al alumno del establecimiento</label>
-            </div>
-        </div>
+  .form-select {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+    background: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+  }
+  .form-select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  }
 
-        <!-- ==================== 6. APODERADO SUPLENTE 2 ==================== -->
-        <h3 class="text-lg font-bold text-gray-500 border-b pb-2">6. Apoderado Suplente 2 <span class="text-xs font-normal">(Opcional)</span></h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre</label>
-                <input type="text" name="ap_suplente2_first_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
-                <input type="text" name="ap_suplente2_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <input type="text" name="ap_suplente2_second_last_name" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">RUN (RUT)</label>
-                <input type="text" name="ap_suplente2_rut" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Parentesco</label>
-                <select name="ap_suplente2_parentesco" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="Padre">Padre</option>
-                    <option value="Madre">Madre</option>
-                    <option value="Tutor">Tutor</option>
-                    <option value="Abuelo/a">Abuelo/a</option>
-                    <option value="Tío/a">Tío/a</option>
-                    <option value="Otro">Otro</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                <input type="email" name="ap_suplente2_email" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input type="tel" name="ap_suplente2_telefono" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación</label>
-                <input type="text" name="ap_suplente2_profesion" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional</label>
-                <select name="ap_suplente2_nivel_educativo" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="1">Educación Parvularia</option>
-                    <option value="2">Educación Básica</option>
-                    <option value="3">Educación Media</option>
-                    <option value="7">Educación Media Científico-Humanista</option>
-                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
-                    <option value="4">Educación Técnico-Profesional</option>
-                    <option value="5">Educación Universitaria</option>
-                    <option value="9">Educación Superior</option>
-                    <option value="6">Postgrado</option>
-                </select>
-            </div>
-            <div class="flex items-center pt-6">
-                <input type="checkbox" name="ap_suplente2_autorizado_retirar" value="1" id="chk_autorizado_retirar_s2" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_autorizado_retirar_s2" class="ml-2 block text-sm text-gray-700">Posee autorización para retirar al alumno del establecimiento</label>
-            </div>
-        </div>
+  .form-textarea {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    resize: vertical;
+    background: #fff;
+  }
+  .form-textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  }
 
-        <!-- ==================== 7. CONTACTOS DE EMERGENCIA ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">7. Contactos de Emergencia</h3>
-        {% for i in [1, 2] %}
-        <div class="bg-gray-50 p-4 rounded-lg mb-4">
-            <h4 class="text-sm font-bold text-gray-700 mb-3">Contacto de Emergencia {{ i }}</h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Primer Nombre</label>
-                    <input type="text" name="contacto_emergencia_{{ i }}_first_name" class="w-full rounded border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Apellido Paterno</label>
-                    <input type="text" name="contacto_emergencia_{{ i }}_last_name" class="w-full rounded border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Apellido Materno</label>
-                    <input type="text" name="contacto_emergencia_{{ i }}_second_last_name" class="w-full rounded border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">RUN</label>
-                    <input type="text" name="contacto_emergencia_{{ i }}_run" class="w-full rounded border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Parentesco</label>
-                    <select name="contacto_emergencia_{{ i }}_parentesco" class="w-full rounded border-gray-300 border px-3 py-2 bg-white">
-                        <option value="">-- Seleccionar --</option>
-                        <option value="Padre">Padre</option>
-                        <option value="Madre">Madre</option>
-                        <option value="Tutor">Tutor</option>
-                        <option value="Abuelo/a">Abuelo/a</option>
-                        <option value="Tío/a">Tío/a</option>
-                        <option value="Otro">Otro</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Correo Electrónico</label>
-                    <input type="email" name="contacto_emergencia_{{ i }}_email" class="w-full rounded border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Teléfono Principal</label>
-                    <input type="tel" name="contacto_emergencia_{{ i }}_telefono" class="w-full rounded border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Teléfono Alternativo</label>
-                    <input type="tel" name="contacto_emergencia_{{ i }}_telefono_alt" class="w-full rounded border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Profesión u Ocupación</label>
-                    <input type="text" name="contacto_emergencia_{{ i }}_profesion" class="w-full rounded border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Nivel Educacional</label>
-                    <select name="contacto_emergencia_{{ i }}_nivel_educativo" class="w-full rounded border-gray-300 border px-3 py-2 bg-white">
-                        <option value="">-- Seleccionar --</option>
-                        <option value="1">Educación Parvularia</option>
-                        <option value="2">Educación Básica</option>
-                        <option value="3">Educación Media</option>
-                        <option value="7">Educación Media Científico-Humanista</option>
-                        <option value="8">Educación Media Técnico-Profesional (TP)</option>
-                        <option value="4">Educación Técnico-Profesional</option>
-                        <option value="5">Educación Universitaria</option>
-                        <option value="9">Educación Superior</option>
-                        <option value="6">Postgrado</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
+  .form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.375rem;
+    line-height: 1.3;
+  }
+  .form-label .req {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0.375rem;
+    height: 0.375rem;
+    background: #ef4444;
+    border-radius: 50%;
+    margin-left: 0.25rem;
+    vertical-align: super;
+  }
+  .form-help {
+    font-size: 0.6875rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+    line-height: 1.3;
+  }
 
-        <!-- ==================== 8. INFORMACIÓN MÉDICA ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">8. Información Médica</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Grupo Sanguíneo</label>
-                <select name="grupo_sanguineo" id="grupo_sanguineo" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Sistema de Salud</label>
-                <select name="sistema_salud" id="sistema_salud" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="Fonasa">Fonasa</option>
-                    <option value="Isapre">Isapre</option>
-                    <option value="Particular">Particular</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Centro de Salud Habitual</label>
-                <input type="text" name="centro_salud" id="centro_salud" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Médico Tratante</label>
-                <input type="text" name="medico_tratante" id="medico_tratante" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono Médico Tratante</label>
-                <input type="tel" name="telefono_medico" id="telefono_medico" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Estatura (cm)</label>
-                <input type="text" name="estatura" id="estatura" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 145">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Peso (KG)</label>
-                <input type="text" name="peso" id="peso" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 45.5">
-            </div>
-            <div class="flex items-center pt-6">
-                <input type="checkbox" name="apto_educacion_fisica" value="1" id="chk_apto_ef" checked class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_apto_ef" class="ml-2 block text-sm text-gray-700">Apto para educación física</label>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 gap-4 mt-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Enfermedades Permanentes</label>
-                <textarea name="enfermedades_permanentes" id="enfermedades_permanentes" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Alergias <span class="text-red-500">*</span></label>
-                <textarea name="alergias" id="alergias" rows="2" required class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Medicamentos Permanentes</label>
-                <textarea name="medicamentos_permanentes" id="medicamentos_permanentes" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Restricciones Alimentarias</label>
-                <textarea name="restricciones_alimentarias" id="restricciones_alimentarias" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Necesidades Médicas Especiales</label>
-                <textarea name="necesidades_medicas" id="necesidades_medicas" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones Médicas</label>
-                <textarea name="obs_medicas_detalle" id="obs_medicas_detalle" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-        </div>
+  /* Checkbox personalizado */
+  .form-checkbox-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    background: #fafbfc;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .form-checkbox-wrap:hover {
+    border-color: #c7d2fe;
+    background: #f5f3ff;
+  }
+  .form-checkbox-wrap input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+    accent-color: #4f46e5;
+  }
+  .form-checkbox-wrap label {
+    font-size: 0.8125rem;
+    color: #374151;
+    cursor: pointer;
+    line-height: 1.4;
+  }
 
-        <!-- ==================== 9. PROGRAMA PIE ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">9. Programa de Integración Escolar (PIE)</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Pertenece a PIE</label>
-                <select name="pertenece_pie" id="pertenece_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="0">No</option>
-                    <option value="1">Sí</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Diagnóstico</label>
-                <input type="date" name="fecha_diagnostico_pie" id="fecha_diagnostico_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Profesional Tratante</label>
-                <input type="text" name="profesional_pie" id="profesional_pie" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div class="md:col-span-3">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Permanencia <span class="text-xs text-gray-500">(Solo PIE)</span></label>
-                <input type="text" name="tipo_permanencia" id="tipo_permanencia" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: Parcial, Total, etc.">
-            </div>
-        </div>
-        <div class="grid grid-cols-1 gap-4 mt-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Diagnóstico PIE</label>
-                <textarea name="diagnostico_pie" id="diagnostico_pie" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones PIE</label>
-                <textarea name="observaciones_pie" id="observaciones_pie" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-            </div>
-        </div>
+  /* Grupo de checkboxes agrupados */
+  .checkbox-group {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .checkbox-group.grid-2 {
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 640px) {
+    .checkbox-group.grid-2 { grid-template-columns: 1fr 1fr; }
+  }
 
-        <!-- ==================== 10. INFORMACIÓN ACADÉMICA ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">10. Información Académica</h3>
-        <div class="mb-4">
-            <div class="flex items-center">
-                <input type="checkbox" name="es_nuevo" id="chk_es_nuevo" value="1" checked class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_es_nuevo" class="ml-2 block text-sm font-medium text-gray-700">¿Es nuevo en el establecimiento?</label>
-            </div>
-        </div>
-        <div id="info-academica-campos" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Colegio de Procedencia</label>
-                    <input type="text" name="colegio_procedencia" id="colegio_procedencia" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Comuna Colegio Anterior</label>
-                    <input type="text" name="comuna_colegio_anterior" id="comuna_colegio_anterior" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Región Colegio Anterior</label>
-                    <input type="text" name="region_colegio_anterior" id="region_colegio_anterior" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Último Curso Aprobado</label>
-                    <input type="text" name="ultimo_curso_aprobado" id="ultimo_curso_aprobado" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Año Último Curso Aprobado</label>
-                    <input type="number" name="anio_ultimo_curso" id="anio_ultimo_curso" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 2025">
-                </div>
-                <div class="md:col-span-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Motivo de Traslado</label>
-                    <textarea name="motivo_traslado" id="motivo_traslado" rows="2" class="w-full rounded-lg border-gray-300 border px-3 py-2"></textarea>
-                </div>
-            </div>
-        </div>
-        <div id="info-academica-mensaje" class="hidden bg-green-50 p-4 rounded-lg border border-green-200">
-            <p class="text-sm text-green-800 font-medium">Este estudiante ya pertenece al establecimiento. No se requiere información de colegio anterior.</p>
-        </div>
+  /* ══════════════════════════════════════════════════════ */
+  /* TRANSICIONES CONDICIONALES                            */
+  /* ══════════════════════════════════════════════════════ */
+  .campo-condicional {
+    overflow: hidden;
+    transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.25s ease;
+  }
+  .campo-condicional.oculto {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    pointer-events: none;
+  }
+  .campo-condicional.visible {
+    max-height: 500px;
+    opacity: 1;
+  }
 
-        <!-- ==================== 11. INFORMACIÓN SOCIOECONÓMICA ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">11. Información Socioeconómica</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional de la Madre</label>
-                <select name="nivel_madre" id="nivel_madre" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="1">Educación Parvularia</option>
-                    <option value="2">Educación Básica</option>
-                    <option value="3">Educación Media</option>
-                    <option value="7">Educación Media Científico-Humanista</option>
-                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
-                    <option value="4">Educación Técnico-Profesional</option>
-                    <option value="5">Educación Universitaria</option>
-                    <option value="9">Educación Superior</option>
-                    <option value="6">Postgrado</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional del Padre</label>
-                <select name="nivel_padre" id="nivel_padre" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="1">Educación Parvularia</option>
-                    <option value="2">Educación Básica</option>
-                    <option value="3">Educación Media</option>
-                    <option value="7">Educación Media Científico-Humanista</option>
-                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
-                    <option value="4">Educación Técnico-Profesional</option>
-                    <option value="5">Educación Universitaria</option>
-                    <option value="9">Educación Superior</option>
-                    <option value="6">Postgrado</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel Educacional del Apoderado</label>
-                <select name="nivel_apoderado" id="nivel_apoderado" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="1">Educación Parvularia</option>
-                    <option value="2">Educación Básica</option>
-                    <option value="3">Educación Media</option>
-                    <option value="7">Educación Media Científico-Humanista</option>
-                    <option value="8">Educación Media Técnico-Profesional (TP)</option>
-                    <option value="4">Educación Técnico-Profesional</option>
-                    <option value="5">Educación Universitaria</option>
-                    <option value="9">Educación Superior</option>
-                    <option value="6">Postgrado</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ingreso Familiar (Opcional)</label>
-                <input type="text" name="ingreso_familiar" id="ingreso_familiar" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 800000 - 1200000">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">N° Integrantes del Hogar</label>
-                <input type="number" name="num_integrantes_hogar" id="num_integrantes_hogar" class="w-full rounded-lg border-gray-300 border px-3 py-2" min="1">
-            </div>
-        </div>
+  /* ══════════════════════════════════════════════════════ */
+  /* BOTONES ACCIÓN STICKY EN MÓVIL                       */
+  /* ══════════════════════════════════════════════════════ */
+  .form-actions-sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid #e5e7eb;
+    padding: 0.75rem 1rem;
+  }
 
-        <!-- ==================== 12. INFORMACIÓN SEP ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">12. Información SEP</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="flex items-center">
-                <input type="checkbox" name="alumno_prioritario" value="1" id="chk_prioritario" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_prioritario" class="ml-2 block text-sm text-gray-700">Alumno Prioritario</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="alumno_preferente" value="1" id="chk_preferente" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_preferente" class="ml-2 block text-sm text-gray-700">Alumno Preferente</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="beneficiario_sep" value="1" id="chk_sep" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_sep" class="ml-2 block text-sm text-gray-700">Beneficiario SEP</label>
-            </div>
-        </div>
+  /* ══════════════════════════════════════════════════════ */
+  /* IMPRESIÓN                                             */
+  /* ══════════════════════════════════════════════════════ */
+  @media print {
+    .form-nav { display: none !important; }
+    .form-actions-sticky { display: none !important; }
+    body { font-size: 9pt; color: #000; }
+    .form-section {
+      break-inside: avoid;
+      box-shadow: none !important;
+      border: 1px solid #d1d5db;
+      border-left: 4px solid #4f46e5;
+      margin-bottom: 0.75rem;
+      page-break-inside: avoid;
+    }
+    .form-section:focus-within { box-shadow: none !important; }
+    .form-input, .form-select, .form-textarea {
+      border: 1px solid #9ca3af;
+      box-shadow: none !important;
+      min-height: auto;
+      padding: 0.25rem 0.5rem;
+      font-size: 8pt;
+    }
+    .form-checkbox-wrap { border: 1px solid #d1d5db; min-height: auto; padding: 0.25rem 0.5rem; }
+    .campo-condicional.oculto { display: none !important; }
+    .campo-condicional.visible { max-height: none; opacity: 1; }
+    #info-precarga { display: none !important; }
+    #resultados-busqueda { display: none !important; }
+    .max-w-5xl { max-width: 100% !important; }
+    .shadow-sm { box-shadow: none !important; }
+    a[href] { text-decoration: none; color: inherit; }
+  }
+</style>
 
-        <!-- ==================== 13. INFORMACIÓN CULTURAL ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">13. Información Cultural</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="flex items-center">
-                <input type="checkbox" name="pertenece_pueblo_originario" value="1" id="chk_pueblo" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_pueblo" class="ml-2 block text-sm text-gray-700">Pertenece a Pueblo Originario</label>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Pueblo Originario</label>
-                <input type="text" name="pueblo_originario" id="pueblo_originario" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="habla_lengua_indigena" value="1" id="chk_lengua" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_lengua" class="ml-2 block text-sm text-gray-700">Habla Lengua Indígena</label>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Lengua Indígena</label>
-                <input type="text" name="lengua_indigena" id="lengua_indigena" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nacionalidad Extranjera</label>
-                <input type="text" name="nacionalidad_extranjera" id="nacionalidad_extranjera" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-        </div>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- NAVEGACIÓN STICKY CON PROGRESO                             -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<nav class="form-nav" aria-label="Navegación del formulario de matrícula">
+  <div class="form-nav-inner">
+    <div class="form-nav-links">
+      <a href="#sec-buscar"><span class="nav-num">0</span> Precarga</a>
+      <a href="#sec-personales"><span class="nav-num">1</span> Personales</a>
+      <a href="#sec-adicionales"><span class="nav-num">1b</span> Adicionales</a>
+      <a href="#sec-ids"><span class="nav-num">2</span> IDs</a>
+      <a href="#sec-residencia"><span class="nav-num">3</span> Residencia</a>
+      <a href="#sec-ap-titular"><span class="nav-num">4</span> Ap. Titular</a>
+      <a href="#sec-suplente1"><span class="nav-num">5</span> Suplente 1</a>
+      <a href="#sec-suplente2"><span class="nav-num">6</span> Suplente 2</a>
+      <a href="#sec-emergencia"><span class="nav-num">7</span> Emergencia</a>
+      <a href="#sec-medica"><span class="nav-num">8</span> Salud</a>
+      <a href="#sec-pie"><span class="nav-num">9</span> PIE</a>
+      <a href="#sec-academica"><span class="nav-num">10</span> Académica</a>
+      <a href="#sec-socio"><span class="nav-num">11</span> Socioeconómica</a>
+      <a href="#sec-sep"><span class="nav-num">12</span> SEP</a>
+      <a href="#sec-cultural"><span class="nav-num">13</span> Cultural</a>
+      <a href="#sec-transporte"><span class="nav-num">14</span> Transporte</a>
+      <a href="#sec-autoriza"><span class="nav-num">15</span> Autorizaciones</a>
+      <a href="#sec-docs"><span class="nav-num">16</span> Documentación</a>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-text" id="progress-text">0% completado</div>
+  </div>
+</nav>
 
-        <!-- ==================== 14. TRANSPORTE ESCOLAR ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">14. Transporte Escolar</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Medio de Transporte</label>
-                <select name="medio_transporte" id="medio_transporte" class="w-full rounded-lg border-gray-300 border px-3 py-2 bg-white">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="Bus público">Bus público</option>
-                    <option value="Bus escolar">Bus escolar</option>
-                    <option value="Auto particular">Auto particular</option>
-                    <option value="Caminando">Caminando</option>
-                    <option value="Bicicleta">Bicicleta</option>
-                    <option value="Otro">Otro</option>
-                </select>
-            </div>
-            <div class="flex items-center pt-6">
-                <input type="checkbox" name="utiliza_transporte_escolar" value="1" id="chk_transporte" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_transporte" class="ml-2 block text-sm text-gray-700">Utiliza Transporte Escolar</label>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Transportista</label>
-                <input type="text" name="nombre_transportista" id="nombre_transportista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono Transportista</label>
-                <input type="tel" name="telefono_transportista" id="telefono_transportista" class="w-full rounded-lg border-gray-300 border px-3 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tiempo Estimado de Traslado</label>
-                <input type="text" name="tiempo_traslado" id="tiempo_traslado" class="w-full rounded-lg border-gray-300 border px-3 py-2" placeholder="Ej: 30 minutos">
-            </div>
-        </div>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- FORMULARIO PRINCIPAL                                       -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+  <form method="POST" class="space-y-5" id="form-matricula">
 
-        <!-- ==================== 15. AUTORIZACIONES ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">15. Autorizaciones</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="flex items-center">
-                <input type="checkbox" name="autoriza_fotografias" value="1" id="chk_fotos" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_fotos" class="ml-2 block text-sm text-gray-700">Autoriza fotografías institucionales</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="autoriza_redes_sociales" value="1" id="chk_redes" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_redes" class="ml-2 block text-sm text-gray-700">Autoriza publicaciones en redes sociales</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="autoriza_salidas" value="1" id="chk_salidas" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_salidas" class="ml-2 block text-sm text-gray-700">Autoriza participación en actividades externas (salidas pedagógicas)</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="autoriza_traslado_medico" value="1" id="chk_traslado" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_traslado" class="ml-2 block text-sm text-gray-700">Autoriza traslado a centro asistencial</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="autoriza_atencion_urgencia" value="1" id="chk_urgencia" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="chk_urgencia" class="ml-2 block text-sm text-gray-700">Autoriza atención médica de urgencia</label>
-            </div>
+    <!-- ==================== 0. BUSCAR MATRÍCULA ANTERIOR ==================== -->
+    <div id="sec-buscar" class="form-section sec-buscar bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-buscar">Precarga de datos</span>
+      <h3 class="text-base sm:text-lg font-bold text-indigo-900 mb-4">Precargar desde Matrícula Anterior</h3>
+      <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 relative">
+        <label class="form-label">Buscar estudiante matriculado anteriormente</label>
+        <div class="relative">
+          <input type="text" id="input-buscar-estudiante"
+                 class="form-input pr-10"
+                 placeholder="Escriba nombre o RUT (mínimo 3 caracteres)..."
+                 autocomplete="off">
+          <div id="resultados-busqueda" class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
         </div>
+        <input type="hidden" id="person-id-seleccionado" name="person_id_precargado" value="">
+        <p class="form-help mt-1.5">Al seleccionar un estudiante se precargarán sus datos personales. Podrá modificarlos antes de guardar.</p>
+        <div id="info-precarga" class="hidden mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
+          <p class="text-sm text-green-800 font-medium">Datos precargados correctamente. Puede modificar cualquier campo antes de guardar.</p>
+          <div id="opciones-suplentes" class="hidden mt-3 pt-3 border-t border-green-300 flex-col gap-2">
+            <label id="label-mantener-s1" class="hidden items-center text-sm text-green-800 cursor-pointer">
+              <input type="checkbox" id="chk_mantener_s1" checked class="mr-2 h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-500">
+              Mantener Apoderado Suplente 1 (<span id="nombre-s1" class="font-semibold"></span>)
+            </label>
+            <label id="label-mantener-s2" class="hidden items-center text-sm text-green-800 cursor-pointer">
+              <input type="checkbox" id="chk_mantener_s2" checked class="mr-2 h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-500">
+              Mantener Apoderado Suplente 2 (<span id="nombre-s2" class="font-semibold"></span>)
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        <!-- ==================== 16. DOCUMENTACIÓN ENTREGADA ==================== -->
-        <h3 class="text-lg font-bold text-gray-900 border-b pb-2">16. Documentación Entregada</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="flex items-center">
-                <input type="checkbox" name="doc_cert_nacimiento" value="1" id="doc_nac" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="doc_nac" class="ml-2 block text-sm text-gray-700">Certificado de nacimiento</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="doc_cert_estudios" value="1" id="doc_est" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="doc_est" class="ml-2 block text-sm text-gray-700">Certificado anual de estudios</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="doc_informe_personalidad" value="1" id="doc_per" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="doc_per" class="ml-2 block text-sm text-gray-700">Informe de personalidad</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="doc_informe_notas" value="1" id="doc_not" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="doc_not" class="ml-2 block text-sm text-gray-700">Informe de notas</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="doc_informe_pie" value="1" id="doc_pie" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="doc_pie" class="ml-2 block text-sm text-gray-700">Informe PIE</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="doc_fotocopia_run_est" value="1" id="doc_run_est" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="doc_run_est" class="ml-2 block text-sm text-gray-700">Fotocopia RUN estudiante</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="doc_fotocopia_run_apod" value="1" id="doc_run_apod" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="doc_run_apod" class="ml-2 block text-sm text-gray-700">Fotocopia RUN apoderado</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="doc_comprobante_domicilio" value="1" id="doc_dom" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="doc_dom" class="ml-2 block text-sm text-gray-700">Comprobante de domicilio</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" name="doc_ficha_medica" value="1" id="doc_med" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                <label for="doc_med" class="ml-2 block text-sm text-gray-700">Ficha médica</label>
-            </div>
+    <!-- ==================== 1. DATOS PERSONALES ==================== -->
+    <div id="sec-personales" class="form-section sec-identidad bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-identidad">Identificación</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Datos Personales del Estudiante</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Primer Nombre <span class="req" title="Campo obligatorio"></span></label>
+          <input type="text" name="first_name" id="first_name" required class="form-input" value="{{ estudiante.FirstName if estudiante else '' }}">
         </div>
+        <div>
+          <label class="form-label">Segundo Nombre</label>
+          <input type="text" name="middle_name" id="middle_name" class="form-input" value="{{ estudiante.MiddleName if estudiante else '' }}">
+        </div>
+        <div>
+          <label class="form-label">Apellido Paterno <span class="req" title="Campo obligatorio"></span></label>
+          <input type="text" name="last_name" id="last_name" required class="form-input" value="{{ estudiante.LastName if estudiante else '' }}">
+        </div>
+        <div>
+          <label class="form-label">Apellido Materno</label>
+          <input type="text" name="second_last_name" id="second_last_name" class="form-input" value="{{ estudiante.SecondLastName if estudiante else '' }}">
+        </div>
+        <div>
+          <label class="form-label">Sexo</label>
+          <select name="ref_sex_id" id="ref_sex_id" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="1" {{ 'selected' if estudiante and estudiante.RefSexId == 1 else '' }}>Masculino</option>
+            <option value="2" {{ 'selected' if estudiante and estudiante.RefSexId == 2 else '' }}>Femenino</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Fecha de Nacimiento</label>
+          <input type="date" name="birthdate" id="birthdate" class="form-input" value="{{ estudiante.Birthdate if estudiante else '' }}">
+        </div>
+      </div>
+    </div>
 
-        <!-- BOTONES -->
-        <div class="pt-8 flex justify-end space-x-3 border-t">
-            <a href="{{ url_for('matricula.listar_estudiantes') }}" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancelar</a>
-            <button type="submit" class="px-6 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium">Guardar Matrícula Completa</button>
+    <!-- ==================== 1b. DATOS ADICIONALES ESTUDIANTE ==================== -->
+    <div id="sec-adicionales" class="form-section sec-adicional bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-adicional">Datos complementarios</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Datos Adicionales del Estudiante</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Nacionalidad</label>
+          <input type="text" name="nacionalidad" id="nacionalidad" class="form-input" placeholder="Ej: Chilena">
         </div>
-    </form>
+        <div>
+          <label class="form-label">País de Origen</label>
+          <input type="text" name="pais_origen" id="pais_origen" class="form-input" placeholder="Ej: Chile">
+        </div>
+        <div>
+          <label class="form-label">Comuna de Residencia</label>
+          <input type="text" name="comuna_residencia" id="comuna_residencia" class="form-input" placeholder="Ej: Temuco">
+        </div>
+        <div>
+          <label class="form-label">Región de Residencia</label>
+          <select name="region_residencia" id="region_residencia" class="form-select">
+            <option value="">-- Seleccionar región --</option>
+            <option value="Arica y Parinacota">Arica y Parinacota</option>
+            <option value="Tarapacá">Tarapacá</option>
+            <option value="Antofagasta">Antofagasta</option>
+            <option value="Atacama">Atacama</option>
+            <option value="Coquimbo">Coquimbo</option>
+            <option value="Valparaíso">Valparaíso</option>
+            <option value="Metropolitana de Santiago">Metropolitana de Santiago</option>
+            <option value="Libertador General Bernardo O'Higgins">Libertador General Bernardo O'Higgins</option>
+            <option value="Maule">Maule</option>
+            <option value="Ñuble">Ñuble</option>
+            <option value="Biobío">Biobío</option>
+            <option value="La Araucanía">La Araucanía</option>
+            <option value="Los Ríos">Los Ríos</option>
+            <option value="Los Lagos">Los Lagos</option>
+            <option value="Aysén del General Carlos Ibáñez del Campo">Aysén del General Carlos Ibáñez del Campo</option>
+            <option value="Magallanes y de la Antártica Chilena">Magallanes y de la Antártica Chilena</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Correo Electrónico (Enseñanza Media)</label>
+          <input type="email" name="email_estudiante" id="email_estudiante" class="form-input" placeholder="Ej: alumno@email.com">
+        </div>
+        <div>
+          <label class="form-label">Teléfono del Estudiante</label>
+          <input type="tel" name="telefono_estudiante" id="telefono_estudiante" class="form-input" placeholder="Ej: +56912345678">
+        </div>
+        <div>
+          <label class="form-label">Religión</label>
+          <input type="text" name="religion" id="religion" class="form-input" placeholder="Ej: Católica, Evangélica, etc.">
+        </div>
+        <div class="flex items-center pt-5">
+          <div class="form-checkbox-wrap w-full">
+            <input type="checkbox" name="acepta_religion" value="1" id="chk_acepta_religion">
+            <label for="chk_acepta_religion">Aceptaría religión en el colegio</label>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Vive con</label>
+          <input type="text" name="vive_con" id="vive_con" class="form-input" placeholder="Ej: Padre, Madre, Abuelos, etc.">
+        </div>
+        <div class="flex items-center pt-5">
+          <div class="form-checkbox-wrap w-full">
+            <input type="checkbox" name="tiene_computadores" value="1" id="chk_tiene_computadores">
+            <label for="chk_tiene_computadores">¿Tiene computadoras en la casa?</label>
+          </div>
+        </div>
+        <div id="campo-cantidad-computadores" class="campo-condicional oculto">
+          <label class="form-label">Cantidad de computadores</label>
+          <input type="number" name="cantidad_computadores" id="cantidad_computadores" class="form-input" min="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 2. IDENTIFICADORES ==================== -->
+    <div id="sec-ids" class="form-section sec-ids bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-ids">MINEDUC</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Identificadores Oficiales MINEDUC</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">RUN (RUT) <span class="req" title="Campo obligatorio"></span></label>
+          <input type="text" name="rut" id="rut" required placeholder="Ej: 12345678-9" class="form-input">
+          <p class="form-help">Se acepta con o sin puntos y guion. Se guardará como: 12.345.678-9</p>
+        </div>
+        <div>
+          <div class="form-checkbox-wrap mb-3">
+            <input type="checkbox" name="es_extranjero" id="chk_extranjero" value="1">
+            <label for="chk_extranjero">Estudiante extranjero (sin RUN chileno)</label>
+          </div>
+          <div id="campo-ipe" class="campo-condicional oculto">
+            <label class="form-label">IPE <span class="text-xs text-gray-500 font-normal">(Identificador Provisional de Extranjero)</span></label>
+            <input type="text" name="ipe" id="ipe" class="form-input">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">N° Correlativo Matrícula</label>
+          <input type="text" name="num_matricula" id="num_matricula" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">N° de Lista</label>
+          <input type="text" name="num_lista" id="num_lista" class="form-input">
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 3. RESIDENCIA Y MATRÍCULA ==================== -->
+    <div id="sec-residencia" class="form-section sec-residencia bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-residencia">Matrícula</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Residencia y Matrícula en Curso</h3>
+      <div class="grid grid-cols-1 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Dirección / Residencia <span class="req" title="Campo obligatorio"></span></label>
+          <input type="text" name="residencia" id="residencia" required placeholder="Ej: Av. Alemania 1234, Temuco" class="form-input">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mt-4">
+        <div>
+          <label class="form-label">Nivel Educativo <span class="req" title="Campo obligatorio"></span></label>
+          <select id="select-nivel" required class="form-select">
+            <option value="">-- Seleccionar nivel --</option>
+            {% for nivel in niveles %}
+            <option value="{{ nivel.OrganizationId }}">{{ nivel.Name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Grado / Año <span class="req" title="Campo obligatorio"></span></label>
+          <select id="select-grado" required disabled class="form-select bg-disabled">
+            <option value="">-- Primero seleccione nivel --</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Letra del Curso <span class="req" title="Campo obligatorio"></span></label>
+          <select id="select-curso" name="curso_id" required disabled class="form-select bg-disabled">
+            <option value="">-- Primero seleccione grado --</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mt-4">
+        <div>
+          <label class="form-label">Fecha de Matrícula <span class="req" title="Campo obligatorio"></span></label>
+          <input type="date" name="entry_date" id="entry_date" required class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Fecha de Ingreso al Establecimiento</label>
+          <input type="date" name="fecha_ingreso_establecimiento" id="fecha_ingreso_establecimiento" class="form-input">
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 4. APODERADO TITULAR ==================== -->
+    <div id="sec-ap-titular" class="form-section sec-ap-titular bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-apoderado">Apoderado</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Apoderado Titular <span class="req" title="Campo obligatorio"></span></h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Primer Nombre <span class="req" title="Campo obligatorio"></span></label>
+          <input type="text" name="ap_titular_first_name" id="ap_titular_first_name" required class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Apellido Paterno <span class="req" title="Campo obligatorio"></span></label>
+          <input type="text" name="ap_titular_last_name" id="ap_titular_last_name" required class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Apellido Materno</label>
+          <input type="text" name="ap_titular_second_last_name" id="ap_titular_second_last_name" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">RUN (RUT) <span class="req" title="Campo obligatorio"></span></label>
+          <input type="text" name="ap_titular_rut" id="ap_titular_rut" required class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Parentesco <span class="req" title="Campo obligatorio"></span></label>
+          <select name="ap_titular_parentesco" id="ap_titular_parentesco" required class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="Padre">Padre</option>
+            <option value="Madre">Madre</option>
+            <option value="Tutor">Tutor</option>
+            <option value="Abuelo/a">Abuelo/a</option>
+            <option value="Tío/a">Tío/a</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Correo Electrónico</label>
+          <input type="email" name="ap_titular_email" id="ap_titular_email" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Teléfono <span class="req" title="Campo obligatorio"></span></label>
+          <input type="tel" name="ap_titular_telefono" id="ap_titular_telefono" required class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Profesión u Ocupación</label>
+          <input type="text" name="ap_titular_profesion" id="ap_titular_profesion" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Lugar de Trabajo</label>
+          <input type="text" name="ap_titular_lugar_trabajo" id="ap_titular_lugar_trabajo" class="form-input">
+        </div>
+        <div class="sm:col-span-2 lg:col-span-3">
+          <div class="form-checkbox-wrap mb-3">
+            <input type="checkbox" id="chk_misma_direccion">
+            <label for="chk_misma_direccion">La dirección es la misma que la del estudiante</label>
+          </div>
+          <label class="form-label">Dirección (si es distinta al estudiante)</label>
+          <input type="text" name="ap_titular_direccion" id="ap_titular_direccion" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Nivel Educacional <span class="req" title="Campo obligatorio"></span></label>
+          <select name="ap_titular_nivel_educativo" id="ap_titular_nivel_educativo" required class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="1">Educación Parvularia</option>
+            <option value="2">Educación Básica</option>
+            <option value="3">Educación Media</option>
+            <option value="7">Educación Media Científico-Humanista</option>
+            <option value="8">Educación Media Técnico-Profesional (TP)</option>
+            <option value="4">Educación Técnico-Profesional</option>
+            <option value="5">Educación Universitaria</option>
+            <option value="9">Educación Superior</option>
+            <option value="6">Postgrado</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Estado Civil</label>
+          <select name="ap_titular_estado_civil" id="ap_titular_estado_civil" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="Soltero/a">Soltero/a</option>
+            <option value="Casado/a">Casado/a</option>
+            <option value="Divorciado/a">Divorciado/a</option>
+            <option value="Viudo/a">Viudo/a</option>
+            <option value="Conviviente">Conviviente</option>
+            <option value="Separado/a">Separado/a</option>
+          </select>
+        </div>
+        <div class="flex items-center pt-5 sm:col-span-2 lg:col-span-2">
+          <div class="form-checkbox-wrap w-full">
+            <input type="checkbox" name="ap_titular_autorizado_retirar" value="1" id="chk_autorizado_retirar">
+            <label for="chk_autorizado_retirar">Posee autorización para retirar al alumno del establecimiento</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 5. APODERADO SUPLENTE 1 ==================== -->
+    <div id="sec-suplente1" class="form-section sec-ap-sup1 opcional bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-apoderado">Apoderado</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Apoderado Suplente 1 <span class="opcional-label">Opcional</span></h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Primer Nombre</label>
+          <input type="text" name="ap_suplente1_first_name" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Apellido Paterno</label>
+          <input type="text" name="ap_suplente1_last_name" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Apellido Materno</label>
+          <input type="text" name="ap_suplente1_second_last_name" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">RUN (RUT)</label>
+          <input type="text" name="ap_suplente1_rut" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Parentesco</label>
+          <select name="ap_suplente1_parentesco" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="Padre">Padre</option>
+            <option value="Madre">Madre</option>
+            <option value="Tutor">Tutor</option>
+            <option value="Abuelo/a">Abuelo/a</option>
+            <option value="Tío/a">Tío/a</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Correo Electrónico</label>
+          <input type="email" name="ap_suplente1_email" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Teléfono</label>
+          <input type="tel" name="ap_suplente1_telefono" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Profesión u Ocupación</label>
+          <input type="text" name="ap_suplente1_profesion" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Nivel Educacional</label>
+          <select name="ap_suplente1_nivel_educativo" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="1">Educación Parvularia</option>
+            <option value="2">Educación Básica</option>
+            <option value="3">Educación Media</option>
+            <option value="7">Educación Media Científico-Humanista</option>
+            <option value="8">Educación Media Técnico-Profesional (TP)</option>
+            <option value="4">Educación Técnico-Profesional</option>
+            <option value="5">Educación Universitaria</option>
+            <option value="9">Educación Superior</option>
+            <option value="6">Postgrado</option>
+          </select>
+        </div>
+        <div class="flex items-center pt-5">
+          <div class="form-checkbox-wrap w-full">
+            <input type="checkbox" name="ap_suplente1_autorizado_retirar" value="1" id="chk_autorizado_retirar_s1">
+            <label for="chk_autorizado_retirar_s1">Autorizado para retirar al alumno</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 6. APODERADO SUPLENTE 2 ==================== -->
+    <div id="sec-suplente2" class="form-section sec-ap-sup2 opcional bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-apoderado">Apoderado</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Apoderado Suplente 2 <span class="opcional-label">Opcional</span></h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Primer Nombre</label>
+          <input type="text" name="ap_suplente2_first_name" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Apellido Paterno</label>
+          <input type="text" name="ap_suplente2_last_name" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Apellido Materno</label>
+          <input type="text" name="ap_suplente2_second_last_name" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">RUN (RUT)</label>
+          <input type="text" name="ap_suplente2_rut" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Parentesco</label>
+          <select name="ap_suplente2_parentesco" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="Padre">Padre</option>
+            <option value="Madre">Madre</option>
+            <option value="Tutor">Tutor</option>
+            <option value="Abuelo/a">Abuelo/a</option>
+            <option value="Tío/a">Tío/a</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Correo Electrónico</label>
+          <input type="email" name="ap_suplente2_email" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Teléfono</label>
+          <input type="tel" name="ap_suplente2_telefono" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Profesión u Ocupación</label>
+          <input type="text" name="ap_suplente2_profesion" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Nivel Educacional</label>
+          <select name="ap_suplente2_nivel_educativo" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="1">Educación Parvularia</option>
+            <option value="2">Educación Básica</option>
+            <option value="3">Educación Media</option>
+            <option value="7">Educación Media Científico-Humanista</option>
+            <option value="8">Educación Media Técnico-Profesional (TP)</option>
+            <option value="4">Educación Técnico-Profesional</option>
+            <option value="5">Educación Universitaria</option>
+            <option value="9">Educación Superior</option>
+            <option value="6">Postgrado</option>
+          </select>
+        </div>
+        <div class="flex items-center pt-5">
+          <div class="form-checkbox-wrap w-full">
+            <input type="checkbox" name="ap_suplente2_autorizado_retirar" value="1" id="chk_autorizado_retirar_s2">
+            <label for="chk_autorizado_retirar_s2">Autorizado para retirar al alumno</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 7. CONTACTOS DE EMERGENCIA ==================== -->
+    <div id="sec-emergencia" class="form-section sec-emergencia bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-emergencia">Emergencia</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Contactos de Emergencia</h3>
+      {% for i in [1, 2] %}
+      <div class="bg-gray-50 p-4 rounded-lg {% if not loop.last %}mb-4{% endif %}">
+        <h4 class="text-sm font-bold text-gray-700 mb-3">Contacto de Emergencia {{ i }}</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Primer Nombre</label>
+            <input type="text" name="contacto_emergencia_{{ i }}_first_name" class="form-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Apellido Paterno</label>
+            <input type="text" name="contacto_emergencia_{{ i }}_last_name" class="form-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Apellido Materno</label>
+            <input type="text" name="contacto_emergencia_{{ i }}_second_last_name" class="form-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">RUN</label>
+            <input type="text" name="contacto_emergencia_{{ i }}_run" class="form-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Parentesco</label>
+            <select name="contacto_emergencia_{{ i }}_parentesco" class="form-select">
+              <option value="">-- Seleccionar --</option>
+              <option value="Padre">Padre</option>
+              <option value="Madre">Madre</option>
+              <option value="Tutor">Tutor</option>
+              <option value="Abuelo/a">Abuelo/a</option>
+              <option value="Tío/a">Tío/a</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Correo Electrónico</label>
+            <input type="email" name="contacto_emergencia_{{ i }}_email" class="form-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Teléfono Principal</label>
+            <input type="tel" name="contacto_emergencia_{{ i }}_telefono" class="form-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Teléfono Alternativo</label>
+            <input type="tel" name="contacto_emergencia_{{ i }}_telefono_alt" class="form-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Profesión u Ocupación</label>
+            <input type="text" name="contacto_emergencia_{{ i }}_profesion" class="form-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Nivel Educacional</label>
+            <select name="contacto_emergencia_{{ i }}_nivel_educativo" class="form-select">
+              <option value="">-- Seleccionar --</option>
+              <option value="1">Educación Parvularia</option>
+              <option value="2">Educación Básica</option>
+              <option value="3">Educación Media</option>
+              <option value="7">Educación Media Científico-Humanista</option>
+              <option value="8">Educación Media Técnico-Profesional (TP)</option>
+              <option value="4">Educación Técnico-Profesional</option>
+              <option value="5">Educación Universitaria</option>
+              <option value="9">Educación Superior</option>
+              <option value="6">Postgrado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- ==================== 8. INFORMACIÓN MÉDICA ==================== -->
+    <div id="sec-medica" class="form-section sec-medica bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-medica">Salud</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Información Médica</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Grupo Sanguíneo</label>
+          <select name="grupo_sanguineo" id="grupo_sanguineo" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Sistema de Salud</label>
+          <select name="sistema_salud" id="sistema_salud" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="Fonasa">Fonasa</option>
+            <option value="Isapre">Isapre</option>
+            <option value="Particular">Particular</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Centro de Salud Habitual</label>
+          <input type="text" name="centro_salud" id="centro_salud" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Médico Tratante</label>
+          <input type="text" name="medico_tratante" id="medico_tratante" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Teléfono Médico Tratante</label>
+          <input type="tel" name="telefono_medico" id="telefono_medico" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Estatura (cm)</label>
+          <input type="text" name="estatura" id="estatura" class="form-input" placeholder="Ej: 145">
+        </div>
+        <div>
+          <label class="form-label">Peso (KG)</label>
+          <input type="text" name="peso" id="peso" class="form-input" placeholder="Ej: 45.5">
+        </div>
+        <div class="flex items-center pt-5">
+          <div class="form-checkbox-wrap w-full">
+            <input type="checkbox" name="apto_educacion_fisica" value="1" id="chk_apto_ef" checked>
+            <label for="chk_apto_ef">Apto para educación física</label>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-4 mt-5">
+        <div>
+          <label class="form-label">Enfermedades Permanentes</label>
+          <textarea name="enfermedades_permanentes" id="enfermedades_permanentes" rows="2" class="form-textarea"></textarea>
+        </div>
+        <div>
+          <label class="form-label">Alergias <span class="req" title="Campo obligatorio"></span></label>
+          <textarea name="alergias" id="alergias" rows="2" required class="form-textarea"></textarea>
+        </div>
+        <div>
+          <label class="form-label">Medicamentos Permanentes</label>
+          <textarea name="medicamentos_permanentes" id="medicamentos_permanentes" rows="2" class="form-textarea"></textarea>
+        </div>
+        <div>
+          <label class="form-label">Restricciones Alimentarias</label>
+          <textarea name="restricciones_alimentarias" id="restricciones_alimentarias" rows="2" class="form-textarea"></textarea>
+        </div>
+        <div>
+          <label class="form-label">Necesidades Médicas Especiales</label>
+          <textarea name="necesidades_medicas" id="necesidades_medicas" rows="2" class="form-textarea"></textarea>
+        </div>
+        <div>
+          <label class="form-label">Observaciones Médicas</label>
+          <textarea name="obs_medicas_detalle" id="obs_medicas_detalle" rows="2" class="form-textarea"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 9. PROGRAMA PIE ==================== -->
+    <div id="sec-pie" class="form-section sec-pie bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-pie">PIE</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Programa de Integración Escolar (PIE)</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Pertenece a PIE</label>
+          <select name="pertenece_pie" id="pertenece_pie" class="form-select">
+            <option value="0">No</option>
+            <option value="1">Sí</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Fecha Diagnóstico</label>
+          <input type="date" name="fecha_diagnostico_pie" id="fecha_diagnostico_pie" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Profesional Tratante</label>
+          <input type="text" name="profesional_pie" id="profesional_pie" class="form-input">
+        </div>
+        <div class="sm:col-span-2 lg:col-span-3">
+          <label class="form-label">Tipo de Permanencia <span class="text-xs text-gray-500 font-normal">(Solo PIE)</span></label>
+          <input type="text" name="tipo_permanencia" id="tipo_permanencia" class="form-input" placeholder="Ej: Parcial, Total, etc.">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-4 mt-4">
+        <div>
+          <label class="form-label">Diagnóstico PIE</label>
+          <textarea name="diagnostico_pie" id="diagnostico_pie" rows="2" class="form-textarea"></textarea>
+        </div>
+        <div>
+          <label class="form-label">Observaciones PIE</label>
+          <textarea name="observaciones_pie" id="observaciones_pie" rows="2" class="form-textarea"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 10. INFORMACIÓN ACADÉMICA ==================== -->
+    <div id="sec-academica" class="form-section sec-academica bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-academica">Académica</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Información Académica</h3>
+      <div class="mb-4">
+        <div class="form-checkbox-wrap inline-flex">
+          <input type="checkbox" name="es_nuevo" id="chk_es_nuevo" value="1" checked>
+          <label for="chk_es_nuevo">¿Es nuevo en el establecimiento?</label>
+        </div>
+      </div>
+      <div id="info-academica-campos" class="campo-condicional visible">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div>
+            <label class="form-label">Colegio de Procedencia</label>
+            <input type="text" name="colegio_procedencia" id="colegio_procedencia" class="form-input">
+          </div>
+          <div>
+            <label class="form-label">Comuna Colegio Anterior</label>
+            <input type="text" name="comuna_colegio_anterior" id="comuna_colegio_anterior" class="form-input">
+          </div>
+          <div>
+            <label class="form-label">Región Colegio Anterior</label>
+            <input type="text" name="region_colegio_anterior" id="region_colegio_anterior" class="form-input">
+          </div>
+          <div>
+            <label class="form-label">Último Curso Aprobado</label>
+            <input type="text" name="ultimo_curso_aprobado" id="ultimo_curso_aprobado" class="form-input">
+          </div>
+          <div>
+            <label class="form-label">Año Último Curso Aprobado</label>
+            <input type="number" name="anio_ultimo_curso" id="anio_ultimo_curso" class="form-input" placeholder="Ej: 2025">
+          </div>
+          <div class="sm:col-span-2 lg:col-span-3">
+            <label class="form-label">Motivo de Traslado</label>
+            <textarea name="motivo_traslado" id="motivo_traslado" rows="2" class="form-textarea"></textarea>
+          </div>
+        </div>
+      </div>
+      <div id="info-academica-mensaje" class="hidden bg-green-50 p-4 rounded-lg border border-green-200">
+        <p class="text-sm text-green-800 font-medium">Este estudiante ya pertenece al establecimiento. No se requiere información de colegio anterior.</p>
+      </div>
+    </div>
+
+    <!-- ==================== 11. INFORMACIÓN SOCIOECONÓMICA ==================== -->
+    <div id="sec-socio" class="form-section sec-socio bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-socio">Socioeconómica</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Información Socioeconómica</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Nivel Educacional de la Madre</label>
+          <select name="nivel_madre" id="nivel_madre" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="1">Educación Parvularia</option>
+            <option value="2">Educación Básica</option>
+            <option value="3">Educación Media</option>
+            <option value="7">Educación Media Científico-Humanista</option>
+            <option value="8">Educación Media Técnico-Profesional (TP)</option>
+            <option value="4">Educación Técnico-Profesional</option>
+            <option value="5">Educación Universitaria</option>
+            <option value="9">Educación Superior</option>
+            <option value="6">Postgrado</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Nivel Educacional del Padre</label>
+          <select name="nivel_padre" id="nivel_padre" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="1">Educación Parvularia</option>
+            <option value="2">Educación Básica</option>
+            <option value="3">Educación Media</option>
+            <option value="7">Educación Media Científico-Humanista</option>
+            <option value="8">Educación Media Técnico-Profesional (TP)</option>
+            <option value="4">Educación Técnico-Profesional</option>
+            <option value="5">Educación Universitaria</option>
+            <option value="9">Educación Superior</option>
+            <option value="6">Postgrado</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Nivel Educacional del Apoderado</label>
+          <select name="nivel_apoderado" id="nivel_apoderado" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="1">Educación Parvularia</option>
+            <option value="2">Educación Básica</option>
+            <option value="3">Educación Media</option>
+            <option value="7">Educación Media Científico-Humanista</option>
+            <option value="8">Educación Media Técnico-Profesional (TP)</option>
+            <option value="4">Educación Técnico-Profesional</option>
+            <option value="5">Educación Universitaria</option>
+            <option value="9">Educación Superior</option>
+            <option value="6">Postgrado</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Ingreso Familiar <span class="text-xs text-gray-500 font-normal">(Opcional)</span></label>
+          <input type="text" name="ingreso_familiar" id="ingreso_familiar" class="form-input" placeholder="Ej: 800000 - 1200000">
+        </div>
+        <div>
+          <label class="form-label">N° Integrantes del Hogar</label>
+          <input type="number" name="num_integrantes_hogar" id="num_integrantes_hogar" class="form-input" min="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 12. INFORMACIÓN SEP ==================== -->
+    <div id="sec-sep" class="form-section sec-sep bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-sep">SEP</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Información SEP</h3>
+      <div class="checkbox-group grid-2">
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="alumno_prioritario" value="1" id="chk_prioritario">
+          <label for="chk_prioritario">Alumno Prioritario</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="alumno_preferente" value="1" id="chk_preferente">
+          <label for="chk_preferente">Alumno Preferente</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="beneficiario_sep" value="1" id="chk_sep">
+          <label for="chk_sep">Beneficiario SEP</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 13. INFORMACIÓN CULTURAL ==================== -->
+    <div id="sec-cultural" class="form-section sec-cultural opcional bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-cultural">Cultural</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Información Cultural <span class="opcional-label">Opcional</span></h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div class="flex items-center">
+          <div class="form-checkbox-wrap w-full">
+            <input type="checkbox" name="pertenece_pueblo_originario" value="1" id="chk_pueblo">
+            <label for="chk_pueblo">Pertenece a Pueblo Originario</label>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Pueblo Originario</label>
+          <input type="text" name="pueblo_originario" id="pueblo_originario" class="form-input">
+        </div>
+        <div class="flex items-center">
+          <div class="form-checkbox-wrap w-full">
+            <input type="checkbox" name="habla_lengua_indigena" value="1" id="chk_lengua">
+            <label for="chk_lengua">Habla Lengua Indígena</label>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Lengua Indígena</label>
+          <input type="text" name="lengua_indigena" id="lengua_indigena" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Nacionalidad Extranjera</label>
+          <input type="text" name="nacionalidad_extranjera" id="nacionalidad_extranjera" class="form-input">
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 14. TRANSPORTE ESCOLAR ==================== -->
+    <div id="sec-transporte" class="form-section sec-transporte opcional bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-transporte">Transporte</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Transporte Escolar <span class="opcional-label">Opcional</span></h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div>
+          <label class="form-label">Medio de Transporte</label>
+          <select name="medio_transporte" id="medio_transporte" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="Bus público">Bus público</option>
+            <option value="Bus escolar">Bus escolar</option>
+            <option value="Auto particular">Auto particular</option>
+            <option value="Caminando">Caminando</option>
+            <option value="Bicicleta">Bicicleta</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="flex items-center">
+          <div class="form-checkbox-wrap w-full">
+            <input type="checkbox" name="utiliza_transporte_escolar" value="1" id="chk_transporte">
+            <label for="chk_transporte">Utiliza Transporte Escolar</label>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Nombre Transportista</label>
+          <input type="text" name="nombre_transportista" id="nombre_transportista" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Teléfono Transportista</label>
+          <input type="tel" name="telefono_transportista" id="telefono_transportista" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Tiempo Estimado de Traslado</label>
+          <input type="text" name="tiempo_traslado" id="tiempo_traslado" class="form-input" placeholder="Ej: 30 minutos">
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 15. AUTORIZACIONES ==================== -->
+    <div id="sec-autoriza" class="form-section sec-autoriza bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-autoriza">Autorizaciones</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Autorizaciones</h3>
+      <div class="checkbox-group grid-2">
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="autoriza_fotografias" value="1" id="chk_fotos">
+          <label for="chk_fotos">Autoriza fotografías institucionales</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="autoriza_redes_sociales" value="1" id="chk_redes">
+          <label for="chk_redes">Autoriza publicaciones en redes sociales</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="autoriza_salidas" value="1" id="chk_salidas">
+          <label for="chk_salidas">Autoriza participación en actividades externas (salidas pedagógicas)</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="autoriza_traslado_medico" value="1" id="chk_traslado">
+          <label for="chk_traslado">Autoriza traslado a centro asistencial</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="autoriza_atencion_urgencia" value="1" id="chk_urgencia">
+          <label for="chk_urgencia">Autoriza atención médica de urgencia</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 16. DOCUMENTACIÓN ENTREGADA ==================== -->
+    <div id="sec-docs" class="form-section sec-docs bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 scroll-mt-28">
+      <span class="sec-badge badge-docs">Documentación</span>
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-5">Documentación Entregada</h3>
+      <div class="checkbox-group grid-2">
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="doc_cert_nacimiento" value="1" id="doc_nac">
+          <label for="doc_nac">Certificado de nacimiento</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="doc_cert_estudios" value="1" id="doc_est">
+          <label for="doc_est">Certificado anual de estudios</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="doc_informe_personalidad" value="1" id="doc_per">
+          <label for="doc_per">Informe de personalidad</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="doc_informe_notas" value="1" id="doc_not">
+          <label for="doc_not">Informe de notas</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="doc_informe_pie" value="1" id="doc_pie">
+          <label for="doc_pie">Informe PIE</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="doc_fotocopia_run_est" value="1" id="doc_run_est">
+          <label for="doc_run_est">Fotocopia RUN estudiante</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="doc_fotocopia_run_apod" value="1" id="doc_run_apod">
+          <label for="doc_run_apod">Fotocopia RUN apoderado</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="doc_comprobante_domicilio" value="1" id="doc_dom">
+          <label for="doc_dom">Comprobante de domicilio</label>
+        </div>
+        <div class="form-checkbox-wrap">
+          <input type="checkbox" name="doc_ficha_medica" value="1" id="doc_med">
+          <label for="doc_med">Ficha médica</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- BOTONES DE ACCIÓN                                      -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="form-actions-sticky">
+      <div class="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+        <a href="{{ url_for('matricula.listar_estudiantes') }}" class="w-full sm:w-auto text-center px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors">Cancelar</a>
+        <button type="submit" class="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium transition-colors shadow-sm">Guardar Matrícula Completa</button>
+      </div>
+    </div>
+
+    <!-- Espaciado inferior para que el sticky no tape contenido -->
+    <div class="h-4"></div>
+  </form>
 </div>
 
 
@@ -879,6 +1359,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectGrado.appendChild(opt);
                 });
                 selectGrado.disabled = false;
+                selectGrado.classList.remove('bg-disabled');
             });
     });
 
@@ -900,15 +1381,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectCurso.appendChild(opt);
                 });
                 selectCurso.disabled = false;
+                selectCurso.classList.remove('bg-disabled');
             });
     });
 
-    // ── IPE solo para extranjeros ──
+    // ── IPE solo para extranjeros (transición suave) ──
     const chkExtranjero = document.getElementById('chk_extranjero');
     const campoIpe = document.getElementById('campo-ipe');
     chkExtranjero.addEventListener('change', function() {
-        campoIpe.classList.toggle('hidden', !this.checked);
-        if (!this.checked) document.getElementById('ipe').value = '';
+        if (this.checked) {
+            campoIpe.classList.remove('oculto');
+            campoIpe.classList.add('visible');
+        } else {
+            campoIpe.classList.add('oculto');
+            campoIpe.classList.remove('visible');
+            document.getElementById('ipe').value = '';
+        }
     });
 
     // ── Dirección apoderado igual a estudiante ──
@@ -919,10 +1407,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (this.checked) {
             inputApDir.value = inputResidencia.value;
             inputApDir.readOnly = true;
-            inputApDir.classList.add('bg-gray-100');
+            inputApDir.classList.add('bg-disabled');
         } else {
             inputApDir.readOnly = false;
-            inputApDir.classList.remove('bg-gray-100');
+            inputApDir.classList.remove('bg-disabled');
         }
     });
     inputResidencia.addEventListener('input', function() {
@@ -935,30 +1423,105 @@ document.addEventListener('DOMContentLoaded', function() {
     const divAcademicaMensaje = document.getElementById('info-academica-mensaje');
     function toggleAcademica() {
         if (chkEsNuevo.checked) {
-            divAcademicaCampos.classList.remove('hidden');
+            divAcademicaCampos.classList.remove('oculto');
+            divAcademicaCampos.classList.add('visible');
             divAcademicaMensaje.classList.add('hidden');
         } else {
-            divAcademicaCampos.classList.add('hidden');
+            divAcademicaCampos.classList.add('oculto');
+            divAcademicaCampos.classList.remove('visible');
             divAcademicaMensaje.classList.remove('hidden');
         }
     }
     chkEsNuevo.addEventListener('change', toggleAcademica);
     toggleAcademica();
 
-    // ── Computadoras dinámico ──
+    // ── Computadoras dinámico (transición suave) ──
     const chkComputadores = document.getElementById('chk_tiene_computadores');
     const divCantidadComputadores = document.getElementById('campo-cantidad-computadores');
     const inputCantidadComputadores = document.getElementById('cantidad_computadores');
     function toggleComputadores() {
         if (chkComputadores.checked) {
-            divCantidadComputadores.classList.remove('hidden');
+            divCantidadComputadores.classList.remove('oculto');
+            divCantidadComputadores.classList.add('visible');
         } else {
-            divCantidadComputadores.classList.add('hidden');
+            divCantidadComputadores.classList.add('oculto');
+            divCantidadComputadores.classList.remove('visible');
             inputCantidadComputadores.value = '';
         }
     }
     chkComputadores.addEventListener('change', toggleComputadores);
     toggleComputadores();
+
+    // ═══════════════════════════════════════════════════════════════
+    // NAVEGACIÓN ACTIVA AL SCROLL
+    // ═══════════════════════════════════════════════════════════════
+    const navLinks = document.querySelectorAll('.form-nav-links a');
+    const sections = document.querySelectorAll('.form-section[id]');
+
+    function updateActiveNav() {
+        let currentSection = '';
+        const scrollPos = window.scrollY + 140;
+
+        sections.forEach(section => {
+            if (section.offsetTop <= scrollPos) {
+                currentSection = section.id;
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.classList.remove('nav-activo');
+            const href = link.getAttribute('href');
+            if (href === '#' + currentSection) {
+                link.classList.add('nav-activo');
+            }
+        });
+    }
+
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
+    updateActiveNav();
+
+    // Smooth scroll para los links de navegación
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const target = document.getElementById(targetId);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // BARRA DE PROGRESO
+    // ═══════════════════════════════════════════════════════════════
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const form = document.getElementById('form-matricula');
+
+    function calcularProgreso() {
+        const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+        let completados = 0;
+        let total = requiredInputs.length;
+
+        requiredInputs.forEach(input => {
+            if (input.type === 'checkbox') {
+                if (input.checked) completados++;
+            } else if (input.tagName === 'SELECT') {
+                if (input.value && input.value !== '') completados++;
+            } else {
+                if (input.value && input.value.trim() !== '') completados++;
+            }
+        });
+
+        const porcentaje = total > 0 ? Math.round((completados / total) * 100) : 0;
+        progressFill.style.width = porcentaje + '%';
+        progressText.textContent = porcentaje + '% completado (' + completados + '/' + total + ' campos obligatorios)';
+    }
+
+    form.addEventListener('input', calcularProgreso);
+    form.addEventListener('change', calcularProgreso);
+    calcularProgreso();
 
     // ═══════════════════════════════════════════════════════════════
     // AUTOCOMPLETE DE MATRÍCULA ANTERIOR
@@ -976,7 +1539,6 @@ document.addEventListener('DOMContentLoaded', function() {
         divResultados.innerHTML = '';
     }
 
-    // Cerrar al hacer click fuera
     document.addEventListener('click', function(e) {
         if (!inputBuscar.contains(e.target) && !divResultados.contains(e.target)) {
             cerrarResultados();
@@ -1005,14 +1567,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         divResultados.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">No se encontraron resultados</div>';
                         return;
                     }
-
                     divResultados.innerHTML = '';
                     data.forEach(p => {
                         const item = document.createElement('div');
                         item.className = 'px-4 py-3 hover:bg-indigo-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors';
                         item.innerHTML = `<div class="text-sm font-medium text-gray-900">${p.text}</div>`;
                         item.addEventListener('click', function() {
-                            inputBuscar.value = p.text.split(' — ')[0]; // Solo el nombre
+                            inputBuscar.value = p.text.split(' — ')[0];
                             hiddenPersonId.value = p.id;
                             cerrarResultados();
                             cargarDatosEstudiante(p.id);
@@ -1020,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         divResultados.appendChild(item);
                     });
                 })
-                .catch(err => {
+                .catch(() => {
                     divResultados.innerHTML = '<div class="px-4 py-3 text-sm text-red-500">Error al buscar</div>';
                 });
         }, 300);
@@ -1035,7 +1596,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                // ── Datos personales ──
                 setVal('first_name', data.persona.first_name);
                 setVal('middle_name', data.persona.middle_name);
                 setVal('last_name', data.persona.last_name);
@@ -1043,23 +1603,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 setVal('ref_sex_id', data.persona.ref_sex_id);
                 setVal('birthdate', data.persona.birthdate);
 
-                // ── Identificadores ──
                 if (data.identificadores) {
                     setVal('rut', data.identificadores['51'] || '');
                     setVal('ipe', data.identificadores['52'] || '');
                     setVal('num_matricula', data.identificadores['55'] || '');
                     setVal('num_lista', data.identificadores['54'] || '');
-
                     if (data.identificadores['52']) {
                         chkExtranjero.checked = true;
-                        campoIpe.classList.remove('hidden');
+                        campoIpe.classList.remove('oculto');
+                        campoIpe.classList.add('visible');
                     }
                 }
 
-                // ── Residencia ──
                 setVal('residencia', data.residencia || '');
 
-                // ── Datos adicionales ──
                 if (data.enrollment) {
                     const e = data.enrollment;
                     setVal('nacionalidad', e.nacionalidad);
@@ -1069,8 +1626,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('email_estudiante', e.email_estudiante);
                     setVal('telefono_estudiante', e.telefono_estudiante);
                     setVal('fecha_ingreso_establecimiento', e.fecha_ingreso_establecimiento);
-
-                    // Académica
                     chkEsNuevo.checked = e.es_nuevo;
                     toggleAcademica();
                     setVal('colegio_procedencia', e.colegio_procedencia);
@@ -1079,41 +1634,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('ultimo_curso_aprobado', e.ultimo_curso_aprobado);
                     setVal('anio_ultimo_curso', e.anio_ultimo_curso);
                     setVal('motivo_traslado', e.motivo_traslado);
-
-                    // Socioeconómica
                     setVal('nivel_madre', e.nivel_madre);
                     setVal('nivel_padre', e.nivel_padre);
                     setVal('nivel_apoderado', e.nivel_apoderado);
                     setVal('ingreso_familiar', e.ingreso_familiar);
                     setVal('num_integrantes_hogar', e.num_integrantes_hogar);
-
-                    // SEP
                     setChk('chk_prioritario', e.alumno_prioritario);
                     setChk('chk_preferente', e.alumno_preferente);
                     setChk('chk_sep', e.beneficiario_sep);
-
-                    // Cultural
                     setChk('chk_pueblo', e.pertenece_pueblo_originario);
                     setVal('pueblo_originario', e.pueblo_originario);
                     setChk('chk_lengua', e.habla_lengua_indigena);
                     setVal('lengua_indigena', e.lengua_indigena);
                     setVal('nacionalidad_extranjera', e.nacionalidad_extranjera);
-
-                    // Transporte
                     setVal('medio_transporte', e.medio_transporte);
                     setChk('chk_transporte', e.utiliza_transporte_escolar);
                     setVal('nombre_transportista', e.nombre_transportista);
                     setVal('telefono_transportista', e.telefono_transportista);
                     setVal('tiempo_traslado', e.tiempo_traslado);
-
-                    // Autorizaciones
                     setChk('chk_fotos', e.autoriza_fotografias);
                     setChk('chk_redes', e.autoriza_redes_sociales);
                     setChk('chk_salidas', e.autoriza_salidas);
                     setChk('chk_traslado', e.autoriza_traslado_medico);
                     setChk('chk_urgencia', e.autoriza_atencion_urgencia);
-
-                    // Documentación
                     setChk('doc_nac', e.doc_cert_nacimiento);
                     setChk('doc_est', e.doc_cert_estudios);
                     setChk('doc_per', e.doc_informe_personalidad);
@@ -1123,22 +1666,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     setChk('doc_run_apod', e.doc_fotocopia_run_apod);
                     setChk('doc_dom', e.doc_comprobante_domicilio);
                     setChk('doc_med', e.doc_ficha_medica);
-
-                    // Observaciones
-                    setVal('obs_academicas', e.obs_academicas);
-                    setVal('obs_medicas', e.obs_medicas);
-                    setVal('obs_familiares', e.obs_familiares);
-                    setVal('obs_establecimiento', e.obs_establecimiento);
-
-                    // Nuevos campos
                     setVal('religion', e.religion);
                     setChk('chk_acepta_religion', e.acepta_religion);
                     setChk('chk_tiene_computadores', e.tiene_computadores);
                     setVal('cantidad_computadores', e.cantidad_computadores);
                     setVal('vive_con', e.vive_con);
+                    if (e.tiene_computadores) {
+                        divCantidadComputadores.classList.remove('oculto');
+                        divCantidadComputadores.classList.add('visible');
+                    }
                 }
 
-                // ── Apoderado titular ──
                 if (data.ap_titular) {
                     const a = data.ap_titular;
                     setVal('ap_titular_first_name', a.first_name);
@@ -1155,10 +1693,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('ap_titular_estado_civil', a.estado_civil);
                     setChk('chk_autorizado_retirar', a.autorizado_retirar);
                 }
-                // ── NUEVO: Apoderados Suplentes (Lógica de Precarga y Checkboxes) ──
+
                 tempSuplente1 = data.ap_suplente1;
                 tempSuplente2 = data.ap_suplente2;
-
                 const opcSuplentes = document.getElementById('opciones-suplentes');
                 const labelS1 = document.getElementById('label-mantener-s1');
                 const labelS2 = document.getElementById('label-mantener-s2');
@@ -1166,7 +1703,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (tempSuplente1 || tempSuplente2) {
                     opcSuplentes.classList.remove('hidden');
                     opcSuplentes.classList.add('flex');
-                    
                     if (tempSuplente1) {
                         labelS1.classList.remove('hidden');
                         labelS1.classList.add('flex');
@@ -1175,10 +1711,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         llenarSuplente('ap_suplente1', tempSuplente1);
                     } else {
                         labelS1.classList.add('hidden');
-                        labelS1.classList.remove('flex');
                         limpiarSuplente('ap_suplente1');
                     }
-
                     if (tempSuplente2) {
                         labelS2.classList.remove('hidden');
                         labelS2.classList.add('flex');
@@ -1187,17 +1721,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         llenarSuplente('ap_suplente2', tempSuplente2);
                     } else {
                         labelS2.classList.add('hidden');
-                        labelS2.classList.remove('flex');
                         limpiarSuplente('ap_suplente2');
                     }
                 } else {
                     opcSuplentes.classList.add('hidden');
-                    opcSuplentes.classList.remove('flex');
                     limpiarSuplente('ap_suplente1');
                     limpiarSuplente('ap_suplente2');
                 }
 
-                // ── Contactos de emergencia ──
                 if (data.contactos_emergencia) {
                     data.contactos_emergencia.forEach((c, idx) => {
                         const i = idx + 1;
@@ -1214,7 +1745,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
 
-                // ── Información médica ──
                 if (data.health) {
                     const h = data.health;
                     setVal('grupo_sanguineo', h.grupo_sanguineo);
@@ -1233,7 +1763,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     setChk('chk_apto_ef', h.apto_educacion_fisica);
                 }
 
-                // ── PIE ──
                 if (data.pie) {
                     setVal('pertenece_pie', data.pie.pertenece_pie ? '1' : '0');
                     setVal('diagnostico_pie', data.pie.diagnostico_pie);
@@ -1243,9 +1772,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('tipo_permanencia', data.pie.tipo_permanencia);
                 }
 
-                // Mostrar confirmación
                 infoPrecarga.classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                calcularProgreso();
             })
             .catch(err => {
                 console.error('Error cargando datos:', err);
@@ -1266,7 +1795,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el = document.querySelector(`[name="${name}"]`);
         if (el) el.value = value || '';
     }
-// ── NUEVO: Escuchadores para los checkboxes de los suplentes ──
+
     document.getElementById('chk_mantener_s1').addEventListener('change', function() {
         if (this.checked) llenarSuplente('ap_suplente1', tempSuplente1);
         else limpiarSuplente('ap_suplente1');
@@ -1277,7 +1806,6 @@ document.addEventListener('DOMContentLoaded', function() {
         else limpiarSuplente('ap_suplente2');
     });
 
-    // ── Helpers para rellenar/limpiar campos de suplentes basados en "name" ──
     function llenarSuplente(prefix, d) {
         if (!d) return;
         setName(`${prefix}_first_name`, d.first_name);
@@ -1289,7 +1817,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setName(`${prefix}_telefono`, d.telefono);
         setName(`${prefix}_profesion`, d.profesion);
         setName(`${prefix}_nivel_educativo`, d.nivel);
-        
         const chkId = prefix === 'ap_suplente1' ? 'chk_autorizado_retirar_s1' : 'chk_autorizado_retirar_s2';
         setChk(chkId, d.autorizado_retirar);
     }
@@ -1304,7 +1831,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setName(`${prefix}_telefono`, '');
         setName(`${prefix}_profesion`, '');
         setName(`${prefix}_nivel_educativo`, '');
-        
         const chkId = prefix === 'ap_suplente1' ? 'chk_autorizado_retirar_s1' : 'chk_autorizado_retirar_s2';
         setChk(chkId, false);
     }
