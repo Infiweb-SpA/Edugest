@@ -23,6 +23,17 @@
             <p class="text-xs text-gray-500 mt-1">Al seleccionar un estudiante se precargarán sus datos personales. Podrá modificarlos antes de guardar.</p>
             <div id="info-precarga" class="hidden mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
                 <p class="text-sm text-green-800 font-medium">✓ Datos precargados. Puede modificar cualquier campo antes de guardar.</p>
+                
+                <div id="opciones-suplentes" class="mt-3 pt-3 border-t border-green-300 hidden flex-col gap-2">
+                    <label id="label-mantener-s1" class="hidden items-center text-sm text-green-800 cursor-pointer">
+                        <input type="checkbox" id="chk_mantener_s1" checked class="mr-2 h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-500">
+                        Mantener Apoderado Suplente 1 (<span id="nombre-s1" class="font-semibold"></span>)
+                    </label>
+                    <label id="label-mantener-s2" class="hidden items-center text-sm text-green-800 cursor-pointer">
+                        <input type="checkbox" id="chk_mantener_s2" checked class="mr-2 h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-500">
+                        Mantener Apoderado Suplente 2 (<span id="nombre-s2" class="font-semibold"></span>)
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -957,6 +968,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const hiddenPersonId = document.getElementById('person-id-seleccionado');
     const infoPrecarga = document.getElementById('info-precarga');
     let timeoutBuscar;
+    let tempSuplente1 = null;
+    let tempSuplente2 = null;
 
     function cerrarResultados() {
         divResultados.classList.add('hidden');
@@ -1142,6 +1155,47 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('ap_titular_estado_civil', a.estado_civil);
                     setChk('chk_autorizado_retirar', a.autorizado_retirar);
                 }
+                // ── NUEVO: Apoderados Suplentes (Lógica de Precarga y Checkboxes) ──
+                tempSuplente1 = data.ap_suplente1;
+                tempSuplente2 = data.ap_suplente2;
+
+                const opcSuplentes = document.getElementById('opciones-suplentes');
+                const labelS1 = document.getElementById('label-mantener-s1');
+                const labelS2 = document.getElementById('label-mantener-s2');
+
+                if (tempSuplente1 || tempSuplente2) {
+                    opcSuplentes.classList.remove('hidden');
+                    opcSuplentes.classList.add('flex');
+                    
+                    if (tempSuplente1) {
+                        labelS1.classList.remove('hidden');
+                        labelS1.classList.add('flex');
+                        document.getElementById('nombre-s1').textContent = tempSuplente1.first_name + ' ' + tempSuplente1.last_name;
+                        document.getElementById('chk_mantener_s1').checked = true;
+                        llenarSuplente('ap_suplente1', tempSuplente1);
+                    } else {
+                        labelS1.classList.add('hidden');
+                        labelS1.classList.remove('flex');
+                        limpiarSuplente('ap_suplente1');
+                    }
+
+                    if (tempSuplente2) {
+                        labelS2.classList.remove('hidden');
+                        labelS2.classList.add('flex');
+                        document.getElementById('nombre-s2').textContent = tempSuplente2.first_name + ' ' + tempSuplente2.last_name;
+                        document.getElementById('chk_mantener_s2').checked = true;
+                        llenarSuplente('ap_suplente2', tempSuplente2);
+                    } else {
+                        labelS2.classList.add('hidden');
+                        labelS2.classList.remove('flex');
+                        limpiarSuplente('ap_suplente2');
+                    }
+                } else {
+                    opcSuplentes.classList.add('hidden');
+                    opcSuplentes.classList.remove('flex');
+                    limpiarSuplente('ap_suplente1');
+                    limpiarSuplente('ap_suplente2');
+                }
 
                 // ── Contactos de emergencia ──
                 if (data.contactos_emergencia) {
@@ -1211,6 +1265,48 @@ document.addEventListener('DOMContentLoaded', function() {
     function setName(name, value) {
         const el = document.querySelector(`[name="${name}"]`);
         if (el) el.value = value || '';
+    }
+// ── NUEVO: Escuchadores para los checkboxes de los suplentes ──
+    document.getElementById('chk_mantener_s1').addEventListener('change', function() {
+        if (this.checked) llenarSuplente('ap_suplente1', tempSuplente1);
+        else limpiarSuplente('ap_suplente1');
+    });
+
+    document.getElementById('chk_mantener_s2').addEventListener('change', function() {
+        if (this.checked) llenarSuplente('ap_suplente2', tempSuplente2);
+        else limpiarSuplente('ap_suplente2');
+    });
+
+    // ── Helpers para rellenar/limpiar campos de suplentes basados en "name" ──
+    function llenarSuplente(prefix, d) {
+        if (!d) return;
+        setName(`${prefix}_first_name`, d.first_name);
+        setName(`${prefix}_last_name`, d.last_name);
+        setName(`${prefix}_second_last_name`, d.second_last_name);
+        setName(`${prefix}_rut`, d.rut);
+        setName(`${prefix}_parentesco`, d.parentesco);
+        setName(`${prefix}_email`, d.email);
+        setName(`${prefix}_telefono`, d.telefono);
+        setName(`${prefix}_profesion`, d.profesion);
+        setName(`${prefix}_nivel_educativo`, d.nivel);
+        
+        const chkId = prefix === 'ap_suplente1' ? 'chk_autorizado_retirar_s1' : 'chk_autorizado_retirar_s2';
+        setChk(chkId, d.autorizado_retirar);
+    }
+
+    function limpiarSuplente(prefix) {
+        setName(`${prefix}_first_name`, '');
+        setName(`${prefix}_last_name`, '');
+        setName(`${prefix}_second_last_name`, '');
+        setName(`${prefix}_rut`, '');
+        setName(`${prefix}_parentesco`, '');
+        setName(`${prefix}_email`, '');
+        setName(`${prefix}_telefono`, '');
+        setName(`${prefix}_profesion`, '');
+        setName(`${prefix}_nivel_educativo`, '');
+        
+        const chkId = prefix === 'ap_suplente1' ? 'chk_autorizado_retirar_s1' : 'chk_autorizado_retirar_s2';
+        setChk(chkId, false);
     }
 });
 </script>
