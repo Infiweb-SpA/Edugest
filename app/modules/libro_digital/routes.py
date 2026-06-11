@@ -11,6 +11,7 @@ from app.models.mineduc import (
 from app.models.edugest import (
     EdugestOrganizationConfig, EdugestCurriculumPlan, EdugestSessionAttendance, EdugestAssessmentInstrument
 )
+from app.models.edugest import EdugestStudentObservation, obtener_hora_chile
 
 libro_digital_bp = Blueprint('libro_digital', __name__, url_prefix='/libro-digital')
 
@@ -205,8 +206,9 @@ def registrar_clase_dinamica(org_id):
                 lista_estudiantes.append({
                     'rol_id': rol.OrganizationPersonRoleId,
                     'rut': ident.Identifier if ident else "Sin RUT",
-                    'nombres': persona.FirstName,
-                    'apellidos': f"{persona.LastName} {persona.SecondLastName or ''}".strip()
+                    'nombre': persona.FirstName,
+                    'apellido_paterno': persona.LastName or '',
+                    'apellido_materno': persona.SecondLastName or ''
                 })
 
     # Letras disponibles para el select
@@ -249,7 +251,9 @@ def registrar_clase_dinamica(org_id):
                 db.session.add(EdugestSessionAttendance(
                     OrganizationCalendarSessionId=sesion.OrganizationCalendarSessionId,
                     OrganizationPersonRoleId=est['rol_id'],
-                    RefAttendanceStatusId=int(estado)
+                    AttendanceStatusId=int(estado),
+                    HoraInicio=hora_inicio,      # <-- NUEVO
+                    HoraTermino=hora_termino     # <-- NUEVO
                 ))
 
         db.session.commit()
@@ -258,7 +262,7 @@ def registrar_clase_dinamica(org_id):
 
     return render_template('libro_digital/lista_curso.html',
                            asignatura=asignatura,
-                           alumnos=lista_estudiantes,
+                           estudiantes=lista_estudiantes,
                            grado_id=grado_id,
                            letra_actual=letra,
                            letras_disponibles=letras_disponibles)
@@ -353,7 +357,7 @@ def exportar_lista(org_id):
             ).all()
             
             # Diccionario {rol_id: estado}
-            asistencia_dict = {a.OrganizationPersonRoleId: a.RefAttendanceStatusId for a in asistencias}
+            asistencia_dict = {a.OrganizationPersonRoleId: a.AttendanceStatusId for a in asistencias}  # <-- CORREGIDO también aquí
             
             for rol in alumnos_roles:
                 persona = Person.query.get(rol.PersonId)
@@ -453,3 +457,54 @@ def crear_asignatura_manual(grado_id):
     flash(f'Asignatura "{nombre}" creada y vinculada al grado exitosamente.', 'success')
 
     return redirect(url_for('libro_digital.asignaturas_por_grado', grado_id=grado_id))
+
+# ============================================================================
+# registrar anotación para un estudiante en una asignatura específica
+# ============================================================================
+
+@libro_digital_bp.route('/anotacion/<int:rol_id>/<int:asignatura_id>', methods=['GET', 'POST'])
+def registrar_anotacion(rol_id, asignatura_id):
+    # Buscar datos esenciales del estudiante para la interfaz
+    estudiante_data = db.session.query(
+        Person.FirstName, Person.LastName, Person.SecondLastName
+    ).join(
+        OrganizationPersonRole, OrganizationPersonRole.PersonId == Person.PersonId
+    ).filter(
+        OrganizationPersonRole.OrganizationPersonRoleId == rol_id
+    ).first()
+    
+    asignatura = Organization.query.get_or_404(asignatura_id)
+    
+    if request.method == 'POST':
+        tipo = request.form.get('tipo')
+        detalle = request.form.get('detalle')
+        
+        if not tipo or not detalle:
+            flash('Todos los campos son obligatorios.', 'warning')
+        else:
+            # Creación del registro asegurando la estampa temporal local de Temuco
+            nueva_observacion = EdugestStudentObservation(
+                OrganizationPersonRoleId=rol_id,
+                AsignaturaId=asignatura_id,
+                Tipo=tipo,
+                Detalle=detalle,
+                FechaRegistro=obtener_hora_chile()
+            )
+            db.session.add(nueva_observacion)
+            db.session.commit()
+            flash('Anotación registrada exitosamente.', 'success')
+            return redirect(url_for('libro_digital.registrar_anotacion', rol_id=rol_id, asignatura_id=asignatura_id))
+            
+    # Obtener el historial completo del estudiante en esta asignatura para la vista
+    historial = EdugestStudentObservation.query.filter_by(
+        OrganizationPersonRoleId=rol_id,
+        AsignaturaId=asignatura_id
+    ).order_by(EdugestStudentObservation.FechaRegistro.desc()).all()
+    
+    return render_template(
+        'libro_digital/anotaciones.html',
+        estudiante=estudiante_data,
+        asignatura=asignatura,
+        historial=historial,
+        rol_id=rol_id
+    )

@@ -70,49 +70,55 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-600">
+            <table class="w-full text-sm text-left text-gray-500">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th scope="col" class="px-6 py-4">RUT</th>
-                        <th scope="col" class="px-6 py-4">Apellidos</th>
-                        <th scope="col" class="px-6 py-4">Nombres</th>
-                        <th scope="col" class="px-6 py-4 text-center">Estado de Asistencia</th>
+                        <th scope="col" class="px-6 py-3">Estudiante</th>
+                        <th scope="col" class="px-6 py-3">RUT / ID</th>
+                        <th scope="col" class="px-6 py-3 text-center">Asistencia</th>
+                        <th scope="col" class="px-6 py-3 text-center">Observaciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for est in alumnos %}
-                    <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="px-6 py-4 font-mono text-xs">{{ est.rut }}</td>
-                        <td class="px-6 py-4 font-medium text-gray-900">{{ est.apellidos }}</td>
-                        <td class="px-6 py-4">{{ est.nombres }}</td>
+                    {% for est in estudiantes %}
+                    <tr class="bg-white border-b border-gray-200 hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">
+                            {{ est.apellido_paterno }} {{ est.apellido_materno }}, {{ est.nombre }}
+                        </td>
+                        <td class="px-6 py-4 text-xs">
+                            {{ est.rut }}
+                        </td>
                         <td class="px-6 py-4">
-                            <div class="flex justify-center space-x-4">
+                            <div class="flex justify-center items-center space-x-4">
                                 <label class="inline-flex items-center cursor-pointer">
-                                    <input type="radio" name="asistencia_{{ est.rol_id }}" value="1" required
+                                    <input type="radio" name="asistencia_{{ est.rol_id }}" value="1" checked
                                         class="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500">
-                                    <span
-                                        class="ml-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">Presente</span>
+                                    <span class="ml-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">Presente</span>
                                 </label>
                                 <label class="inline-flex items-center cursor-pointer">
                                     <input type="radio" name="asistencia_{{ est.rol_id }}" value="2"
                                         class="w-4 h-4 text-rose-600 border-gray-300 focus:ring-rose-500">
-                                    <span
-                                        class="ml-1.5 text-xs font-medium text-rose-700 bg-rose-50 px-2 py-1 rounded-md">Ausente</span>
+                                    <span class="ml-1.5 text-xs font-medium text-rose-700 bg-rose-50 px-2 py-1 rounded-md">Ausente</span>
                                 </label>
                                 <label class="inline-flex items-center cursor-pointer">
                                     <input type="radio" name="asistencia_{{ est.rol_id }}" value="3"
                                         class="w-4 h-4 text-amber-500 border-gray-300 focus:ring-amber-500">
-                                    <span
-                                        class="ml-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-md">Atrasado</span>
+                                    <span class="ml-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-md">Atrasado</span>
                                 </label>
                             </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <a href="{{ url_for('libro_digital.registrar_anotacion', rol_id=est.rol_id, asignatura_id=asignatura.OrganizationId) }}" 
+                               class="inline-block w-12 h-12 bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs rounded-md shadow-sm transition flex flex-col items-center justify-center border border-pink-400">
+                                <span>➕</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider">Mas</span>
+                            </a>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
                         <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                            No hay estudiantes matriculados en el curso <strong>Letra {{ letra_actual }}</strong> de
-                            este grado.
+                            No hay estudiantes matriculados en el curso <strong>Letra {{ letra_actual }}</strong> de este grado.
                         </td>
                     </tr>
                     {% endfor %}

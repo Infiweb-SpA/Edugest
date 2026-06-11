@@ -1,5 +1,10 @@
 from app.database import db
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+def obtener_hora_chile():
+    """Retorna la fecha y hora actual garantizando la zona horaria de Chile Continental (Temuco)"""
+    return datetime.now(ZoneInfo("America/Santiago"))
 
 # ============================================================================
 # MÓDULO A: CONFIGURACIÓN Y PERMISOS
@@ -48,7 +53,7 @@ class EdugestCurriculumPlan(db.Model):
     Actividad   = db.Column(db.Text, nullable=True)
     DetallesActividad = db.Column(db.Text, nullable=True)
     Objetivo    = db.Column(db.Text, nullable=True)
-    CreatedAt   = db.Column(db.DateTime, default=datetime.utcnow)
+    CreatedAt   = db.Column(db.DateTime, default=obtener_hora_chile)
 
 
 class EdugestSessionAttendance(db.Model):
@@ -56,21 +61,29 @@ class EdugestSessionAttendance(db.Model):
     __tablename__ = 'edugest_session_attendance'
     
     SessionAttendanceId = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    OrganizationCalendarSessionId = db.Column(
-        db.Integer,
-        db.ForeignKey('OrganizationCalendarSession.OrganizationCalendarSessionId', ondelete='CASCADE'),
-        nullable=False
-    )
-    OrganizationPersonRoleId = db.Column(
-        db.Integer,
-        db.ForeignKey('OrganizationPersonRole.OrganizationPersonRoleId', ondelete='CASCADE'),
-        nullable=False
-    )
-    # 1=Presente, 2=Ausente, 3=Atraso
-    RefAttendanceStatusId = db.Column(db.Integer, nullable=False)
-    CreatedAt = db.Column(db.DateTime, default=datetime.utcnow)
+    OrganizationCalendarSessionId = db.Column(db.Integer, db.ForeignKey('OrganizationCalendarSession.OrganizationCalendarSessionId'), nullable=False)
+    OrganizationPersonRoleId = db.Column(db.Integer, db.ForeignKey('OrganizationPersonRole.OrganizationPersonRoleId'), nullable=False)
+    AttendanceStatusId = db.Column(db.Integer, nullable=False)  # 1: Presente, 2: Ausente, 3: Atraso
+    
+    # Momento exacto en que se firmó el registro
+    FechaRegistro = db.Column(db.DateTime, default=obtener_hora_chile, onupdate=obtener_hora_chile, nullable=False)
+    
+    # HORARIO DE LA CLASE (para reportes sin joins complejos)
+    HoraInicio = db.Column(db.String(8), nullable=True)   # Ej: "08:30:00"
+    HoraTermino = db.Column(db.String(8), nullable=True)  # Ej: "09:15:00"
 
-
+    
+# NUEVA TABLA para el botón "Más" (Anotaciones del Estudiante)
+class EdugestStudentObservation(db.Model):
+    """Historial de anotaciones positivas, negativas u otras de los estudiantes"""
+    __tablename__ = 'edugest_student_observation'
+    
+    ObservationId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    OrganizationPersonRoleId = db.Column(db.Integer, db.ForeignKey('OrganizationPersonRole.OrganizationPersonRoleId', ondelete='CASCADE'), nullable=False)
+    AsignaturaId = db.Column(db.Integer, db.ForeignKey('Organization.OrganizationId', ondelete='CASCADE'), nullable=False)
+    Tipo = db.Column(db.String(50), nullable=False)  # 'Positiva', 'Negativa', 'Otra'
+    Detalle = db.Column(db.Text, nullable=False)
+    FechaRegistro = db.Column(db.DateTime, default=obtener_hora_chile, nullable=False)
 # ============================================================================
 # MÓDULO C: MOTOR DE EVALUACIONES DIGITALES
 # ============================================================================
