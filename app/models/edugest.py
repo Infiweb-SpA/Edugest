@@ -370,3 +370,21 @@ class EdugestPersonRelationshipDetail(db.Model):
         # Campos adicionales apoderado
     EstadoCivil = db.Column(db.String(50), nullable=True)
     AutorizadoRetirarEstablecimiento = db.Column(db.Boolean, default=False, nullable=False)
+
+# ============================================================================
+# MODULO G: NOTAS MANUALES (Evaluaciones impresas)
+# ============================================================================
+
+class EdugestManualGrade(db.Model):
+    """Calificaciones de evaluaciones (automáticas y manuales) para persistencia y reportes"""
+    __tablename__ = 'edugest_manual_grade'
+
+    ManualGradeId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    InstrumentId = db.Column(db.Integer, db.ForeignKey('edugest_assessment_instrument.InstrumentId', ondelete='CASCADE'), nullable=False)
+    OrganizationPersonRoleId = db.Column(db.Integer, db.ForeignKey('OrganizationPersonRole.OrganizationPersonRoleId', ondelete='CASCADE'), nullable=False)
+    Score = db.Column(db.Float, nullable=False)
+    IsManual = db.Column(db.Boolean, default=False, nullable=False)
+    CreatedAt = db.Column(db.DateTime, default=obtener_hora_chile)
+    UpdatedAt = db.Column(db.DateTime, default=obtener_hora_chile, onupdate=obtener_hora_chile)
+
+    __table_args__ = (db.UniqueConstraint('InstrumentId', 'OrganizationPersonRoleId', name='uq_manual_grade'),)

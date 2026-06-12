@@ -3,69 +3,231 @@
 {% block header_title %}Consolidado de Calificaciones Automatizadas{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
-    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-slate-50">
+<form method="POST" action="{{ url_for('evaluaciones.guardar_nota_manual', inst_id=instrumento.InstrumentId) }}" id="formNotas">
+<div class="max-w-7xl mx-auto bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+
+    <!-- CABECERA -->
+    <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">
         <div>
             <h3 class="text-lg font-bold text-gray-900">{{ instrumento.Title }}</h3>
-            <p class="text-xs text-gray-400 mt-0.5">Notas inyectadas directamente al Acta oficial del Libro Digital de Clases.</p>
+            <p class="text-xs text-gray-400 mt-0.5">
+                Marque el checkbox en la columna <strong>"Nota Manual"</strong> para habilitar la edición directa de la nota.
+                Desmárquelo para restablecer la calificación automática.
+            </p>
         </div>
-        <a href="{{ url_for('evaluaciones.index') }}" class="text-xs border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md font-medium">Volver</a>
+        <div class="flex items-center gap-2">
+            <button type="submit" id="btnGuardar"
+                    class="text-xs px-4 py-2 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition hidden cursor-pointer">
+                💾 Guardar Notas Manuales
+            </button>
+            <a href="{{ url_for('evaluaciones.index') }}"
+               class="text-xs border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md font-medium">
+                Volver
+            </a>
+        </div>
     </div>
 
-    <table class="w-full text-left border-collapse text-sm">
-        <thead>
-            <tr class="bg-slate-100 text-gray-600 uppercase text-xs font-semibold border-b border-gray-200">
-                <th class="p-4">Estudiante</th>
-                <th class="p-4 text-center">Puntaje</th>
-                <th class="p-4 text-center">Nota Final</th>
-                <th class="p-4 text-center">Estado</th>
-                <th class="p-4 text-center">Simulación Rápida</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in tabla_resultados %}
-            <tr class="border-b border-gray-100 hover:bg-slate-50 transition">
-                <td class="p-4">
-                    <div class="font-medium text-gray-900">{{ r.alumno.FirstName }} {{ r.alumno.LastName }}</div>
-                    <div class="text-xs text-gray-400">RUT: {{ r.rut }}</div>
-                </td>
-                
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600 text-center font-medium">
-                    {{ r.puntaje }} / {{ r.puntaje_maximo }} pts
-                </td>
-                
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-center font-bold">
-                    <span class="{% if r.estado == 'No Rendido' %}text-gray-400{% elif r.nota|float >= 4.0 %}text-emerald-600{% else %}text-red-600{% endif %}">
-                        {{ r.nota }}
-                    </span>
-                </td>
-                
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
-                    {% if r.estado == 'No Rendido' %}
-                        <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">⚪ No Rendido</span>
-                    {% elif r.estado == 'Aprobado' %}
-                        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">🟢 Aprobado</span>
-                    {% else %}
-                        <span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">🔴 Reprobado</span>
-                    {% endif %}
-                </td>
+    <!-- TABLA -->
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+            <thead>
+                <tr class="bg-slate-100 text-gray-600 uppercase text-xs font-semibold border-b border-gray-200">
+                    <th class="p-4">Estudiante</th>
+                    <th class="p-4 text-center">Puntaje</th>
+                    <th class="p-4 text-center">Nota Final</th>
+                    <th class="p-4 text-center">Estado</th>
+                    <th class="p-4 text-center">Simulación Rápida</th>
+                    <th class="p-4 text-center whitespace-nowrap">Nota Manual</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in tabla_resultados %}
+                <tr class="border-b border-gray-100 hover:bg-slate-50 transition {% if r.es_manual %}bg-amber-50/40{% endif %}"
+                    id="row_{{ r.opr_id }}">
 
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
-                    {% if r.estado == 'No Rendido' %}
-                        <a href="{{ url_for('evaluaciones.rendir', inst_id=instrumento.InstrumentId, alumno_id=r.alumno.PersonId) }}" 
-                           class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-indigo-500 transition">
-                            📝 Rendir Test
+                    <!-- ESTUDIANTE -->
+                    <td class="p-4">
+                        <div class="font-medium text-gray-900">{{ r.alumno.FirstName }} {{ r.alumno.LastName }}</div>
+                        <div class="text-xs text-gray-400">RUT: {{ r.rut }}</div>
+                    </td>
+
+                    <!-- PUNTAJE -->
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600 text-center font-medium">
+                        <span class="puntaje-display">{{ r.puntaje }} / {{ r.puntaje_maximo }} pts</span>
+                    </td>
+
+                    <!-- NOTA FINAL -->
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-center font-bold">
+                        <!-- Display de nota (se muestra cuando NO es manual) -->
+                        <span class="nota-display {% if r.estado == 'No Rendido' %}text-gray-400{% elif r.nota|float >= 4.0 %}text-emerald-600{% else %}text-red-600{% endif %}"
+                              id="nota_display_{{ r.opr_id }}"
+                              data-nota-auto="{{ r.nota if not r.es_manual else r.nota }}">
+                            {{ r.nota }}
+                            {% if r.es_manual %}
+                            <span class="text-[10px] ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium align-middle">Manual</span>
+                            {% endif %}
+                        </span>
+                        <!-- Input de nota manual (se muestra cuando ES manual) -->
+                        <input type="number" step="0.1" min="1.0" max="7.0"
+                               name="nota_manual_{{ r.opr_id }}"
+                               id="nota_input_{{ r.opr_id }}"
+                               value="{{ r.nota }}"
+                               oninput="updateEstado({{ r.opr_id }})"
+                               class="nota-input w-20 text-center px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold
+                                      {% if not r.es_manual %}hidden{% endif %}"
+                               {% if not r.es_manual %}disabled{% endif %}>
+                        <!-- Campo oculto para marcar eliminación -->
+                        <input type="hidden" name="eliminar_nota_{{ r.opr_id }}" id="eliminar_{{ r.opr_id }}" value="0">
+                    </td>
+
+                    <!-- ESTADO -->
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-center" id="estado_{{ r.opr_id }}">
+                        {% if r.estado == 'No Rendido' %}
+                            <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">⚪ No Rendido</span>
+                        {% elif r.estado == 'Aprobado' %}
+                            <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">🟢 Aprobado</span>
+                        {% else %}
+                            <span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">🔴 Reprobado</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- SIMULACIÓN RÁPIDA -->
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
+                        <a href="{{ url_for('evaluaciones.rendir', inst_id=instrumento.InstrumentId, alumno_id=r.alumno.PersonId) }}"
+                           class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold shadow-xs transition
+                                  {% if r.estado == 'No Rendido' %}
+                                      bg-indigo-600 text-white hover:bg-indigo-500
+                                  {% else %}
+                                      bg-slate-200 text-slate-700 hover:bg-slate-300
+                                  {% endif %}">
+                            {% if r.estado == 'No Rendido' %}📝 Rendir Test{% else %}🔄 Re-rendir{% endif %}
                         </a>
-                    {% else %}
-                        <a href="{{ url_for('evaluaciones.rendir', inst_id=instrumento.InstrumentId, alumno_id=r.alumno.PersonId) }}" 
-                           class="inline-flex items-center rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-300 transition">
-                            🔄 Re-rendir
-                        </a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+
+                    <!-- NOTA MANUAL (checkbox) -->
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
+                        <input type="checkbox"
+                               id="chk_manual_{{ r.opr_id }}"
+                               class="h-4 w-4 rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                               onchange="toggleManual({{ r.opr_id }})"
+                               {% if r.es_manual %}checked{% endif %}>
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PIE -->
+    <div class="p-4 border-t border-gray-100 flex justify-between items-center bg-slate-50">
+        <p class="text-xs text-gray-400">
+            <strong>{{ tabla_resultados|length }}</strong> estudiantes ·
+            <strong id="contadorManuales">{{ tabla_resultados|selectattr('es_manual')|list|length }}</strong> con nota manual
+        </p>
+        <button type="submit" id="btnGuardarBottom"
+                class="text-xs px-4 py-2 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition hidden cursor-pointer">
+            💾 Guardar Notas Manuales
+        </button>
+    </div>
+
 </div>
+</form>
+
+<script>
+function toggleManual(oprId) {
+    const checkbox = document.getElementById('chk_manual_' + oprId);
+    const display = document.getElementById('nota_display_' + oprId);
+    const input = document.getElementById('nota_input_' + oprId);
+    const eliminarField = document.getElementById('eliminar_' + oprId);
+    const row = document.getElementById('row_' + oprId);
+
+    if (checkbox.checked) {
+        // ACTIVAR modo manual: mostrar input, ocultar display
+        display.classList.add('hidden');
+        input.classList.remove('hidden');
+        input.disabled = false;
+        eliminarField.value = '0';
+        row.classList.add('bg-amber-50/40');
+        input.focus();
+        input.select();
+    } else {
+        // DESACTIVAR modo manual: restaurar nota automática
+        input.classList.add('hidden');
+        input.disabled = true;
+        eliminarField.value = '1';
+        row.classList.remove('bg-amber-50/40');
+
+        // Restaurar display con la nota automática
+        const notaAuto = parseFloat(display.dataset.notaAuto);
+        display.textContent = notaAuto.toFixed(1);
+        display.classList.remove('text-gray-400', 'text-emerald-600', 'text-red-600');
+        if (notaAuto >= 4.0) {
+            display.classList.add('text-emerald-600');
+        } else {
+            display.classList.add('text-red-600');
+        }
+        display.classList.remove('hidden');
+
+        // Actualizar estado visual
+        updateEstadoFromNota(oprId, notaAuto);
+    }
+
+    refreshGuardarBtn();
+    updateContador();
+}
+
+function updateEstado(oprId) {
+    const input = document.getElementById('nota_input_' + oprId);
+    const nota = parseFloat(input.value);
+    if (isNaN(nota)) return;
+    updateEstadoFromNota(oprId, nota);
+}
+
+function updateEstadoFromNota(oprId, nota) {
+    const estadoCell = document.getElementById('estado_' + oprId);
+    if (nota >= 4.0) {
+        estadoCell.innerHTML = '<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">🟢 Aprobado</span>';
+    } else {
+        estadoCell.innerHTML = '<span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">🔴 Reprobado</span>';
+    }
+}
+
+function refreshGuardarBtn() {
+    const allCheckboxes = document.querySelectorAll('input[id^="chk_manual_"]');
+    let anyChecked = false;
+    allCheckboxes.forEach(function(cb) { if (cb.checked) anyChecked = true; });
+
+    const btnTop = document.getElementById('btnGuardar');
+    const btnBottom = document.getElementById('btnGuardarBottom');
+
+    if (anyChecked) {
+        btnTop.classList.remove('hidden');
+        btnBottom.classList.remove('hidden');
+    } else {
+        btnTop.classList.add('hidden');
+        btnBottom.classList.add('hidden');
+    }
+}
+
+function updateContador() {
+    const allCheckboxes = document.querySelectorAll('input[id^="chk_manual_"]');
+    let count = 0;
+    allCheckboxes.forEach(function(cb) { if (cb.checked) count++; });
+    document.getElementById('contadorManuales').textContent = count;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Guardar nota automática para cada estudiante
+    {% for r in tabla_resultados %}
+    (function() {
+        var display = document.getElementById('nota_display_{{ r.opr_id }}');
+        display.dataset.notaAuto = '{{ r.nota_auto }}';
+    })();
+    {% endfor %}
+
+    refreshGuardarBtn();
+});
+
+</script>
 {% endblock %}

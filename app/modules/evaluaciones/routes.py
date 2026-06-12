@@ -6,11 +6,13 @@ from app.models import (
     EdugestCurriculumPlan,
     EdugestQuestionOption,
     EdugestStudentResponse,
+    EdugestManualGrade,
     Organization,
     OrganizationPersonRole,
     OrganizationRelationship,
     Person,
     PersonIdentifier
+
 )
 
 evaluaciones_bp = Blueprint('evaluaciones', __name__, url_prefix='/evaluaciones')
@@ -348,7 +350,7 @@ def rendir(inst_id, alumno_id):
     relacion_grado = OrganizationRelationship.query.filter_by(
         OrganizationId=instrumento.OrganizationId
     ).first()
-    
+
     cursos = []
     if relacion_grado:
         cursos = Organization.query.join(
@@ -358,7 +360,7 @@ def rendir(inst_id, alumno_id):
             Organization.RefOrganizationTypeId == 21,
             OrganizationRelationship.ParentOrganizationId == relacion_grado.ParentOrganizationId
         ).all()
-    
+
     matricula = None
     for curso in cursos:
         mat = OrganizationPersonRole.query.filter_by(
@@ -370,7 +372,7 @@ def rendir(inst_id, alumno_id):
         if mat:
             matricula = mat
             break
-    
+
     if not matricula:
         flash('El estudiante no está matriculado en ningún curso de esta asignatura.', 'danger')
         return redirect(url_for('evaluaciones.resultados', inst_id=inst_id))
@@ -390,7 +392,7 @@ def rendir(inst_id, alumno_id):
     if request.method == 'POST':
         for item in preguntas_data:
             q = item['pregunta']
-            
+
             # --- ALTERNATIVA y V/F ---
             if q.QuestionType in ['Alternativa', 'VerdaderoFalso']:
                 campo = f'pregunta_{q.QuestionId}'
@@ -400,14 +402,13 @@ def rendir(inst_id, alumno_id):
                 opcion_id = int(opcion_id_str)
                 opcion = EdugestQuestionOption.query.get(opcion_id)
                 puntaje = q.Points if (opcion and opcion.IsCorrect) else 0
-                
                 _guardar_respuesta(matricula, q, opcion_id, puntaje)
-            
+
             # --- DESARROLLO ---
             elif q.QuestionType == 'Desarrollo':
                 texto = request.form.get(f'pregunta_{q.QuestionId}', '')
                 _guardar_respuesta_desarrollo(matricula, q, texto)
-            
+
             # --- RELACIÓN DE COLUMNAS ---
             elif q.QuestionType == 'RelacionColumnas':
                 puntaje = 0
@@ -416,9 +417,8 @@ def rendir(inst_id, alumno_id):
                     respuesta = request.form.get(f'relacion_{q.QuestionId}_{op.OrderIndex}')
                     if respuesta and int(respuesta) == op.OptionId:
                         puntaje += q.Points / total if total > 0 else 0
-                
                 _guardar_respuesta(matricula, q, None, round(puntaje, 2))
-            
+
             # --- COMPLETAR ---
             elif q.QuestionType == 'Completar':
                 respuestas_correctas = [op.OptionText.strip().lower() for op in sorted(item['opciones'], key=lambda x: x.OrderIndex or 0)]
@@ -427,9 +427,45 @@ def rendir(inst_id, alumno_id):
                     resp = request.form.get(f'completar_{q.QuestionId}_{idx}', '').strip().lower()
                     if resp == correcta:
                         aciertos += 1
-                
                 puntaje = (aciertos / len(respuestas_correctas)) * q.Points if respuestas_correctas else 0
                 _guardar_respuesta(matricula, q, None, round(puntaje, 2))
+
+        db.session.flush()
+
+        # ═══════════════════════════════════════════════════════
+        # GUARDAR NOTA AUTOMÁTICA EN LA TABLA DE CALIFICACIONES
+        # ═══════════════════════════════════════════════════════
+        puntaje_maximo = sum(p.Points for p in preguntas) or 1
+
+        respuestas_guardadas = (
+            EdugestStudentResponse.query
+            .filter_by(OrganizationPersonRoleId=matricula.OrganizationPersonRoleId)
+            .join(EdugestAssessmentQuestion)
+            .filter(EdugestAssessmentQuestion.InstrumentId == inst_id)
+            .all()
+        )
+        puntaje_obtenido = sum(r.ScoreEarned or 0 for r in respuestas_guardadas)
+        nota_calculada = round(1 + (puntaje_obtenido / puntaje_maximo) * 6, 1)
+
+        # Solo guardar automática si NO tiene nota manual activa
+        registro = EdugestManualGrade.query.filter_by(
+            InstrumentId=inst_id,
+            OrganizationPersonRoleId=matricula.OrganizationPersonRoleId
+        ).first()
+
+        if registro:
+            if not registro.IsManual:
+                # Actualizar nota automática existente
+                registro.Score = nota_calculada
+        else:
+            # Crear nuevo registro automático
+            nuevo = EdugestManualGrade(
+                InstrumentId=inst_id,
+                OrganizationPersonRoleId=matricula.OrganizationPersonRoleId,
+                Score=nota_calculada,
+                IsManual=False
+            )
+            db.session.add(nuevo)
 
         db.session.commit()
         flash('Evaluación enviada y calificada automáticamente.', 'success')
@@ -449,11 +485,11 @@ def resultados(inst_id):
     preguntas = EdugestAssessmentQuestion.query.filter_by(InstrumentId=inst_id).all()
     puntaje_maximo = sum(p.Points for p in preguntas) or 1
 
-    # FIX: Buscar estudiantes en los CURSOS del grado, no en la asignatura
+    # Buscar estudiantes en los CURSOS del grado
     relacion_grado = OrganizationRelationship.query.filter_by(
         OrganizationId=instrumento.OrganizationId
     ).first()
-    
+
     matriculas = []
     if relacion_grado:
         cursos = Organization.query.join(
@@ -463,7 +499,7 @@ def resultados(inst_id):
             Organization.RefOrganizationTypeId == 21,
             OrganizationRelationship.ParentOrganizationId == relacion_grado.ParentOrganizationId
         ).all()
-        
+
         for curso in cursos:
             mats = OrganizationPersonRole.query.filter_by(
                 OrganizationId=curso.OrganizationId,
@@ -472,6 +508,10 @@ def resultados(inst_id):
             ).all()
             matriculas.extend(mats)
 
+    # Cargar TODAS las calificaciones guardadas (automáticas + manuales)
+    calificaciones = EdugestManualGrade.query.filter_by(InstrumentId=inst_id).all()
+    calificaciones_dict = {c.OrganizationPersonRoleId: c for c in calificaciones}
+
     tabla_resultados = []
     vistos = set()
 
@@ -479,8 +519,9 @@ def resultados(inst_id):
         if matricula.PersonId in vistos:
             continue
         vistos.add(matricula.PersonId)
-        
+
         alumno = matricula.person
+        opr_id = matricula.OrganizationPersonRoleId
 
         identificador = PersonIdentifier.query.filter_by(
             PersonId=alumno.PersonId,
@@ -488,22 +529,44 @@ def resultados(inst_id):
         ).first()
         rut = identificador.Identifier if identificador else 'Sin RUT'
 
+        # Calcular puntaje desde respuestas (para mostrar en columna Puntaje)
         respuestas = (
             EdugestStudentResponse.query
-            .filter_by(OrganizationPersonRoleId=matricula.OrganizationPersonRoleId)
+            .filter_by(OrganizationPersonRoleId=opr_id)
             .join(EdugestAssessmentQuestion)
             .filter(EdugestAssessmentQuestion.InstrumentId == inst_id)
             .all()
         )
-
         puntaje_obtenido = sum(r.ScoreEarned or 0 for r in respuestas)
 
+        # Nota automática calculada (siempre, como respaldo)
         if puntaje_maximo > 0:
-            nota = round(1 + (puntaje_obtenido / puntaje_maximo) * 6, 1)
+            nota_auto = round(1 + (puntaje_obtenido / puntaje_maximo) * 6, 1)
         else:
-            nota = 1.0
+            nota_auto = 1.0
 
-        if not respuestas:
+        # Buscar registro guardado
+        registro = calificaciones_dict.get(opr_id)
+
+        if registro and registro.IsManual:
+            # Tiene nota manual guardada
+            nota = registro.Score
+            es_manual = True
+        elif registro and not registro.IsManual:
+            # Tiene nota automática guardada
+            nota = registro.Score
+            es_manual = False
+        elif not respuestas:
+            # Sin respuestas y sin registro
+            nota = nota_auto
+            es_manual = False
+        else:
+            # Tiene respuestas pero no se guardó (caso legacy)
+            nota = nota_auto
+            es_manual = False
+
+        # Determinar estado
+        if not respuestas and not registro:
             estado = 'No Rendido'
         elif nota >= 4.0:
             estado = 'Aprobado'
@@ -516,7 +579,10 @@ def resultados(inst_id):
             'puntaje': puntaje_obtenido,
             'puntaje_maximo': puntaje_maximo,
             'nota': nota,
-            'estado': estado
+            'nota_auto': nota_auto,
+            'estado': estado,
+            'es_manual': es_manual,
+            'opr_id': opr_id
         })
 
     tabla_resultados.sort(key=lambda x: x['alumno'].LastName)
@@ -524,6 +590,91 @@ def resultados(inst_id):
     return render_template('evaluaciones/resultados.html',
                            instrumento=instrumento,
                            tabla_resultados=tabla_resultados)
+
+
+
+@evaluaciones_bp.route('/instrumento/<int:inst_id>/nota-manual', methods=['POST'])
+def guardar_nota_manual(inst_id):
+    """Guarda notas manuales nuevas y restaura automáticas las que se desmarcaron"""
+    instrumento = EdugestAssessmentInstrument.query.get_or_404(inst_id)
+    preguntas = EdugestAssessmentQuestion.query.filter_by(InstrumentId=inst_id).all()
+    puntaje_maximo = sum(p.Points for p in preguntas) or 1
+
+    for key, value in request.form.items():
+        # ---- ELIMINAR: revertir a nota automática ----
+        if key.startswith('eliminar_nota_') and value == '1':
+            opr_id = int(key.replace('eliminar_nota_', ''))
+            registro = EdugestManualGrade.query.filter_by(
+                InstrumentId=inst_id,
+                OrganizationPersonRoleId=opr_id
+            ).first()
+
+            if registro:
+                # Recalcular nota automática desde las respuestas guardadas
+                respuestas = (
+                    EdugestStudentResponse.query
+                    .filter_by(OrganizationPersonRoleId=opr_id)
+                    .join(EdugestAssessmentQuestion)
+                    .filter(EdugestAssessmentQuestion.InstrumentId == inst_id)
+                    .all()
+                )
+                puntaje_obtenido = sum(r.ScoreEarned or 0 for r in respuestas)
+                nota_auto = round(1 + (puntaje_obtenido / puntaje_maximo) * 6, 1)
+
+                registro.Score = nota_auto
+                registro.IsManual = False
+
+        # ---- GUARDAR/ACTUALIZAR nota manual ----
+        if key.startswith('nota_manual_'):
+            opr_id = int(key.replace('nota_manual_', ''))
+
+            # Si este opr_id fue marcado para eliminación, saltar
+            eliminar_key = f'eliminar_nota_{opr_id}'
+            if request.form.get(eliminar_key) == '1':
+                continue
+
+            try:
+                nota = float(value)
+                if 1.0 <= nota <= 7.0:
+                    registro = EdugestManualGrade.query.filter_by(
+                        InstrumentId=inst_id,
+                        OrganizationPersonRoleId=opr_id
+                    ).first()
+
+                    if registro:
+                        registro.Score = nota
+                        registro.IsManual = True
+                    else:
+                        nueva = EdugestManualGrade(
+                            InstrumentId=inst_id,
+                            OrganizationPersonRoleId=opr_id,
+                            Score=nota,
+                            IsManual=True
+                        )
+                        db.session.add(nueva)
+            except (ValueError, TypeError):
+                continue
+
+    db.session.commit()
+    flash('Notas guardadas correctamente.', 'success')
+    return redirect(url_for('evaluaciones.resultados', inst_id=inst_id))
+
+
+
+
+@evaluaciones_bp.route('/instrumento/<int:inst_id>/eliminar-nota-manual/<int:opr_id>', methods=['POST'])
+def eliminar_nota_manual(inst_id, opr_id):
+    """Elimina una nota manual y revierte al cálculo automático"""
+    manual = EdugestManualGrade.query.filter_by(
+        InstrumentId=inst_id,
+        OrganizationPersonRoleId=opr_id
+    ).first()
+    if manual:
+        db.session.delete(manual)
+        db.session.commit()
+        flash('Nota manual eliminada. Se usará la calificación automática.', 'info')
+    return redirect(url_for('evaluaciones.resultados', inst_id=inst_id))
+
 
 
 @evaluaciones_bp.route('/instrumento/<int:inst_id>/visibilidad', methods=['POST'])

@@ -21,5 +21,6 @@ from app.models.edugest import (
     # NUEVOS: Extensión de matrícula
     EdugestStudentEnrollment, EdugestEmergencyContact,
     EdugestStudentHealth, EdugestStudentPIE,
-    EdugestPersonRelationshipDetail
+    EdugestPersonRelationshipDetail,
+    EdugestManualGrade
 )

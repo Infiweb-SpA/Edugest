@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+
+{% block title %}Reporte de Grado - Edugest{% endblock %}
+{% block header_title %}Reporte Consolidado: {{ grado.Name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Cabecera -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <a href="{{ url_for('reportes.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                    ⬅️ Volver a Reportes
+                </a>
+                <h3 class="text-xl font-bold text-gray-900 mt-2">
+                    {{ grado.Name }} - Todos los Cursos
+                </h3>
+                <p class="text-sm text-gray-500 mt-1">
+                    Período: <strong class="text-gray-700">{{ fecha_inicio }} al {{ fecha_fin }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <form method="GET" class="flex flex-wrap items-end gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Período</label>
+                <select name="periodo" onchange="this.form.submit()"
+                    class="rounded-lg border border-gray-300 p-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    <option value="mes" {% if periodo == 'mes' %}selected{% endif %}>Mensual</option>
+                    <option value="semestre" {% if periodo == 'semestre' %}selected{% endif %}>Semestral</option>
+                    <option value="anio" {% if periodo == 'anio' %}selected{% endif %}>Anual</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de referencia</label>
+                <input type="date" name="fecha" value="{{ fecha_ref }}" 
+                    onchange="this.form.submit()"
+                    class="rounded-lg border border-gray-300 p-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+            </div>
+        </form>
+    </div>
+
+    <!-- RESUMEN GENERAL DEL GRADO -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Asistencia -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-semibold">Asistencia</p>
+                    <p class="text-lg font-bold text-gray-900">{{ chart_data.presentes + chart_data.ausentes + chart_data.atrasados }}</p>
+                </div>
+            </div>
+            <div class="flex gap-1 text-xs">
+                <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">{{ chart_data.presentes }} P</span>
+                <span class="px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded">{{ chart_data.ausentes }} A</span>
+                <span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">{{ chart_data.atrasados }} T</span>
+            </div>
+        </div>
+
+        <!-- Notas -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-semibold">Promedio General</p>
+                    <p class="text-lg font-bold text-gray-900">
+                        {% if resumen_grado.promedio_general is not none %}
+                            {{ resumen_grado.promedio_general }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Promedio de todos los cursos</p>
+        </div>
+
+        <!-- Anotaciones Positivas -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-semibold">Anot. Positivas</p>
+                    <p class="text-lg font-bold text-emerald-600">{{ resumen_grado.total_anotaciones_positivas }}</p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Reconocimientos y logros</p>
+        </div>
+
+        <!-- Anotaciones Negativas -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-semibold">Anot. Negativas</p>
+                    <p class="text-lg font-bold text-rose-600">{{ resumen_grado.total_anotaciones_negativas }}</p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Llamados de atención</p>
+        </div>
+    </div>
+
+    <!-- GRÁFICO + TABLA ASISTENCIA POR CURSO -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4">Asistencia Consolidada</h4>
+            <div class="flex justify-center">
+                <img src="{{ url_for('reportes.grafico_grado', grado_id=grado.OrganizationId, periodo=periodo, fecha=fecha_ref) }}" 
+                     alt="Gráfico de asistencia del grado" 
+                     class="max-w-full h-auto rounded-lg">
+            </div>
+            <div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="p-2 bg-emerald-50 rounded-lg">
+                    <span class="block font-bold text-emerald-700 text-lg">{{ chart_data.presentes }}</span>
+                    <span class="text-emerald-600">Presentes</span>
+                </div>
+                <div class="p-2 bg-rose-50 rounded-lg">
+                    <span class="block font-bold text-rose-700 text-lg">{{ chart_data.ausentes }}</span>
+                    <span class="text-rose-600">Ausentes</span>
+                </div>
+                <div class="p-2 bg-amber-50 rounded-lg">
+                    <span class="block font-bold text-amber-700 text-lg">{{ chart_data.atrasados }}</span>
+                    <span class="text-amber-600">Atrasados</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden lg:col-span-2">
+            <div class="p-6 border-b border-gray-200">
+                <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Resumen por Curso</h4>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Letra</th>
+                            <th scope="col" class="px-4 py-3 text-center">Alumnos</th>
+                            <th scope="col" class="px-4 py-3 text-center">Presentes</th>
+                            <th scope="col" class="px-4 py-3 text-center">Ausentes</th>
+                            <th scope="col" class="px-4 py-3 text-center">Atrasados</th>
+                            <th scope="col" class="px-4 py-3 text-center">Total Reg.</th>
+                            <th scope="col" class="px-4 py-3 text-center">% Asist.</th>
+                            <th scope="col" class="px-4 py-3 text-right">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in cursos %}
+                        <tr class="bg-white border-b hover:bg-gray-50 transition">
+                            <td class="px-4 py-3">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs">
+                                    {{ c.letra }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center font-semibold">{{ c.total_alumnos }}</td>
+                            <td class="px-4 py-3 text-center text-emerald-600 font-medium">{{ c.presentes }}</td>
+                            <td class="px-4 py-3 text-center text-rose-600 font-medium">{{ c.ausentes }}</td>
+                            <td class="px-4 py-3 text-center text-amber-600 font-medium">{{ c.atrasados }}</td>
+                            <td class="px-4 py-3 text-center font-bold">{{ c.total_registros }}</td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold
+                                    {% if c.porcentaje_asistencia >= 85 %}bg-emerald-100 text-emerald-800
+                                    {% elif c.porcentaje_asistencia >= 70 %}bg-amber-100 text-amber-800
+                                    {% else %}bg-rose-100 text-rose-800{% endif %}">
+                                    {{ c.porcentaje_asistencia }}%
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <a href="{{ url_for('reportes.reporte_curso', curso_id=c.curso_id, periodo=periodo, fecha=fecha_ref) }}"
+                                   class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                    Ver detalle →
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="px-6 py-8 text-center text-gray-400">
+                                No hay cursos con registros de asistencia en este período.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA: NOTAS POR CURSO -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </div>
+            <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Calificaciones por Curso</h4>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Curso</th>
+                        <th scope="col" class="px-4 py-3 text-center">Alumnos</th>
+                        <th scope="col" class="px-4 py-3 text-center">Evaluaciones</th>
+                        <th scope="col" class="px-4 py-3 text-center">Promedio Curso</th>
+                        <th scope="col" class="px-4 py-3 text-center">Situación</th>
+                        <th scope="col" class="px-4 py-3 text-right">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in cursos %}
+                    <tr class="bg-white border-b hover:bg-gray-50 transition">
+                        <td class="px-4 py-3 font-medium text-gray-900">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs mr-2">
+                                {{ c.letra }}
+                            </span>
+                            {{ grado.Name }} {{ c.letra }}
+                        </td>
+                        <td class="px-4 py-3 text-center font-semibold">{{ c.total_alumnos }}</td>
+                        <td class="px-4 py-3 text-center">
+                            {% if c.total_evaluaciones > 0 %}
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
+                                    {{ c.total_evaluaciones }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            {% if c.promedio_notas is not none %}
+                                <span class="text-lg font-bold
+                                    {% if c.promedio_notas >= 6.0 %}text-emerald-600
+                                    {% elif c.promedio_notas >= 4.0 %}text-amber-600
+                                    {% else %}text-rose-600{% endif %}">
+                                    {{ c.promedio_notas }}
+                                </span>
+                            {% else %}
+                                <span class="text-xs text-gray-400">Sin datos</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            {% if c.promedio_notas is not none %}
+                                {% if c.promedio_notas >= 6.0 %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">✅ Aprobado</span>
+                                {% elif c.promedio_notas >= 4.0 %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">⚠️ Regular</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800">❌ Reprobado</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-xs text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <a href="{{ url_for('reportes.reporte_curso', curso_id=c.curso_id, periodo=periodo, fecha=fecha_ref) }}"
+                               class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                Ver detalle →
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-400">
+                            No hay cursos con calificaciones registradas.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TABLA: ANOTACIONES POR CURSO -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            </div>
+            <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Anotaciones por Curso</h4>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Curso</th>
+                        <th scope="col" class="px-4 py-3 text-center">Alumnos</th>
+                        <th scope="col" class="px-4 py-3 text-center">Positivas</th>
+                        <th scope="col" class="px-4 py-3 text-center">Negativas</th>
+                        <th scope="col" class="px-4 py-3 text-center">Otras</th>
+                        <th scope="col" class="px-4 py-3 text-center">Total</th>
+                        <th scope="col" class="px-4 py-3 text-right">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in cursos %}
+                    <tr class="bg-white border-b hover:bg-gray-50 transition">
+                        <td class="px-4 py-3 font-medium text-gray-900">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs mr-2">
+                                {{ c.letra }}
+                            </span>
+                            {{ grado.Name }} {{ c.letra }}
+                        </td>
+                        <td class="px-4 py-3 text-center font-semibold">{{ c.total_alumnos }}</td>
+                        <td class="px-4 py-3 text-center">
+                            {% if c.anotaciones_positivas > 0 %}
+                                <span class="inline-flex items-center justify-center px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">
+                                    {{ c.anotaciones_positivas }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            {% if c.anotaciones_negativas > 0 %}
+                                <span class="inline-flex items-center justify-center px-2 py-1 rounded-full bg-rose-100 text-rose-700 font-bold text-xs">
+                                    {{ c.anotaciones_negativas }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            {% if c.anotaciones_otras > 0 %}
+                                <span class="inline-flex items-center justify-center px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-bold text-xs">
+                                    {{ c.anotaciones_otras }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center font-bold">{{ c.total_anotaciones }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <a href="{{ url_for('reportes.reporte_curso', curso_id=c.curso_id, periodo=periodo, fecha=fecha_ref) }}"
+                               class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                Ver detalle →
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-400">
+                            No hay cursos con anotaciones registradas.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

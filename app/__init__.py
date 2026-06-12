@@ -54,6 +54,10 @@ def create_app():
     from app.modules.comunicacion.routes import comunicacion_bp
     app.register_blueprint(comunicacion_bp)
 
+    # 7. Módulo de Reportes
+    from app.modules.reportes.routes import reportes_bp
+    app.register_blueprint(reportes_bp)
+
     # Redirección de la raíz al panel de administración por defecto
     @app.route('/')
     def index():

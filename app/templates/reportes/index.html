@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes - Edugest{% endblock %}
+{% block header_title %}Módulo de Reportes{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">📊 Panel de Reportes</h3>
+                <p class="text-sm text-gray-500">Seleccione un curso para ver el detalle de asistencia, calificaciones y anotaciones.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 text-xs">
+                <div class="flex items-center gap-1">
+                    <span class="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> Presente
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="inline-block w-3 h-3 rounded-full bg-rose-500"></span> Ausente
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="inline-block w-3 h-3 rounded-full bg-amber-500"></span> Atrasado
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="inline-block w-3 h-3 rounded-full bg-blue-500"></span> Notas
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="inline-block w-3 h-3 rounded-full bg-purple-500"></span> Anotaciones
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+            <h3 class="text-base font-bold text-gray-900">Cursos con Alumnos Inscritos</h3>
+            <p class="text-sm text-gray-500 mt-1">Solo se muestran cursos que tienen estudiantes matriculados.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th scope="col" class="px-6 py-4">Grado</th>
+                        <th scope="col" class="px-6 py-4">Curso</th>
+                        <th scope="col" class="px-6 py-4 text-center">Letra</th>
+                        <th scope="col" class="px-6 py-4 text-center">Alumnos Inscritos</th>
+                        <th scope="col" class="px-6 py-4 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in cursos %}
+                    <tr class="bg-white border-b hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 font-medium text-gray-900">
+                            {{ c.grado_nombre }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {{ c.curso_nombre }}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs">
+                                {{ c.letra }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center font-semibold text-indigo-600">
+                            {{ c.total_alumnos }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <a href="{{ url_for('reportes.reporte_curso', curso_id=c.curso_id) }}"
+                                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                                    📈 Ver Reporte
+                                </a>
+                                <a href="{{ url_for('reportes.reporte_grado', grado_id=c.grado_id) }}"
+                                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition">
+                                    📊 Todo el Grado
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                            <div class="flex flex-col items-center gap-2">
+                                <span class="text-3xl">📭</span>
+                                <p>No hay cursos con alumnos inscritos en el sistema.</p>
+                                <p class="text-xs">Registre asistencia primero en el Libro de Clases.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
