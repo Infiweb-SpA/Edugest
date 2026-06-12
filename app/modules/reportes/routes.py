@@ -184,7 +184,7 @@ def informe_notas_pdf(curso_id, rol_id):
     relacion = OrganizationRelationship.query.filter_by(OrganizationId=curso_id).first()
     grado = Organization.query.get(relacion.ParentOrganizationId) if relacion else None
     colegio = Organization.query.filter_by(RefOrganizationTypeId=1).first()
-    nombre_colegio = colegio.Name if colegio else 'Millantu'
+    nombre_colegio = colegio.Name if colegio else 'NombreColegio'
 
     prof_jefe = db.session.query(Person).join(OrganizationPersonRole, Person.PersonId == OrganizationPersonRole.PersonId).filter(
         OrganizationPersonRole.OrganizationId == curso_id, OrganizationPersonRole.RoleId == 3, OrganizationPersonRole.ExitDate == None
@@ -193,6 +193,7 @@ def informe_notas_pdf(curso_id, rol_id):
 
     anio_actual = datetime.now().year
 
+    # Obtener notas del alumno agrupadas por asignatura
     notas_raw = db.session.query(EdugestManualGrade.Score, EdugestManualGrade.CreatedAt, Organization.Name.label('asignatura_nombre')
     ).join(EdugestAssessmentInstrument, EdugestManualGrade.InstrumentId == EdugestAssessmentInstrument.InstrumentId
     ).join(Organization, EdugestAssessmentInstrument.OrganizationId == Organization.OrganizationId
@@ -201,6 +202,14 @@ def informe_notas_pdf(curso_id, rol_id):
     notas_por_asignatura = defaultdict(list)
     for n in notas_raw:
         notas_por_asignatura[n.asignatura_nombre].append({'nota': round(n.Score, 1), 'fecha': n.CreatedAt})
+
+    # Obtener anotaciones del alumno
+    anotaciones_raw = db.session.query(
+        EdugestStudentObservation.Tipo, EdugestStudentObservation.Detalle,
+        EdugestStudentObservation.FechaRegistro, Organization.Name.label('asignatura_nombre')
+    ).outerjoin(Organization, EdugestStudentObservation.AsignaturaId == Organization.OrganizationId
+    ).filter(EdugestStudentObservation.OrganizationPersonRoleId == rol_id
+    ).order_by(EdugestStudentObservation.FechaRegistro.desc()).all()
 
     filas_asignaturas = []
     suma_promedios = 0; count_promedios = 0
@@ -244,7 +253,7 @@ def informe_notas_pdf(curso_id, rol_id):
         elements.append(logo_table)
         elements.append(Spacer(1, 0.2*cm))
 
-    elements.append(Paragraph(f'Escuela Particular N°166 "{nombre_colegio}"', style_center_bold))
+    elements.append(Paragraph(f'Escuela Particular N°XXX "{nombre_colegio}"', style_center_bold))
     elements.append(Spacer(1, 0.2*cm))
     elements.append(Paragraph("INFORME AVANCE DE NOTAS PARCIALES 1° SEMESTRE", style_title))
     elements.append(Paragraph(f"Año {anio_actual}", style_subtitle))
@@ -311,28 +320,43 @@ def informe_notas_pdf(curso_id, rol_id):
     tabla_notas = Table(all_rows, colWidths=col_widths, repeatRows=2)
 
     tabla_style = TableStyle([
+        # Grid completo para toda la tabla
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('BOX', (0, 0), (-1, -1), 1, colors.black),
-        ('BOX', (0, 0), (0, -1), 1, colors.black),
-        ('BOX', (1, 0), (7, -1), 1, colors.black),
-        ('BOX', (8, 0), (8, -1), 1, colors.black),
+
+        # Líneas horizontales entre cada fila de datos
         ('LINEBELOW', (0, 0), (-1, 0), 1, colors.black),
         ('LINEBELOW', (0, 1), (-1, 1), 1, colors.black),
-        ('LINEBELOW', (0, -3), (-1, -3), 1, colors.black),
+
+        # Líneas verticales principales
         ('LINEAFTER', (0, 0), (0, -1), 1, colors.black),
         ('LINEAFTER', (4, 1), (4, -1), 0.5, colors.black),
         ('LINEAFTER', (8, 0), (8, -1), 1, colors.black),
-        ('BACKGROUND', (5, 1), (7, -1), colors.HexColor('#cccccc')),
+
+        # Columnas grises (5, 6, 7)
+        ('BACKGROUND', (5, 1), (7, -3), colors.HexColor('#cccccc')),
+
+        # Header backgrounds
         ('BACKGROUND', (0, 0), (0, 1), colors.HexColor('#f5f5f5')),
         ('BACKGROUND', (1, 0), (7, 0), colors.HexColor('#f5f5f5')),
         ('BACKGROUND', (8, 0), (8, 1), colors.HexColor('#f5f5f5')),
         ('BACKGROUND', (1, 1), (4, 1), colors.HexColor('#f5f5f5')),
+
+        # Promedio General background
         ('BACKGROUND', (0, -2), (-1, -1), colors.HexColor('#f5f5f5')),
+
+        # Alineación
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING', (0, 0), (-1, -1), 6),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('LEFTPADDING', (0, 0), (0, -1), 6),
         ('RIGHTPADDING', (0, 0), (0, -1), 6),
     ])
+
+    # Líneas horizontales entre cada fila de asignaturas
+    for i in range(2, 2 + len(data_rows)):
+        tabla_style.add('LINEBELOW', (0, i), (-1, i), 0.5, colors.black)
+
     tabla_style.add('SPAN', (0, 0), (0, 1))
     tabla_style.add('SPAN', (1, 0), (7, 0))
     tabla_style.add('SPAN', (8, 0), (8, 1))
@@ -342,19 +366,54 @@ def informe_notas_pdf(curso_id, rol_id):
     elements.append(tabla_notas)
     elements.append(Spacer(1, 0.4*cm))
 
-    obs_data = [
-        [Paragraph("<b>Observaciones:</b>", style_celda_bold_left)],
-        [Paragraph("", style_celda_left)],
-        [Paragraph("", style_celda_left)],
-        [Paragraph("", style_celda_left)],
-    ]
-    tabla_obs = Table(obs_data, colWidths=[16.5*cm], rowHeights=[0.7*cm, 0.7*cm, 0.7*cm, 0.7*cm])
+    # === OBSERVACIONES CON ANOTACIONES ===
+    obs_text = "<b>Observaciones:</b>"
+
+    # Agregar anotaciones diferenciadas
+    anot_positivas = [a for a in anotaciones_raw if a.Tipo == 'Positiva']
+    anot_negativas = [a for a in anotaciones_raw if a.Tipo == 'Negativa']
+    anot_otras = [a for a in anotaciones_raw if a.Tipo not in ['Positiva', 'Negativa']]
+
+    obs_lines = [obs_text]
+
+    if anot_positivas:
+        obs_lines.append("<b>Positivas:</b>")
+        for a in anot_positivas:
+            fecha = a.FechaRegistro.strftime('%d/%m/%Y') if a.FechaRegistro else ''
+            asig = a.asignatura_nombre or 'General'
+            obs_lines.append(f"• {asig}: {a.Detalle} ({fecha})")
+
+    if anot_negativas:
+        obs_lines.append("<b>Negativas:</b>")
+        for a in anot_negativas:
+            fecha = a.FechaRegistro.strftime('%d/%m/%Y') if a.FechaRegistro else ''
+            asig = a.asignatura_nombre or 'General'
+            obs_lines.append(f"• {asig}: {a.Detalle} ({fecha})")
+
+    if anot_otras:
+        obs_lines.append("<b>Otras:</b>")
+        for a in anot_otras:
+            fecha = a.FechaRegistro.strftime('%d/%m/%Y') if a.FechaRegistro else ''
+            asig = a.asignatura_nombre or 'General'
+            obs_lines.append(f"• {asig}: {a.Detalle} ({fecha})")
+
+    if not anotaciones_raw:
+        obs_lines.append("Sin observaciones registradas.")
+
+    # Construir filas de observaciones
+    obs_rows = [[Paragraph(line, style_celda_left)] for line in obs_lines]
+    # Rellenar hasta 4 filas mínimo para mantener tamaño
+    while len(obs_rows) < 4:
+        obs_rows.append([Paragraph("", style_celda_left)])
+
+    tabla_obs = Table(obs_rows, colWidths=[16.5*cm])
     tabla_obs.setStyle(TableStyle([
         ('BOX', (0, 0), (-1, -1), 1, colors.black),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('LEFTPADDING', (0, 0), (-1, -1), 6),
         ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
     elements.append(tabla_obs)
     elements.append(Spacer(1, 0.3*cm))
