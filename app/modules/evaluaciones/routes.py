@@ -128,48 +128,59 @@ def unidades_asignatura(org_id):
 # ============================================================================
 @evaluaciones_bp.route('/clase/<int:plan_id>/nueva-evaluacion', methods=['GET', 'POST'])
 def crear_evaluacion_clase(plan_id):
-    """Crea evaluación vinculada a una clase específica (PlanId)"""
     plan = EdugestCurriculumPlan.query.get_or_404(plan_id)
     asignatura = Organization.query.get_or_404(plan.OrganizationId)
-    
-    # Obtener grado
+
     relacion_grado = OrganizationRelationship.query.filter_by(
         OrganizationId=asignatura.OrganizationId
     ).first()
     grado_id = relacion_grado.ParentOrganizationId if relacion_grado else None
-    
-    # Obtener unidades de esta asignatura para el select
+
     unidades = EdugestCurriculumPlan.query.filter_by(
         OrganizationId=asignatura.OrganizationId
     ).order_by(EdugestCurriculumPlan.CreatedAt).all()
-    
-    # Obtener clases de la unidad actual para el select
+
     clases = EdugestCurriculumPlan.query.filter_by(
         OrganizationId=asignatura.OrganizationId,
         UnitTitle=plan.UnitTitle
     ).filter(
-        EdugestCurriculumPlan.Contenido.isnot(None) | 
+        EdugestCurriculumPlan.Contenido.isnot(None) |
         EdugestCurriculumPlan.Objetivo.isnot(None)
     ).all()
-    
+
     if request.method == 'POST':
         titulo = request.form.get('title')
-        plan_id_selected = request.form.get('plan_id')  # Puede cambiar la clase
+        plan_id_selected = request.form.get('plan_id')
         is_digital = 'is_digital' in request.form
-        
+
+        # Leer el campo correcto del template: evaluation_type
+        evaluation_type = request.form.get('evaluation_type', 'Calificativa')
+
+        # Mapear texto a ID
+        tipo_map = {
+            'Sumativa': 1,
+            'Calificativa': 2,
+            'Formativa': 2,      # Se trata como calificativa
+            'Diagnóstica': 2,    # Se trata como calificativa
+            'Otra': 2            # Se trata como calificativa
+        }
+        assessment_type_id = tipo_map.get(evaluation_type, 2)
+
         nuevo_ins = EdugestAssessmentInstrument(
             Title=titulo,
             OrganizationId=asignatura.OrganizationId,
             PlanId=plan_id_selected if plan_id_selected else plan_id,
             IsDigital=is_digital,
-            IsVisible=False
+            IsVisible=False,
+            AssessmentTypeId=assessment_type_id,
+            Seleccionada=(assessment_type_id == 1)
         )
         db.session.add(nuevo_ins)
         db.session.commit()
-        
+
         flash("Evaluación creada y vinculada a la clase.", "success")
         return redirect(url_for('evaluaciones.unidades_asignatura', org_id=asignatura.OrganizationId))
-    
+
     return render_template('evaluaciones/crear_evaluacion.html',
                            plan=plan,
                            asignatura=asignatura,

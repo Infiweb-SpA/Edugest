@@ -100,6 +100,8 @@ class EdugestAssessmentInstrument(db.Model):
     Title = db.Column(db.String(255), nullable=False)
     IsDigital = db.Column(db.Boolean, default=True, nullable=False) 
     IsVisible = db.Column(db.Boolean, default=False, nullable=False) 
+    AssessmentTypeId = db.Column(db.Integer, nullable=True)  # 1=Sumativa, 2=Calificativa
+    Seleccionada = db.Column(db.Boolean, default=False, nullable=False)
 
 
 class EdugestAssessmentQuestion(db.Model):

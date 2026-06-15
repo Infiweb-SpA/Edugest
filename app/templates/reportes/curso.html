@@ -6,12 +6,14 @@
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- Cabecera -->
+    <!-- ============================================================ -->
+    <!-- CABECERA -->
+    <!-- ============================================================ -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                 <a href="{{ url_for('reportes.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                    ⬅️ Volver a Reportes
+                    ← Volver a Reportes
                 </a>
                 <h3 class="text-xl font-bold text-gray-900 mt-2">
                     {{ grado.Name if grado else 'Grado' }} - {{ curso.Name }} (Letra {{ curso.ShortName or 'N/A' }})
@@ -23,13 +25,15 @@
             <div class="flex gap-2">
                 <a href="{{ url_for('reportes.exportar_asistencia', curso_id=curso.OrganizationId, periodo=periodo, fecha=fecha_ref) }}"
                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition shadow-sm">
-                    📥 Exportar CSV
+                    Exportar CSV
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- Filtros -->
+    <!-- ============================================================ -->
+    <!-- FILTROS -->
+    <!-- ============================================================ -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <form method="GET" class="flex flex-wrap items-end gap-4">
             <input type="hidden" name="fecha" value="{{ fecha_ref }}">
@@ -46,14 +50,59 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de referencia</label>
-                <input type="date" name="fecha" value="{{ fecha_ref }}" 
+                <input type="date" name="fecha" value="{{ fecha_ref }}"
                     onchange="this.form.submit()"
                     class="rounded-lg border border-gray-300 p-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
             </div>
         </form>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- ASIGNATURAS DEL CURSO (BOTONES A notas_sumativas) -->
+    <!-- ============================================================ -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h4 class="text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">
+            Asignaturas — Calificaciones Sumativas y Calificativas
+        </h4>
+        {% if asignaturas is defined and asignaturas|length > 0 %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {% for asig in asignaturas %}
+            <a href="{{ url_for('reportes.reporte_notas_sumativas', org_id=asig.org_id) }}"
+               class="group flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50/30 transition-all duration-200 cursor-pointer">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-9 h-9 rounded-lg bg-violet-100 group-hover:bg-indigo-100 flex items-center justify-center flex-shrink-0 transition-colors">
+                        <svg class="w-4 h-4 text-violet-600 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="block text-sm font-semibold text-gray-800 group-hover:text-indigo-700 truncate transition-colors">
+                            {{ asig.nombre }}
+                        </span>
+                        <span class="block text-xs text-gray-400">
+                            {% if asig.total_instrumentos > 0 %}
+                                {{ asig.total_instrumentos }} evaluación{{ 'es' if asig.total_instrumentos != 1 else '' }}
+                            {% else %}
+                                Sin evaluaciones
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-400 flex-shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400 italic">No hay asignaturas vinculadas a este curso.</p>
+        {% endif %}
+    </div>
+
+    <!-- ============================================================ -->
     <!-- RESUMEN GENERAL: Asistencia + Notas + Anotaciones -->
+    <!-- ============================================================ -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- Card Asistencia -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
@@ -92,12 +141,11 @@
             </div>
             <div class="flex gap-2 text-xs text-gray-600">
                 {% if resumen_notas.promedio_curso is not none %}
-                    <span>{{ resumen_notas.total_evaluaciones }} evaluaciones totales</span>
+                    <span>{{ resumen_notas.total_evaluaciones }} evaluaciones</span>
                     <span class="text-gray-300">|</span>
                     <span class="text-emerald-600">Mejor: {{ resumen_notas.mejor_nota }}</span>
+                    <span class="text-gray-300">|</span>
                     <span class="text-rose-600">Peor: {{ resumen_notas.peor_nota }}</span>
-                {% else %}
-                    <span class="text-gray-400">No hay calificaciones registradas</span>
                 {% endif %}
             </div>
         </div>
@@ -110,304 +158,227 @@
                 </div>
                 <div>
                     <p class="text-xs text-gray-500 uppercase font-semibold">Anotaciones</p>
-                    <p class="text-lg font-bold text-gray-900">{{ resumen_anotaciones.positivas + resumen_anotaciones.negativas + resumen_anotaciones.otras }} total</p>
+                    <p class="text-lg font-bold text-gray-900">
+                        {{ resumen_anotaciones.positivas + resumen_anotaciones.negativas + resumen_anotaciones.otras }} total
+                    </p>
                 </div>
             </div>
             <div class="flex gap-2 text-xs">
-                <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded">{{ resumen_anotaciones.positivas }} Positivas</span>
-                <span class="px-2 py-1 bg-rose-100 text-rose-700 rounded">{{ resumen_anotaciones.negativas }} Negativas</span>
+                <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded">{{ resumen_anotaciones.positivas }} Pos</span>
+                <span class="px-2 py-1 bg-rose-100 text-rose-700 rounded">{{ resumen_anotaciones.negativas }} Neg</span>
                 <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded">{{ resumen_anotaciones.otras }} Otras</span>
             </div>
         </div>
     </div>
 
-    <!-- GRÁFICO + TABLA ASISTENCIA -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-1">
-            <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4">Distribución de Asistencia</h4>
-            <div class="flex justify-center">
-                <img src="{{ url_for('reportes.grafico_asistencia', curso_id=curso.OrganizationId, periodo=periodo, fecha=fecha_ref) }}" 
-                     alt="Gráfico de asistencia" 
-                     class="max-w-full h-auto rounded-lg">
-            </div>
-            <div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-                <div class="p-2 bg-emerald-50 rounded-lg">
-                    <span class="block font-bold text-emerald-700 text-lg">{{ chart_data.presentes }}</span>
-                    <span class="text-emerald-600">Presentes</span>
-                </div>
-                <div class="p-2 bg-rose-50 rounded-lg">
-                    <span class="block font-bold text-rose-700 text-lg">{{ chart_data.ausentes }}</span>
-                    <span class="text-rose-600">Ausentes</span>
-                </div>
-                <div class="p-2 bg-amber-50 rounded-lg">
-                    <span class="block font-bold text-amber-700 text-lg">{{ chart_data.atrasados }}</span>
-                    <span class="text-amber-600">Atrasados</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden lg:col-span-2">
-            <div class="p-6 border-b border-gray-200">
-                <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Detalle por Estudiante</h4>
-            </div>
-            <div class="overflow-x-auto max-h-96 overflow-y-auto">
-                <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
-                        <tr>
-                            <th scope="col" class="px-4 py-3">Estudiante</th>
-                            <th scope="col" class="px-4 py-3">RUT</th>
-                            <th scope="col" class="px-4 py-3 text-center">Presentes</th>
-                            <th scope="col" class="px-4 py-3 text-center">Ausentes</th>
-                            <th scope="col" class="px-4 py-3 text-center">Atrasados</th>
-                            <th scope="col" class="px-4 py-3 text-center">Total</th>
-                            <th scope="col" class="px-4 py-3 text-center">% Asist.</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for est in alumnos %}
-                        <tr class="bg-white border-b hover:bg-gray-50 transition">
-                            <td class="px-4 py-3 font-medium text-gray-900">
-                                {{ est.apellido_paterno }} {{ est.apellido_materno }}, {{ est.nombres }}
-                            </td>
-                            <td class="px-4 py-3 text-xs font-mono">{{ est.rut }}</td>
-                            <td class="px-4 py-3 text-center">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
-                                    {{ est.presentes }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-800">
-                                    {{ est.ausentes }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                                    {{ est.atrasados }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-center font-bold">{{ est.total }}</td>
-                            <td class="px-4 py-3 text-center">
-                                <div class="flex items-center justify-center">
-                                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                        <div class="bg-emerald-500 h-2 rounded-full" style="width: {{ est.porcentaje_asistencia }}%"></div>
-                                    </div>
-                                    <span class="text-xs font-bold {% if est.porcentaje_asistencia >= 85 %}text-emerald-600{% elif est.porcentaje_asistencia >= 70 %}text-amber-600{% else %}text-rose-600{% endif %}">
-                                        {{ est.porcentaje_asistencia }}%
-                                    </span>
-                                </div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-gray-400">
-                                No hay registros de asistencia para este período.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- SECCIÓN: NOTAS POR ASIGNATURA POR ESTUDIANTE -->
+    <!-- ============================================================ -->
+    <!-- TABLA DETALLADA POR ALUMNO -->
+    <!-- ============================================================ -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                </div>
-                <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Calificaciones por Asignatura</h4>
-            </div>
-        </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-500">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th scope="col" class="px-4 py-3">Estudiante</th>
-                        <th scope="col" class="px-4 py-3">Asignaturas / Notas</th>
-                        <th scope="col" class="px-4 py-3 text-center">Prom. General Final</th>
-                        <th scope="col" class="px-4 py-3 text-center">Situación Final</th>
-                        <th scope="col" class="px-4 py-3 text-center">Informe</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">#</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">RUT</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Estudiante</th>
+                        <th class="px-3 py-3 text-center text-xs font-bold text-emerald-600 uppercase">P</th>
+                        <th class="px-3 py-3 text-center text-xs font-bold text-rose-600 uppercase">A</th>
+                        <th class="px-3 py-3 text-center text-xs font-bold text-amber-600 uppercase">T</th>
+                        <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">% Asist.</th>
+                        <th class="px-3 py-3 text-center text-xs font-bold text-blue-600 uppercase">Evaluaciones</th>
+                        <th class="px-3 py-3 text-center text-xs font-bold text-blue-600 uppercase">Prom. Final</th>
+                        <th class="px-3 py-3 text-center text-xs font-bold text-purple-600 uppercase">Anot.</th>
+                        <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Detalle</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for est in alumnos %}
-                    <tr class="bg-white border-b hover:bg-gray-50 transition">
-                        <td class="px-4 py-3 font-medium text-gray-900 align-top">
-                            {{ est.apellido_paterno }} {{ est.apellido_materno }}, {{ est.nombres }}
-                            <span class="block text-xs text-gray-400 font-mono">{{ est.rut }}</span>
-                            <span class="block text-xs text-gray-500 mt-1">{{ est.total_evaluaciones }} evaluaciones en {{ est.total_asignaturas }} asignatura(s)</span>
+                    {% for a in alumnos %}
+                    <tr class="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                        <td class="px-4 py-3 text-gray-400">{{ loop.index }}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-gray-600">{{ a.rut }}</td>
+                        <td class="px-4 py-3 font-semibold text-gray-900">
+                            {{ a.apellido_paterno }} {{ a.apellido_materno }}, {{ a.nombres }}
                         </td>
-                        <td class="px-4 py-3">
-                            {% if est.notas_por_asignatura %}
-                                <div class="space-y-3">
-                                    {% for asig_id, asig_data in est.notas_por_asignatura.items() %}
-                                    <div class="border-l-2 border-blue-200 pl-3">
-                                        <div class="flex items-center justify-between mb-1">
-                                            <span class="font-semibold text-gray-800 text-sm">{{ asig_data.nombre }}</span>
-                                            <span class="text-xs font-bold
-                                                {% if asig_data.promedio >= 6.0 %}text-emerald-600
-                                                {% elif asig_data.promedio >= 4.0 %}text-amber-600
-                                                {% else %}text-rose-600{% endif %}">
-                                                Prom: {{ asig_data.promedio }}
-                                            </span>
-                                        </div>
-                                        <div class="flex flex-wrap gap-1">
-                                            {% for n in asig_data.notas %}
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                                                {% if n.nota >= 6.0 %}bg-emerald-100 text-emerald-800
-                                                {% elif n.nota >= 4.0 %}bg-amber-100 text-amber-800
-                                                {% else %}bg-rose-100 text-rose-800{% endif %}"
-                                                title="{{ n.instrumento }} ({{ n.tipo }} - {{ n.fecha }})"
-                                            >
-                                                {{ n.nota }}
-                                            </span>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
+                        <td class="px-3 py-3 text-center">
+                            <span class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold">
+                                {{ a.presentes }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            <span class="inline-block px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-xs font-semibold">
+                                {{ a.ausentes }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            <span class="inline-block px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-semibold">
+                                {{ a.atrasados }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            {% if a.porcentaje_asistencia >= 85 %}
+                                <span class="text-emerald-600 font-bold">{{ a.porcentaje_asistencia }}%</span>
+                            {% elif a.porcentaje_asistencia >= 70 %}
+                                <span class="text-amber-600 font-bold">{{ a.porcentaje_asistencia }}%</span>
                             {% else %}
-                                <span class="text-xs text-gray-400 italic">Sin calificaciones registradas</span>
+                                <span class="text-rose-600 font-bold">{{ a.porcentaje_asistencia }}%</span>
                             {% endif %}
                         </td>
-                        <td class="px-4 py-3 text-center align-middle">
-                            {% if est.promedio_general_final is not none %}
-                                <span class="text-2xl font-bold
-                                    {% if est.promedio_general_final >= 6.0 %}text-emerald-600
-                                    {% elif est.promedio_general_final >= 4.0 %}text-amber-600
-                                    {% else %}text-rose-600{% endif %}">
-                                    {{ est.promedio_general_final }}
-                                </span>
-                            {% else %}
-                                <span class="text-xs text-gray-400">—</span>
-                            {% endif %}
+                        <td class="px-3 py-3 text-center text-gray-700">
+                            {{ a.total_evaluaciones }}
                         </td>
-                        <td class="px-4 py-3 text-center align-middle">
-                            {% if est.promedio_general_final is not none %}
-                                {% if est.promedio_general_final >= 6.0 %}
-                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                                        ✅ Aprobado
+                        <td class="px-3 py-3 text-center">
+                            {% if a.promedio_general_final is not none %}
+                                {% if a.promedio_general_final >= 4.0 %}
+                                    <span class="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-sm font-bold">
+                                        {{ a.promedio_general_final }}
                                     </span>
-                                {% elif est.promedio_general_final >= 4.0 %}
-                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
-                                        ⚠️ Regular
+                                {% elif a.promedio_general_final >= 3.0 %}
+                                    <span class="inline-block px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-sm font-bold">
+                                        {{ a.promedio_general_final }}
                                     </span>
                                 {% else %}
-                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
-                                        ❌ Reprobado
+                                    <span class="inline-block px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-sm font-bold">
+                                        {{ a.promedio_general_final }}
                                     </span>
                                 {% endif %}
                             {% else %}
-                                <span class="text-xs text-gray-400">Sin datos</span>
+                                <span class="text-gray-300">—</span>
                             {% endif %}
                         </td>
-                        <td class="px-4 py-3 text-center align-middle">
-                            <a href="{{ url_for('reportes.informe_notas_pdf', curso_id=curso.OrganizationId, rol_id=est.rol_id) }}"
-                               class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition shadow-sm"
-                               title="Descargar informe de notas PDF">
-                                📄 PDF
-                            </a>
+                        <td class="px-3 py-3 text-center">
+                            {% if a.total_anotaciones > 0 %}
+                                <span class="inline-flex items-center gap-1 text-xs">
+                                    {% if a.conteo_anotaciones.get('Positiva', 0) > 0 %}
+                                        <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">{{ a.conteo_anotaciones['Positiva'] }}</span>
+                                    {% endif %}
+                                    {% if a.conteo_anotaciones.get('Negativa', 0) > 0 %}
+                                        <span class="px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded">{{ a.conteo_anotaciones['Negativa'] }}</span>
+                                    {% endif %}
+                                    {% if a.conteo_anotaciones.get('Otra', 0) > 0 %}
+                                        <span class="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded">{{ a.conteo_anotaciones['Otra'] }}</span>
+                                    {% endif %}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            <button onclick="toggleDetalle({{ loop.index }})"
+                                class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">
+                                Ver detalle
+                            </button>
                         </td>
                     </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-gray-400">
-                            No hay estudiantes con calificaciones registradas.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <!-- SECCIÓN: ANOTACIONES POR ESTUDIANTE -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                </div>
-                <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Anotaciones del Estudiante</h4>
-            </div>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-500">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-4 py-3">Estudiante</th>
-                        <th scope="col" class="px-4 py-3 text-center">Positivas</th>
-                        <th scope="col" class="px-4 py-3 text-center">Negativas</th>
-                        <th scope="col" class="px-4 py-3 text-center">Otras</th>
-                        <th scope="col" class="px-4 py-3">Últimas Anotaciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for est in alumnos %}
-                    <tr class="bg-white border-b hover:bg-gray-50 transition">
-                        <td class="px-4 py-3 font-medium text-gray-900">
-                            {{ est.apellido_paterno }} {{ est.apellido_materno }}, {{ est.nombres }}
-                            <span class="block text-xs text-gray-400 font-mono">{{ est.rut }}</span>
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            {% if est.conteo_anotaciones.Positiva > 0 %}
-                                <span class="inline-flex items-center justify-center px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">
-                                    {{ est.conteo_anotaciones.Positiva }}
-                                </span>
-                            {% else %}
-                                <span class="text-gray-300">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            {% if est.conteo_anotaciones.Negativa > 0 %}
-                                <span class="inline-flex items-center justify-center px-2 py-1 rounded-full bg-rose-100 text-rose-700 font-bold text-xs">
-                                    {{ est.conteo_anotaciones.Negativa }}
-                                </span>
-                            {% else %}
-                                <span class="text-gray-300">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            {% if est.conteo_anotaciones.Otra > 0 %}
-                                <span class="inline-flex items-center justify-center px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-bold text-xs">
-                                    {{ est.conteo_anotaciones.Otra }}
-                                </span>
-                            {% else %}
-                                <span class="text-gray-300">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3">
-                            {% if est.anotaciones %}
-                                <div class="space-y-1 max-h-24 overflow-y-auto">
-                                    {% for anot in est.anotaciones[:3] %}
-                                    <div class="flex items-start gap-2 text-xs">
-                                        <span class="inline-block w-2 h-2 rounded-full mt-1 flex-shrink-0
-                                            {% if anot.tipo == 'Positiva' %}bg-emerald-500
-                                            {% elif anot.tipo == 'Negativa' %}bg-rose-500
-                                            {% else %}bg-gray-400{% endif %}">
-                                        </span>
-                                        <div>
-                                            <span class="font-medium text-gray-700">{{ anot.asignatura }}</span>
-                                            <span class="text-gray-500">— {{ anot.detalle[:60] }}{% if anot.detalle|length > 60 %}...{% endif %}</span>
-                                            <span class="text-gray-400 ml-1">({{ anot.fecha }})</span>
+                    <!-- FILA DE DETALLE (expandible) -->
+                    <tr id="detalle-{{ loop.index }}" class="hidden bg-gray-50">
+                        <td colspan="11" class="px-6 py-4">
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                                <!-- Detalle de Notas por Asignatura -->
+                                <div class="lg:col-span-2">
+                                    <p class="text-xs font-bold text-gray-500 uppercase mb-2">Notas por Asignatura</p>
+                                    {% if a.notas_por_asignatura %}
+                                    <div class="space-y-2">
+                                        {% for asig_id, asig_data in a.notas_por_asignatura.items() %}
+                                        <div class="bg-white rounded-lg border border-gray-200 p-3">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="text-sm font-semibold text-gray-800">{{ asig_data.nombre }}</span>
+                                                {% if asig_data.promedio is not none %}
+                                                    <span class="text-sm font-bold
+                                                        {% if asig_data.promedio >= 4.0 %}text-blue-600
+                                                        {% elif asig_data.promedio >= 3.0 %}text-amber-600
+                                                        {% else %}text-rose-600{% endif %}">
+                                                        Prom: {{ asig_data.promedio }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+
+                                            <!-- Calificativas -->
+                                            {% if asig_data.calificativas %}
+                                            <div class="flex flex-wrap gap-1.5 mb-1">
+                                                <span class="text-[10px] font-bold text-blue-600 uppercase mr-1 self-center">Calif:</span>
+                                                {% for n in asig_data.calificativas %}
+                                                <span class="inline-block px-2 py-0.5 rounded text-xs font-medium
+                                                    {% if n.nota >= 4.0 %}bg-blue-100 text-blue-700
+                                                    {% elif n.nota >= 3.0 %}bg-amber-100 text-amber-700
+                                                    {% else %}bg-rose-100 text-rose-700{% endif %}"
+                                                    title="{{ n.instrumento }} ({{ n.fecha }})">
+                                                    {{ n.nota }}
+                                                </span>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+
+                                            <!-- Sumativas seleccionadas -->
+                                            {% if asig_data.sum_sel_notas %}
+                                            <div class="flex flex-wrap gap-1.5 mb-1">
+                                                <span class="text-[10px] font-bold text-emerald-600 uppercase mr-1 self-center">Sum. Selec:</span>
+                                                {% for nota_val in asig_data.sum_sel_notas %}
+                                                <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700">
+                                                    {{ nota_val }}
+                                                </span>
+                                                {% endfor %}
+                                                {% if asig_data.promedio_sum_sel is not none %}
+                                                <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-emerald-200 text-emerald-800">
+                                                    = {{ asig_data.promedio_sum_sel }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            {% endif %}
+
+                                            <!-- Sumativas NO seleccionadas (solo visualización) -->
+                                            {% if asig_data.sumativas %}
+                                            <div class="flex flex-wrap gap-1.5">
+                                                <span class="text-[10px] font-bold text-gray-400 uppercase mr-1 self-center">Sum. Otras:</span>
+                                                {% for n in asig_data.sumativas %}
+                                                    {% if not n.seleccionada %}
+                                                    <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-400"
+                                                          title="{{ n.instrumento }} (no incluida en promedio)">
+                                                        {{ n.nota }}
+                                                    </span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
                                         </div>
+                                        {% endfor %}
                                     </div>
-                                    {% endfor %}
-                                    {% if est.anotaciones|length > 3 %}
-                                        <p class="text-xs text-indigo-600 font-medium pl-4">+{{ est.anotaciones|length - 3 }} anotaciones más</p>
+                                    {% else %}
+                                    <p class="text-xs text-gray-400 italic">Sin calificaciones registradas.</p>
                                     {% endif %}
                                 </div>
-                            {% else %}
-                                <span class="text-xs text-gray-400 italic">Sin anotaciones en este período</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-gray-400">
-                            No hay estudiantes con anotaciones registradas.
+
+                                <!-- Detalle de Anotaciones -->
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 uppercase mb-2">Anotaciones</p>
+                                    {% if a.anotaciones %}
+                                    <div class="space-y-1.5 max-h-60 overflow-y-auto">
+                                        {% for anot in a.anotaciones %}
+                                        <div class="flex items-start gap-2 text-xs">
+                                            {% if anot.tipo == 'Positiva' %}
+                                                <span class="mt-0.5 w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                            {% elif anot.tipo == 'Negativa' %}
+                                                <span class="mt-0.5 w-2 h-2 rounded-full bg-rose-400 flex-shrink-0"></span>
+                                            {% else %}
+                                                <span class="mt-0.5 w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>
+                                            {% endif %}
+                                            <div>
+                                                <span class="font-semibold text-gray-700">[{{ anot.tipo }}]</span>
+                                                <span class="text-gray-500">{{ anot.fecha }}</span>
+                                                <span class="text-gray-400">· {{ anot.asignatura }}</span>
+                                                <p class="text-gray-600 mt-0.5">{{ anot.detalle }}</p>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <p class="text-xs text-gray-400 italic">Sin anotaciones en el período.</p>
+                                    {% endif %}
+                                </div>
+
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -416,5 +387,24 @@
         </div>
     </div>
 
+    {% if not alumnos %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <p class="text-gray-500">No hay alumnos inscritos en este curso.</p>
+    </div>
+    {% endif %}
+
 </div>
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+function toggleDetalle(index) {
+    const fila = document.getElementById('detalle-' + index);
+    if (fila) {
+        fila.classList.toggle('hidden');
+    }
+}
+</script>
+
 {% endblock %}

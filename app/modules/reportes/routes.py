@@ -136,7 +136,7 @@ def reporte_curso(curso_id):
     ).all()
     rol_ids = [r.OrganizationPersonRoleId for r in alumnos_roles]
 
-    # Asistencias
+    # ── Asistencias ──
     asistencias = db.session.query(
         EdugestSessionAttendance.OrganizationPersonRoleId,
         EdugestSessionAttendance.AttendanceStatusId,
@@ -150,12 +150,15 @@ def reporte_curso(curso_id):
         EdugestSessionAttendance.AttendanceStatusId
     ).all()
 
-    # Notas
+    # ── Notas (CON AssessmentTypeId y Seleccionada) ──
     notas_raw = db.session.query(
         EdugestManualGrade.OrganizationPersonRoleId, EdugestManualGrade.InstrumentId,
         EdugestManualGrade.Score, EdugestManualGrade.IsManual, EdugestManualGrade.CreatedAt,
         EdugestAssessmentInstrument.Title.label('instrument_title'),
-        Organization.OrganizationId.label('asignatura_id'), Organization.Name.label('asignatura_nombre')
+        EdugestAssessmentInstrument.AssessmentTypeId,
+        EdugestAssessmentInstrument.Seleccionada,
+        Organization.OrganizationId.label('asignatura_id'),
+        Organization.Name.label('asignatura_nombre')
     ).join(
         EdugestAssessmentInstrument,
         EdugestManualGrade.InstrumentId == EdugestAssessmentInstrument.InstrumentId
@@ -164,7 +167,7 @@ def reporte_curso(curso_id):
         EdugestAssessmentInstrument.OrganizationId == Organization.OrganizationId
     ).filter(EdugestManualGrade.OrganizationPersonRoleId.in_(rol_ids)).all()
 
-    # Anotaciones
+    # ── Anotaciones ──
     anotaciones_raw = db.session.query(
         EdugestStudentObservation.OrganizationPersonRoleId, EdugestStudentObservation.Tipo,
         EdugestStudentObservation.Detalle, EdugestStudentObservation.FechaRegistro,
@@ -177,6 +180,9 @@ def reporte_curso(curso_id):
         EdugestStudentObservation.FechaRegistro <= fecha_fin
     ).order_by(EdugestStudentObservation.FechaRegistro.desc()).all()
 
+    # ==================================================================
+    # PROCESAMIENTO POR ALUMNO
+    # ==================================================================
     alumnos_reporte = []
     total_presentes = total_ausentes = total_atrasados = 0
 
@@ -188,7 +194,7 @@ def reporte_curso(curso_id):
             PersonId=persona.PersonId, RefPersonIdentificationSystemId=51
         ).first()
 
-        # Asistencia del alumno
+        # ── Asistencia del alumno ──
         asist_alumno = [a for a in asistencias if a.OrganizationPersonRoleId == rol.OrganizationPersonRoleId]
         presentes = sum(a.total for a in asist_alumno if a.AttendanceStatusId == 1)
         ausentes = sum(a.total for a in asist_alumno if a.AttendanceStatusId == 2)
@@ -198,33 +204,77 @@ def reporte_curso(curso_id):
         total_ausentes += ausentes
         total_atrasados += atrasados
 
-        # Notas del alumno
+        # ── Notas del alumno (SEPARADAS POR TIPO) ──
         notas_alumno = [n for n in notas_raw if n.OrganizationPersonRoleId == rol.OrganizationPersonRoleId]
         notas_por_asignatura = {}
+
         for n in notas_alumno:
             asig_id = n.asignatura_id
             asig_nombre = n.asignatura_nombre or f'Asignatura #{asig_id}'
             if asig_id not in notas_por_asignatura:
-                notas_por_asignatura[asig_id] = {'nombre': asig_nombre, 'notas': [], 'evaluaciones': 0}
-            notas_por_asignatura[asig_id]['notas'].append({
+                notas_por_asignatura[asig_id] = {
+                    'nombre': asig_nombre,
+                    'calificativas': [],
+                    'sumativas': [],
+                    'sum_sel_notas': [],
+                    'evaluaciones': 0
+                }
+
+            nota_info = {
                 'instrumento': n.instrument_title or f'Evaluación #{n.InstrumentId}',
                 'nota': round(n.Score, 1),
                 'tipo': 'Manual' if n.IsManual else 'Automática',
-                'fecha': n.CreatedAt.strftime('%d/%m/%Y') if n.CreatedAt else 'N/A'
-            })
+                'fecha': n.CreatedAt.strftime('%d/%m/%Y') if n.CreatedAt else 'N/A',
+                'assessment_type': n.AssessmentTypeId,
+                'seleccionada': bool(n.Seleccionada) if n.Seleccionada is not None else False
+            }
+
+            if n.AssessmentTypeId == TIPO_CALIFICATIVA:
+                notas_por_asignatura[asig_id]['calificativas'].append(nota_info)
+            elif n.AssessmentTypeId == TIPO_SUMATIVA:
+                notas_por_asignatura[asig_id]['sumativas'].append(nota_info)
+                if nota_info['seleccionada']:
+                    notas_por_asignatura[asig_id]['sum_sel_notas'].append(nota_info['nota'])
+            else:
+                # Sin tipo definido: se trata como calificativa
+                notas_por_asignatura[asig_id]['calificativas'].append(nota_info)
+
             notas_por_asignatura[asig_id]['evaluaciones'] += 1
 
+        # Calcular promedio por asignatura
         for asig_id in notas_por_asignatura:
-            notas_list = notas_por_asignatura[asig_id]['notas']
-            suma = sum(n['nota'] for n in notas_list)
-            notas_por_asignatura[asig_id]['promedio'] = round(suma / len(notas_list), 1) if notas_list else None
+            data = notas_por_asignatura[asig_id]
 
-        promedios_asig = [notas_por_asignatura[a]['promedio'] for a in notas_por_asignatura
-                          if notas_por_asignatura[a]['promedio'] is not None]
-        promedio_general_final = round(sum(promedios_asig) / len(promedios_asig), 1) if promedios_asig else None
-        total_evaluaciones = sum(notas_por_asignatura[a]['evaluaciones'] for a in notas_por_asignatura)
+            # Notas de calificativas puras
+            calif_scores = [n['nota'] for n in data['calificativas']]
 
-        # Anotaciones del alumno
+            # Promedio de sumativas seleccionadas (se convierte en una nota calificativa más)
+            sum_sel = data['sum_sel_notas']
+            promedio_sum_sel = round(sum(sum_sel) / len(sum_sel), 1) if sum_sel else None
+
+            # Se agrega el promedio de sum. seleccionadas como una calificativa más
+            todos_para_promedio = list(calif_scores)
+            if promedio_sum_sel is not None:
+                todos_para_promedio.append(promedio_sum_sel)
+
+            data['promedio_sum_sel'] = promedio_sum_sel
+            data['promedio'] = round(
+                sum(todos_para_promedio) / len(todos_para_promedio), 1
+            ) if todos_para_promedio else None
+
+        promedios_asig = [
+            notas_por_asignatura[a]['promedio']
+            for a in notas_por_asignatura
+            if notas_por_asignatura[a]['promedio'] is not None
+        ]
+        promedio_general_final = round(
+            sum(promedios_asig) / len(promedios_asig), 1
+        ) if promedios_asig else None
+        total_evaluaciones = sum(
+            notas_por_asignatura[a]['evaluaciones'] for a in notas_por_asignatura
+        )
+
+        # ── Anotaciones del alumno ──
         anot_alumno = [a for a in anotaciones_raw if a.OrganizationPersonRoleId == rol.OrganizationPersonRoleId]
         anotaciones_list = []
         conteo_anotaciones = {'Positiva': 0, 'Negativa': 0, 'Otra': 0}
@@ -269,7 +319,31 @@ def reporte_curso(curso_id):
         'otras': sum(a['conteo_anotaciones']['Otra'] for a in alumnos_reporte)
     }
 
-    return render_template('reportes/curso.html', curso=curso, grado=grado, alumnos=alumnos_reporte,
+    # ── Asignaturas del curso (vinculadas al GRADO, no al curso) ──
+    grado_id = grado.OrganizationId if grado else None
+
+    asignaturas_data = []
+    if grado_id:
+        asignaturas_org = Organization.query.join(
+            OrganizationRelationship,
+            Organization.OrganizationId == OrganizationRelationship.OrganizationId
+        ).filter(
+            OrganizationRelationship.ParentOrganizationId == grado_id,
+            Organization.RefOrganizationTypeId == 22
+        ).order_by(Organization.Name).all()
+
+        for asig in asignaturas_org:
+            total_instrumentos = EdugestAssessmentInstrument.query.filter_by(
+                OrganizationId=asig.OrganizationId
+            ).count()
+            asignaturas_data.append({
+                'org_id': asig.OrganizationId,
+                'nombre': asig.Name,
+                'total_instrumentos': total_instrumentos
+            })
+
+    return render_template('reportes/curso.html', curso=curso, grado=grado,
+                           alumnos=alumnos_reporte, asignaturas=asignaturas_data,
                            chart_data=chart_data, resumen_notas=resumen_notas,
                            resumen_anotaciones=resumen_anotaciones, periodo=periodo,
                            fecha_inicio=fecha_inicio.strftime('%Y-%m-%d'),
@@ -410,11 +484,11 @@ def reporte_grado(grado_id):
 def reporte_notas_sumativas(org_id):
     """
     Muestra las calificaciones por asignatura con:
-    - Columnas individuales para cada evaluación Sumativa (con checkbox)
-    - Columna de Promedio de Sumativas Seleccionadas
+    - Columnas individuales para cada evaluación Sumativa (con checkbox de selección)
+    - Columna de Promedio de Sumativas Seleccionadas (se convierte en nota calificativa)
     - Columnas individuales para cada evaluación Calificativa
-    - Columna de Promedio General (solo Calificativas)
-    - Columna de Nota Final (promedio de ambas)
+    - Columna de Promedio Calificativas (incluye el derivado de sumativas seleccionadas)
+    - Columna de Nota Final
     """
     asignatura = Organization.query.get_or_404(org_id)
 
@@ -422,7 +496,6 @@ def reporte_notas_sumativas(org_id):
     instrumentos = EdugestAssessmentInstrument.query.filter_by(OrganizationId=org_id).all()
 
     # Separar en Sumativas y Calificativas según AssessmentTypeId
-    # Ajustar TIPO_SUMATIVA y TIPO_CALIFICATIVA según el modelo real
     todas_sumativas = []
     calificativas = []
     for inst in instrumentos:
@@ -430,13 +503,13 @@ def reporte_notas_sumativas(org_id):
             todas_sumativas.append(inst)
         elif inst.AssessmentTypeId == TIPO_CALIFICATIVA:
             calificativas.append(inst)
+        else:
+            # Sin tipo definido: se trata como calificativa por defecto
+            calificativas.append(inst)
 
-    # Marcar estado de selección para cada sumativa
-    for s in todas_sumativas:
-        s.seleccionada = getattr(s, 'Seleccionada', True)
-
-    sumativas_seleccionadas = [s for s in todas_sumativas if s.seleccionada]
-    sumativas_no_seleccionadas = [s for s in todas_sumativas if not s.seleccionada]
+    # Sumativas separadas por estado de selección (persistido en BD)
+    sumativas_seleccionadas = [s for s in todas_sumativas if s.Seleccionada]
+    sumativas_no_seleccionadas = [s for s in todas_sumativas if not s.Seleccionada]
 
     # Obtener todos los IDs de instrumentos de esta asignatura
     instrument_ids = [inst.InstrumentId for inst in instrumentos]
@@ -481,7 +554,7 @@ def reporte_notas_sumativas(org_id):
             PersonId=persona.PersonId, RefPersonIdentificationSystemId=51
         ).first()
 
-        # Notas sumativas del estudiante (todas, tanto seleccionadas como no)
+        # ── Notas Sumativas del estudiante (todas, para visualización) ──
         notas_sumativas_est = {}
         for s in todas_sumativas:
             if s.InstrumentId in notas_por_estudiante[rol_id]:
@@ -490,39 +563,35 @@ def reporte_notas_sumativas(org_id):
             else:
                 notas_sumativas_est[s.InstrumentId] = None
 
-        # Notas calificativas del estudiante
-        notas_calificativas_est = []
+        # ── Notas Calificativas del estudiante ──
+        notas_calificativas_est = {}
         for c in calificativas:
             if c.InstrumentId in notas_por_estudiante[rol_id]:
                 scores = notas_por_estudiante[rol_id][c.InstrumentId]
-                notas_calificativas_est.append({
-                    'instrument_id': c.InstrumentId,
-                    'nota': round(sum(scores) / len(scores), 1)
-                })
+                notas_calificativas_est[c.InstrumentId] = round(sum(scores) / len(scores), 1)
             else:
-                notas_calificativas_est.append({
-                    'instrument_id': c.InstrumentId,
-                    'nota': None
-                })
+                notas_calificativas_est[c.InstrumentId] = None
 
-        # Promedio de sumativas seleccionadas
-        sum_sel = [notas_sumativas_est[s.InstrumentId] for s in todas_sumativas
-                   if s.seleccionada and notas_sumativas_est[s.InstrumentId] is not None]
-        promedio_sumativas = round(sum(sum_sel) / len(sum_sel), 1) if sum_sel else None
+        # ── Promedio de sumativas SELECCIONADAS (se convierte en calificativa) ──
+        sum_sel_scores = [
+            notas_sumativas_est[s.InstrumentId]
+            for s in sumativas_seleccionadas
+            if notas_sumativas_est.get(s.InstrumentId) is not None
+        ]
+        promedio_sum_sel = round(sum(sum_sel_scores) / len(sum_sel_scores), 1) if sum_sel_scores else None
 
-        # Promedio de calificativas
-        calif_validas = [n['nota'] for n in notas_calificativas_est if n['nota'] is not None]
+        # ── Promedio de calificativas puras ──
+        calif_validas = [v for v in notas_calificativas_est.values() if v is not None]
         promedio_calificativas = round(sum(calif_validas) / len(calif_validas), 1) if calif_validas else None
 
-        # Nota Final = promedio entre promedio sumativas y promedio calificativas
-        if promedio_sumativas is not None and promedio_calificativas is not None:
-            nota_final = round((promedio_sumativas + promedio_calificativas) / 2, 1)
-        elif promedio_calificativas is not None:
-            nota_final = promedio_calificativas
-        elif promedio_sumativas is not None:
-            nota_final = promedio_sumativas
-        else:
-            nota_final = None
+        # ── NOTA FINAL: promedio de (calificativas individuales + promedio sum. seleccionadas) ──
+        todos_para_promedio = list(calif_validas)
+        if promedio_sum_sel is not None:
+            todos_para_promedio.append(promedio_sum_sel)
+
+        nota_final = round(
+            sum(todos_para_promedio) / len(todos_para_promedio), 1
+        ) if todos_para_promedio else None
 
         # Obtener curso del estudiante para el enlace del PDF
         curso_rel = OrganizationRelationship.query.filter_by(OrganizationId=rol.OrganizationId).first()
@@ -534,12 +603,11 @@ def reporte_notas_sumativas(org_id):
             'rut': ident.Identifier if ident else 'Sin RUT',
             'notas_sumativas': notas_sumativas_est,
             'notas_calificativas': notas_calificativas_est,
-            'promedio_sumativas': promedio_sumativas,
+            'promedio_sum_sel': promedio_sum_sel,
             'promedio_calificativas': promedio_calificativas,
             'nota_final': nota_final,
-            'cant_sum': len([v for v in notas_sumativas_est.values() if v is not None]),
+            'cant_sum_sel': len(sum_sel_scores),
             'cant_calif': len(calif_validas),
-            'cant_total': len([v for v in notas_sumativas_est.values() if v is not None]) + len(calif_validas),
             'grado_id': grado_id
         })
 
@@ -552,7 +620,6 @@ def reporte_notas_sumativas(org_id):
                            calificativas=calificativas,
                            sumativas_seleccionadas=sumativas_seleccionadas,
                            sumativas_no_seleccionadas=sumativas_no_seleccionadas)
-
 
 # ============================================================
 # RUTA: CONFIGURAR SUMATIVAS (EXISTENTE)
@@ -604,67 +671,11 @@ def guardar_sumativa_ajax(instrument_id):
     instrumento.Seleccionada = bool(data['seleccionada'])
     db.session.commit()
 
-    return jsonify({'success': True})
-
-
-# ============================================================
-# RUTA: REPORTE DE GRADO - GRÁFICO
-# ============================================================
-@reportes_bp.route('/grado/<int:grado_id>/grafico')
-def grafico_grado(grado_id):
-    periodo = request.args.get('periodo', 'mes')
-    fecha_ref = request.args.get('fecha', datetime.now().strftime('%Y-%m-%d'))
-    try:
-        fecha_base = datetime.strptime(fecha_ref, '%Y-%m-%d')
-    except ValueError:
-        fecha_base = datetime.now()
-    fecha_inicio, fecha_fin = calcular_rango_fechas(fecha_base, periodo)
-
-    cursos = Organization.query.join(
-        OrganizationRelationship, Organization.OrganizationId == OrganizationRelationship.OrganizationId
-    ).filter(
-        OrganizationRelationship.ParentOrganizationId == grado_id,
-        Organization.RefOrganizationTypeId == 21
-    ).all()
-
-    total_p = total_a = total_t = 0
-    for c in cursos:
-        rol_ids = [r.OrganizationPersonRoleId for r in
-                   OrganizationPersonRole.query.filter_by(OrganizationId=c.OrganizationId, RoleId=6, ExitDate=None).all()]
-        if rol_ids:
-            asist = db.session.query(
-                EdugestSessionAttendance.AttendanceStatusId,
-                func.count(EdugestSessionAttendance.SessionAttendanceId)
-            ).filter(
-                EdugestSessionAttendance.OrganizationPersonRoleId.in_(rol_ids),
-                EdugestSessionAttendance.FechaRegistro >= fecha_inicio,
-                EdugestSessionAttendance.FechaRegistro <= fecha_fin
-            ).group_by(EdugestSessionAttendance.AttendanceStatusId).all()
-            for sid, cnt in asist:
-                if sid == 1:
-                    total_p += cnt
-                elif sid == 2:
-                    total_a += cnt
-                elif sid == 3:
-                    total_t += cnt
-
-    fig, ax = plt.subplots(figsize=(4, 4))
-    labels = ['Presentes', 'Ausentes', 'Atrasados']
-    sizes = [total_p, total_a, total_t]
-    chart_colors = ['#10b981', '#f43f5e', '#f59e0b']
-    if sum(sizes) > 0:
-        ax.pie(sizes, labels=labels, colors=chart_colors, autopct='%1.1f%%', startangle=90)
-    else:
-        ax.text(0.5, 0.5, 'Sin datos', ha='center', va='center', fontsize=14)
-    ax.set_title('Distribución de Asistencia')
-    plt.tight_layout()
-
-    img_buffer = BytesIO()
-    fig.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
-    plt.close(fig)
-    img_buffer.seek(0)
-
-    return send_file(img_buffer, mimetype='image/png', download_name='grafico_grado.png')
+    return jsonify({
+        'success': True,
+        'instrument_id': instrument_id,
+        'seleccionada': instrumento.Seleccionada
+    })
 
 
 # ============================================================
@@ -1025,3 +1036,62 @@ def informe_notas_pdf(curso_id, rol_id):
 
     filename = f"informe_notas_{persona.FirstName}_{persona.LastName}.pdf"
     return send_file(buffer, mimetype='application/pdf', download_name=filename, as_attachment=True)
+
+
+
+
+@reportes_bp.route('/grado/<int:grado_id>/grafico')
+def grafico_grado(grado_id):
+    periodo = request.args.get('periodo', 'mes')
+    fecha_ref = request.args.get('fecha', datetime.now().strftime('%Y-%m-%d'))
+    try:
+        fecha_base = datetime.strptime(fecha_ref, '%Y-%m-%d')
+    except ValueError:
+        fecha_base = datetime.now()
+    fecha_inicio, fecha_fin = calcular_rango_fechas(fecha_base, periodo)
+
+    cursos = Organization.query.join(
+        OrganizationRelationship, Organization.OrganizationId == OrganizationRelationship.OrganizationId
+    ).filter(
+        OrganizationRelationship.ParentOrganizationId == grado_id,
+        Organization.RefOrganizationTypeId == 21
+    ).all()
+
+    total_p = total_a = total_t = 0
+    for c in cursos:
+        rol_ids = [r.OrganizationPersonRoleId for r in
+                   OrganizationPersonRole.query.filter_by(OrganizationId=c.OrganizationId, RoleId=6, ExitDate=None).all()]
+        if rol_ids:
+            asist = db.session.query(
+                EdugestSessionAttendance.AttendanceStatusId,
+                func.count(EdugestSessionAttendance.SessionAttendanceId)
+            ).filter(
+                EdugestSessionAttendance.OrganizationPersonRoleId.in_(rol_ids),
+                EdugestSessionAttendance.FechaRegistro >= fecha_inicio,
+                EdugestSessionAttendance.FechaRegistro <= fecha_fin
+            ).group_by(EdugestSessionAttendance.AttendanceStatusId).all()
+            for sid, cnt in asist:
+                if sid == 1:
+                    total_p += cnt
+                elif sid == 2:
+                    total_a += cnt
+                elif sid == 3:
+                    total_t += cnt
+
+    fig, ax = plt.subplots(figsize=(4, 4))
+    labels = ['Presentes', 'Ausentes', 'Atrasados']
+    sizes = [total_p, total_a, total_t]
+    chart_colors = ['#10b981', '#f43f5e', '#f59e0b']
+    if sum(sizes) > 0:
+        ax.pie(sizes, labels=labels, colors=chart_colors, autopct='%1.1f%%', startangle=90)
+    else:
+        ax.text(0.5, 0.5, 'Sin datos', ha='center', va='center', fontsize=14)
+    ax.set_title('Distribución de Asistencia')
+    plt.tight_layout()
+
+    img_buffer = BytesIO()
+    fig.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+    plt.close(fig)
+    img_buffer.seek(0)
+
+    return send_file(img_buffer, mimetype='image/png', download_name='grafico_grado.png')
