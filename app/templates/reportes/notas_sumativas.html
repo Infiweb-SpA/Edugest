@@ -1,0 +1,636 @@
+{% extends 'base.html' %}
+
+{% block title %}Notas Sumativas - {{ asignatura.Name }}{% endblock %}
+{% block header_title %}Reporte: Calificaciones por Asignatura{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- ============================================================ -->
+    <!-- CABECERA -->
+    <!-- ============================================================ -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <a href="{{ url_for('reportes.index') }}"
+                   class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                    ⬅️ Volver a Reportes
+                </a>
+                <h3 class="text-xl font-bold text-gray-900 mt-2">
+                    {{ asignatura.Name }}
+                </h3>
+                <p class="text-sm text-gray-500 mt-1">
+                    Evaluaciones
+                    <strong class="text-rose-600">Sumativas</strong> (con casillas de selección) y
+                    <strong class="text-violet-600">Calificativas</strong>.
+                    Use las casillas para incluir/excluir sumativas del promedio.
+                </p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{{ url_for('reportes.configurar_sumativas', org_id=asignatura.OrganizationId) }}"
+                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition shadow-sm">
+                    ⚙️ Configurar Sumativas
+                </a>
+                <a href="{{ url_for('evaluaciones.unidades_asignatura', org_id=asignatura.OrganizationId) }}"
+                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition">
+                    📋 Ver Unidades
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TARJETAS DE RESUMEN -->
+    <!-- ============================================================ -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+        <!-- Total Calificativas -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-semibold">Calificativas</p>
+                    <p class="text-lg font-bold text-gray-900">{{ calificativas|length }}</p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Siempre incluidas en el promedio</p>
+        </div>
+
+        <!-- Sumativas Seleccionadas -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-semibold">Sumativas Seleccionadas</p>
+                    <p class="text-lg font-bold text-gray-900"
+                       id="count-seleccionadas">{{ sumativas_seleccionadas|length }}</p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Incluidas en el promedio sumativo</p>
+        </div>
+
+        <!-- Sumativas Excluidas -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-semibold">Sumativas Excluidas</p>
+                    <p class="text-lg font-bold text-gray-900"
+                       id="count-excluidas">{{ sumativas_no_seleccionadas|length }}</p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">No afectan el promedio</p>
+        </div>
+
+        <!-- Promedio Nota Final del Curso -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-semibold">Promedio Nota Final</p>
+                    <p class="text-lg font-bold text-gray-900" id="promedio-curso-general">
+                        {% set promedios_validos = [] %}
+                        {% for est in estudiantes %}
+                            {% if est.nota_final is not none %}
+                                {% set _ = promedios_validos.append(est.nota_final) %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if promedios_validos|length > 0 %}
+                            {{ (promedios_validos|sum / promedios_validos|length)|round(1) }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Prom. de nota final de todos los estudiantes</p>
+        </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TABLA PRINCIPAL DE CALIFICACIONES -->
+    <!-- ============================================================ -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider">
+                    Calificaciones por Asignatura
+                </h4>
+            </div>
+            <p class="text-xs text-gray-400">
+                Marque/desmarque las casillas Sum para incluir/excluir del promedio
+            </p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500" id="tabla-calificaciones">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+
+                    <!-- 1. ESTUDIANTE -->
+                    <th scope="col"
+                        class="px-4 py-3 sticky left-0 bg-gray-50 z-20 border-r border-gray-200 min-w-[180px]">
+                        Estudiante
+                    </th>
+
+                    <!-- 2. ASIGNATURA -->
+                    <th scope="col" class="px-4 py-3 text-center border-r border-gray-200 min-w-[120px]">
+                        Asignatura
+                    </th>
+
+                    <!-- 3. COLUMNAS SUMATIVAS CON CHECKBOX -->
+                    {% for s in todas_sumativas %}
+                        <th scope="col"
+                            class="px-3 py-3 text-center min-w-[90px] border-r border-gray-100 bg-rose-50/30">
+                            <div class="flex flex-col items-center gap-1">
+                                <input type="checkbox"
+                                       class="sumativa-check w-4 h-4 text-rose-600 border-gray-300 rounded focus:ring-rose-500 cursor-pointer"
+                                       data-instrument-id="{{ s.InstrumentId }}"
+                                       {% if s.seleccionada %}checked{% endif %}>
+                                <span class="font-bold text-rose-800 text-xs leading-tight">
+                                    {{ s.Title[:12] }}{% if s.Title|length > 12 %}..{% endif %}
+                                </span>
+                                <span class="text-xs px-1.5 py-0.5 rounded font-medium bg-rose-100 text-rose-700">Sum</span>
+                            </div>
+                        </th>
+                    {% endfor %}
+
+                    <!-- 4. PROMEDIO SUMATIVAS SELECCIONADAS -->
+                    <th scope="col"
+                        class="px-4 py-3 text-center bg-rose-50 border-l-2 border-rose-200 border-r border-gray-200 min-w-[110px]">
+                        <div class="flex flex-col items-center">
+                            <span class="font-bold text-rose-800">Prom. Sumativas</span>
+                            <span class="text-xs text-rose-600 mt-1">Seleccionadas</span>
+                        </div>
+                    </th>
+
+                    <!-- 5. COLUMNAS CALIFICATIVAS -->
+                    {% for c in calificativas %}
+                        <th scope="col" class="px-3 py-3 text-center min-w-[90px] border-r border-gray-100">
+                            <div class="flex flex-col items-center">
+                                <span class="font-bold text-violet-800">
+                                    {{ c.Title[:12] }}{% if c.Title|length > 12 %}..{% endif %}
+                                </span>
+                                <span class="text-xs px-1.5 py-0.5 rounded mt-1 font-medium bg-violet-50 text-violet-700">Calif</span>
+                            </div>
+                        </th>
+                    {% endfor %}
+
+                    <!-- 6. PROMEDIO GENERAL (SOLO CALIFICATIVAS) -->
+                    <th scope="col"
+                        class="px-4 py-3 text-center bg-blue-50 border-l-2 border-blue-200 border-r border-gray-200 min-w-[110px]">
+                        <div class="flex flex-col items-center">
+                            <span class="font-bold text-blue-800">Prom. General</span>
+                            <span class="text-xs text-blue-600 mt-1">Solo Calif.</span>
+                        </div>
+                    </th>
+
+                    <!-- 7. NOTA FINAL (PROM SUM + PROM CALIF) -->
+                    <th scope="col"
+                        class="px-4 py-3 text-center bg-amber-50 border-l-2 border-amber-200 border-r border-gray-200 min-w-[110px]">
+                        <div class="flex flex-col items-center">
+                            <span class="font-bold text-amber-800">Nota Final</span>
+                            <span class="text-xs text-amber-600 mt-1">Prom. Sum + Calif</span>
+                        </div>
+                    </th>
+
+                    <!-- 8. SITUACIÓN FINAL -->
+                    <th scope="col" class="px-4 py-3 text-center border-r border-gray-200 min-w-[110px]">
+                        Situación Final
+                    </th>
+
+                    <!-- 9. INFORME -->
+                    <th scope="col" class="px-4 py-3 text-center min-w-[80px]">
+                        Informe
+                    </th>
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for est in estudiantes %}
+                    <tr class="estudiante-row bg-white border-b hover:bg-gray-50 transition">
+
+                        <!-- 1. ESTUDIANTE -->
+                        <td class="px-4 py-3 font-medium text-gray-900 sticky left-0 bg-white hover:bg-gray-50 z-10 border-r border-gray-200">
+                            <div class="font-semibold">
+                                {{ est.alumno.LastName or '' }} {{ est.alumno.SecondLastName or '' }}, {{ est.alumno.FirstName or '' }}
+                            </div>
+                            <div class="text-xs text-gray-400 font-mono mt-1">{{ est.rut }}</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                {{ est.cant_sum }} sum + {{ est.cant_calif }} calif
+                            </div>
+                        </td>
+
+                        <!-- 2. ASIGNATURA -->
+                        <td class="px-4 py-3 text-center border-r border-gray-200">
+                            <span class="font-semibold text-gray-800">{{ asignatura.Name }}</span>
+                        </td>
+
+                        <!-- 3. NOTAS SUMATIVAS INDIVIDUALES -->
+                        {% for s in todas_sumativas %}
+                            <td class="px-3 py-3 text-center border-r border-gray-100 nota-sumativa-cell"
+                                data-instrument-id="{{ s.InstrumentId }}"
+                                data-nota="{{ est.notas_sumativas[s.InstrumentId] if est.notas_sumativas[s.InstrumentId] is not none else '' }}">
+                                {% if est.notas_sumativas[s.InstrumentId] is not none %}
+                                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold
+                                        {% if est.notas_sumativas[s.InstrumentId] >= 6.0 %}bg-emerald-100 text-emerald-700
+                                        {% elif est.notas_sumativas[s.InstrumentId] >= 4.0 %}bg-amber-100 text-amber-700
+                                        {% else %}bg-rose-100 text-rose-700{% endif %}">
+                                        {{ est.notas_sumativas[s.InstrumentId] }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-gray-300 text-xs">—</span>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+
+                        <!-- 4. PROMEDIO SUMATIVAS SELECCIONADAS -->
+                        <td class="px-4 py-3 text-center bg-rose-50/30 border-l-2 border-rose-200 border-r border-gray-200 prom-sumativas">
+                            {% if est.promedio_sumativas is not none %}
+                                <span class="text-xl font-bold
+                                    {% if est.promedio_sumativas >= 6.0 %}text-emerald-600
+                                    {% elif est.promedio_sumativas >= 4.0 %}text-amber-600
+                                    {% else %}text-rose-600{% endif %}">
+                                    {{ est.promedio_sumativas }}
+                                </span>
+                                <span class="text-xs text-gray-400 block">{{ est.cant_sum }} eval.</span>
+                            {% else %}
+                                <span class="text-xs text-gray-400 italic">Sin sumativas</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 5. NOTAS CALIFICATIVAS INDIVIDUALES -->
+                        {% for nc in est.notas_calificativas %}
+                            <td class="px-3 py-3 text-center border-r border-gray-100 nota-calificativa"
+                                data-nota="{{ nc.nota if nc.nota is not none else '' }}">
+                                {% if nc.nota is not none %}
+                                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold
+                                        {% if nc.nota >= 6.0 %}bg-emerald-100 text-emerald-700
+                                        {% elif nc.nota >= 4.0 %}bg-amber-100 text-amber-700
+                                        {% else %}bg-rose-100 text-rose-700{% endif %}">
+                                        {{ nc.nota }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-gray-300 text-xs">—</span>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+
+                        <!-- 6. PROMEDIO GENERAL (SOLO CALIFICATIVAS) -->
+                        <td class="px-4 py-3 text-center bg-blue-50/30 border-l-2 border-blue-200 border-r border-gray-200 prom-calificativas">
+                            {% if est.promedio_calificativas is not none %}
+                                <span class="text-2xl font-bold
+                                    {% if est.promedio_calificativas >= 6.0 %}text-emerald-600
+                                    {% elif est.promedio_calificativas >= 4.0 %}text-amber-600
+                                    {% else %}text-rose-600{% endif %}">
+                                    {{ est.promedio_calificativas }}
+                                </span>
+                                <span class="text-xs text-gray-400 block">{{ est.cant_calif }} eval.</span>
+                            {% else %}
+                                <span class="text-xs text-gray-400 italic">Sin calificativas</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 7. NOTA FINAL -->
+                        <td class="px-4 py-3 text-center bg-amber-50/30 border-l-2 border-amber-200 border-r border-gray-200 nota-final">
+                            {% if est.nota_final is not none %}
+                                <span class="text-2xl font-bold
+                                    {% if est.nota_final >= 6.0 %}text-emerald-600
+                                    {% elif est.nota_final >= 4.0 %}text-amber-600
+                                    {% else %}text-rose-600{% endif %}">
+                                    {{ est.nota_final }}
+                                </span>
+                            {% else %}
+                                <span class="text-xs text-gray-400 italic">Sin notas</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 8. SITUACIÓN FINAL -->
+                        <td class="px-4 py-3 text-center border-r border-gray-200 situacion-final">
+                            {% if est.nota_final is not none %}
+                                {% if est.nota_final >= 6.0 %}
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                        ✅ Aprobado
+                                    </span>
+                                {% elif est.nota_final >= 4.0 %}
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                                        ⚠️ Regular
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
+                                        ❌ Reprobado
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-xs text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 9. INFORME PDF -->
+                        <td class="px-4 py-3 text-center">
+                            <a href="{{ url_for('reportes.informe_notas_pdf', curso_id=est.grado_id, rol_id=est.opr_id) }}"
+                               class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition shadow-sm"
+                               title="Descargar informe PDF">
+                                📄 PDF
+                            </a>
+                        </td>
+
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="{{ 7 + todas_sumativas|length + calificativas|length }}"
+                            class="px-6 py-12 text-center text-gray-400">
+                            <div class="flex flex-col items-center gap-2">
+                                <span class="text-3xl">📭</span>
+                                <p>No hay estudiantes con evaluaciones registradas.</p>
+                                <p class="text-xs">Cree evaluaciones de tipo Sumativa o Calificativa primero.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SUMATIVAS NO SELECCIONADAS (si existen) -->
+    <!-- ============================================================ -->
+    {% if sumativas_no_seleccionadas %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Evaluaciones Sumativas No Seleccionadas
+                    <span class="text-xs font-normal normal-case text-gray-400">(No incluidas en el promedio)</span>
+                </h4>
+            </div>
+            <div class="p-6">
+                <div class="flex flex-wrap gap-2">
+                    {% for eval in sumativas_no_seleccionadas %}
+                        <span class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm">
+                            <span class="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+                            {{ eval.Title }}
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- ============================================================ -->
+    <!-- LEYENDA -->
+    <!-- ============================================================ -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+            <span class="font-semibold">Leyenda:</span>
+            <div class="flex items-center gap-1">
+                <span class="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> Nota ≥ 6.0 (Aprobado)
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="inline-block w-3 h-3 rounded-full bg-amber-500"></span> Nota 4.0 - 5.9 (Regular)
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="inline-block w-3 h-3 rounded-full bg-rose-500"></span> Nota &lt; 4.0 (Reprobado)
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="inline-block w-3 h-3 rounded bg-rose-100 border border-rose-200"></span> Promedio Sumativas
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="inline-block w-3 h-3 rounded bg-blue-100 border border-blue-200"></span> Promedio Calificativas
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="inline-block w-3 h-3 rounded bg-amber-100 border border-amber-200"></span> Nota Final
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ================================================================ -->
+<!-- JAVASCRIPT: CÁLCULOS DINÁMICOS Y GUARDADO AJAX -->
+<!-- ================================================================ -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Obtener todos los checkboxes de sumativas
+    var checkboxes = document.querySelectorAll('.sumativa-check');
+
+    checkboxes.forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            var instId = this.dataset.instrumentId;
+            var isChecked = this.checked;
+
+            // Actualizar el atributo data-seleccionada en las celdas de esa sumativa
+            document.querySelectorAll('.nota-sumativa-cell[data-instrument-id="' + instId + '"]').forEach(function (cell) {
+                cell.dataset.seleccionada = isChecked ? 'true' : 'false';
+            });
+
+            // Recalcular todo
+            recalcularTodo();
+
+            // Guardar vía AJAX
+            guardarSeleccion(instId, isChecked);
+        });
+    });
+
+    // Cálculo inicial al cargar la página
+    recalcularTodo();
+});
+
+
+/**
+ * Obtiene los IDs de las sumativas que están marcadas con checkbox.
+ */
+function getCheckedSumativaIds() {
+    var ids = [];
+    document.querySelectorAll('.sumativa-check:checked').forEach(function (cb) {
+        ids.push(cb.dataset.instrumentId);
+    });
+    return ids;
+}
+
+
+/**
+ * Recalcula todos los promedios y la nota final para cada estudiante.
+ */
+function recalcularTodo() {
+    var rows = document.querySelectorAll('.estudiante-row');
+    var checkedIds = getCheckedSumativaIds();
+
+    var totalNotaFinal = 0;
+    var countNotaFinal = 0;
+
+    rows.forEach(function (row) {
+
+        // ---- PROMEDIO SUMATIVAS SELECCIONADAS ----
+        var sumaSum = 0;
+        var countSum = 0;
+
+        checkedIds.forEach(function (instId) {
+            var cell = row.querySelector('.nota-sumativa-cell[data-instrument-id="' + instId + '"]');
+            if (cell && cell.dataset.nota !== '') {
+                sumaSum += parseFloat(cell.dataset.nota);
+                countSum++;
+            }
+        });
+
+        var promSum = countSum > 0 ? Math.round((sumaSum / countSum) * 10) / 10 : null;
+
+        // ---- PROMEDIO CALIFICATIVAS ----
+        var sumaCalif = 0;
+        var countCalif = 0;
+
+        row.querySelectorAll('.nota-calificativa').forEach(function (cell) {
+            if (cell.dataset.nota !== '') {
+                sumaCalif += parseFloat(cell.dataset.nota);
+                countCalif++;
+            }
+        });
+
+        var promCalif = countCalif > 0 ? Math.round((sumaCalif / countCalif) * 10) / 10 : null;
+
+        // ---- NOTA FINAL = promedio de ambos ----
+        var notaFinal = null;
+        if (promSum !== null && promCalif !== null) {
+            notaFinal = Math.round(((promSum + promCalif) / 2) * 10) / 10;
+        } else if (promCalif !== null) {
+            notaFinal = promCalif;
+        } else if (promSum !== null) {
+            notaFinal = promSum;
+        }
+
+        // ---- ACTUALIZAR CELDAS ----
+        updateCell(row, '.prom-sumativas', promSum, countSum + ' eval.');
+        updateCell(row, '.prom-calificativas', promCalif, countCalif + ' eval.');
+        updateCell(row, '.nota-final', notaFinal, null);
+        updateSituacion(row, notaFinal);
+
+        if (notaFinal !== null) {
+            totalNotaFinal += notaFinal;
+            countNotaFinal++;
+        }
+    });
+
+    // ---- ACTUALIZAR PROMEDIO DEL CURSO ----
+    var cursoEl = document.getElementById('promedio-curso-general');
+    if (cursoEl) {
+        if (countNotaFinal > 0) {
+            cursoEl.textContent = Math.round((totalNotaFinal / countNotaFinal) * 10) / 10;
+        } else {
+            cursoEl.textContent = '—';
+        }
+    }
+
+    // ---- ACTUALIZAR CONTADORES DE TARJETAS ----
+    var totalSumativas = document.querySelectorAll('.sumativa-check').length;
+    var seleccionadas = checkedIds.length;
+    var excluidas = totalSumativas - seleccionadas;
+
+    var countSelEl = document.getElementById('count-seleccionadas');
+    var countExcEl = document.getElementById('count-excluidas');
+    if (countSelEl) countSelEl.textContent = seleccionadas;
+    if (countExcEl) countExcEl.textContent = excluidas;
+}
+
+
+/**
+ * Actualiza una celda de promedio o nota final con el valor calculado.
+ */
+function updateCell(row, selector, value, subtext) {
+    var cell = row.querySelector(selector);
+    if (!cell) return;
+
+    if (value !== null) {
+        var colorClass = 'text-emerald-600';
+        if (value < 4.0) colorClass = 'text-rose-600';
+        else if (value < 6.0) colorClass = 'text-amber-600';
+
+        var html = '<span class="text-2xl font-bold ' + colorClass + '">' + value.toFixed(1) + '</span>';
+        if (subtext) {
+            html += '<span class="text-xs text-gray-400 block">' + subtext + '</span>';
+        }
+        cell.innerHTML = html;
+    } else {
+        cell.innerHTML = '<span class="text-xs text-gray-400 italic">—</span>';
+    }
+}
+
+
+/**
+ * Actualiza la celda de Situación Final según el valor de la nota.
+ */
+function updateSituacion(row, notaFinal) {
+    var cell = row.querySelector('.situacion-final');
+    if (!cell) return;
+
+    if (notaFinal !== null) {
+        if (notaFinal >= 6.0) {
+            cell.innerHTML = '<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">✅ Aprobado</span>';
+        } else if (notaFinal >= 4.0) {
+            cell.innerHTML = '<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">⚠️ Regular</span>';
+        } else {
+            cell.innerHTML = '<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">❌ Reprobado</span>';
+        }
+    } else {
+        cell.innerHTML = '<span class="text-xs text-gray-400">—</span>';
+    }
+}
+
+
+/**
+ * Envía la selección de una sumativa al servidor vía AJAX.
+ */
+function guardarSeleccion(instrumentId, seleccionada) {
+    fetch('/reportes/api/guardar-sumativa/' + instrumentId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({seleccionada: seleccionada})
+    })
+    .then(function (response) {
+        return response.json();
+    })
+    .then(function (data) {
+        if (!data.success) {
+            console.error('Error al guardar selección:', data.message);
+        }
+    })
+    .catch(function (error) {
+        console.error('Error de red al guardar selección:', error);
+    });
+}
+</script>
+
+{% endblock %}
