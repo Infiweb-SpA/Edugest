@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edugest - Iniciar Sesión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .bg-mesh {
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                #0f172a;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .input-field {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            transition: all 0.2s ease;
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeUp 0.5s ease forwards;
+        }
+
+        .animate-in-delay {
+            animation: fadeUp 0.5s ease forwards;
+            animation-delay: 0.15s;
+            opacity: 0;
+        }
+
+        .animate-in-delay-2 {
+            animation: fadeUp 0.5s ease forwards;
+            animation-delay: 0.3s;
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body class="bg-mesh min-h-screen flex items-center justify-center p-4">
+
+    <!-- Fondo decorativo -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-violet-500/5 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="relative z-10 w-full max-w-md">
+
+        <!-- Logo y título -->
+        <div class="text-center mb-8 animate-in">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-4">
+                <span class="text-3xl">🎓</span>
+            </div>
+            <h1 class="text-3xl font-bold text-white tracking-tight">Edugest</h1>
+            <p class="text-slate-400 text-sm mt-1">Sistema de Gestión Escolar</p>
+        </div>
+
+        <!-- Card de login -->
+        <div class="glass rounded-2xl p-8 animate-in-delay">
+
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="mb-5 space-y-2">
+                {% for category, message in messages %}
+                <div class="px-4 py-3 rounded-lg text-sm font-medium
+                    {% if category == 'error' %}bg-red-500/10 text-red-400 border border-red-500/20
+                    {% elif category == 'warning' %}bg-amber-500/10 text-amber-400 border border-amber-500/20
+                    {% else %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="space-y-5">
+                <!-- Campo RUT -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">RUT</label>
+                    <input type="text" name="username" required autocomplete="username"
+                        placeholder="Ej: 12.345.678-9"
+                        class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 outline-none text-sm">
+                </div>
+
+                <!-- Campo Contraseña -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Contraseña</label>
+                    <div class="relative">
+                        <input type="password" name="password" id="password" required autocomplete="current-password"
+                            placeholder="Ingresa tu contraseña"
+                            class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 outline-none text-sm pr-12">
+                        <button type="button" onclick="togglePassword()"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition">
+                            <svg id="eye-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <svg id="eye-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botón -->
+                <button type="submit"
+                    class="btn-login w-full py-3 rounded-xl text-white font-semibold text-sm tracking-wide shadow-lg cursor-pointer">
+                    Iniciar Sesión
+                </button>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-slate-600 text-xs mt-6 animate-in-delay-2">
+            Edugest SpA &copy; 2026 &middot; Región de La Araucanía
+        </p>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const eyeOpen = document.getElementById('eye-open');
+            const eyeClosed = document.getElementById('eye-closed');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            } else {
+                input.type = 'password';
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            }
+        }
+    </script>
+
+</body>
+
+</html>

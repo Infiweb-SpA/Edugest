@@ -390,3 +390,36 @@ class EdugestManualGrade(db.Model):
     UpdatedAt = db.Column(db.DateTime, default=obtener_hora_chile, onupdate=obtener_hora_chile)
 
     __table_args__ = (db.UniqueConstraint('InstrumentId', 'OrganizationPersonRoleId', name='uq_manual_grade'),)
+
+
+# ============================================================================
+# MODULO H: USUARIOS Y AUTENTICACIÓN
+# ============================================================================
+
+class EdugestUser(db.Model):
+    """Cuentas de usuario para login (vinculada a Person)"""
+    __tablename__ = 'edugest_user'
+
+    UserId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    PersonId = db.Column(db.Integer, db.ForeignKey('Person.PersonId', ondelete='CASCADE'), nullable=False, unique=True)
+    Username = db.Column(db.String(50), unique=True, nullable=False)  # RUT
+    PasswordHash = db.Column(db.String(255), nullable=False)
+    IsActive = db.Column(db.Boolean, default=True, nullable=False)
+    RoleId = db.Column(db.Integer, nullable=False, default=6)  # 1=Admin, 3=Profesor, 6=Apoderado
+    CreatedAt = db.Column(db.DateTime, default=obtener_hora_chile)
+
+    # Flask-Login requiere estos métodos
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_active(self):
+        return self.IsActive
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return str(self.UserId)

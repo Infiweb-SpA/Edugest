@@ -716,5 +716,60 @@ with app.app_context():
     else:
         print("❌ No se encontró el grado 1° Básico")
 
+    # ============================================================
+    # CREAR USUARIO ADMINISTRADOR
+    # ============================================================
+    from werkzeug.security import generate_password_hash
+    from app.models.edugest import EdugestUser
+    from app.models.mineduc import Person, PersonIdentifier
+
+    print("\n🔐 Creando usuarios del sistema...")
+
+    # Buscar o crear la persona del administrador
+    rut_admin = "78332482-2"
+    admin_person = None
+
+    # Buscar por RUT en PersonIdentifier
+    ident_admin = PersonIdentifier.query.filter_by(
+        Identifier=rut_admin, RefPersonIdentificationSystemId=51
+    ).first()
+
+    if ident_admin:
+        admin_person = Person.query.get(ident_admin.PersonId)
+    else:
+        # Crear persona administrador
+        admin_person = Person(
+            FirstName="Administrador",
+            MiddleName="",
+            LastName="Sistema",
+            SecondLastName="Edugest"
+        )
+        db.session.add(admin_person)
+        db.session.flush()
+
+        db.session.add(PersonIdentifier(
+            PersonId=admin_person.PersonId,
+            Identifier=rut_admin,
+            RefPersonIdentificationSystemId=51
+        ))
+        db.session.flush()
+        print(f"   ✅ Persona administrador creada: {rut_admin}")
+
+    # Crear cuenta de usuario admin si no existe
+    if not EdugestUser.query.filter_by(Username=rut_admin).first():
+        admin_user = EdugestUser(
+            PersonId=admin_person.PersonId,
+            Username=rut_admin,
+            PasswordHash=generate_password_hash("4822"),
+            IsActive=True,
+            RoleId=1  # Administrador
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print(f"   ✅ Usuario administrador creado: RUT={rut_admin}, Contraseña=4822")
+    else:
+        print(f"   ℹ️ Usuario administrador ya existe: {rut_admin}")
+
+
     print("\n" + "=" * 60)
     print("🎉 ¡Siembra completada!")

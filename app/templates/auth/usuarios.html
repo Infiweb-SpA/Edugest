@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuarios - Edugest{% endblock %}
+{% block header_title %}Gestión de Usuarios{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Usuarios del Sistema</h3>
+                <p class="text-sm text-gray-500 mt-1">{{ usuarios|length }} usuario{{ 's' if usuarios|length != 1 else '' }} registrado{{ 's' if usuarios|length != 1 else '' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">RUT</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Nombre</th>
+                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Rol</th>
+                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                <tr class="border-b border-gray-100 hover:bg-gray-50/50">
+                    <td class="px-4 py-3 font-mono text-xs text-gray-600">{{ u.usuario.Username }}</td>
+                    <td class="px-4 py-3 font-semibold text-gray-900">
+                        {% if u.persona %}
+                            {{ u.persona.FirstName }} {{ u.persona.LastName or '' }}
+                        {% else %}
+                            Sin persona vinculada
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        {% if u.usuario.RoleId == 1 %}
+                            <span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold">Administrador</span>
+                        {% elif u.usuario.RoleId == 3 %}
+                            <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">Profesor</span>
+                        {% elif u.usuario.RoleId == 6 %}
+                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold">Apoderado</span>
+                        {% else %}
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-semibold">Rol {{ u.usuario.RoleId }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        {% if u.usuario.IsActive %}
+                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold">Activo</span>
+                        {% else %}
+                            <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold">Inactivo</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

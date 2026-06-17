@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Acceso Denegado - Edugest{% endblock %}
+{% block header_title %}Acceso Denegado{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto text-center py-20">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 mb-6">
+        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+    </div>
+    <h3 class="text-2xl font-bold text-gray-900 mb-2">Acceso No Autorizado</h3>
+    <p class="text-gray-500 mb-6">
+        {{ mensaje if mensaje else 'No tienes los permisos necesarios para acceder a esta sección.' }}
+    </p>
+    <a href="{{ url_for('admin.dashboard') }}"
+        class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
+        Volver al Panel
+    </a>
+</div>
+{% endblock %}

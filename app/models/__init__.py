@@ -1,26 +1,21 @@
-# Importamos la instancia de la base de datos para centralizar accesos
-from app.database import db
-
-# Importamos todos los modelos para exponerlos al motor de SQLAlchemy
 from app.models.mineduc import (
-    Person, PersonIdentifier, Organization, 
-    OrganizationPersonRole, RoleAttendanceEvent, 
-    OrganizationCalendarSession, AssessmentResult,
-    OrganizationRelationship, OrganizationIdentifier,
+    Person, PersonIdentifier, Organization, OrganizationRelationship,
+    OrganizationIdentifier, OrganizationPersonRole,
+    RoleAttendanceEvent, OrganizationCalendarSession,
+    AssessmentResult, Incident, IncidentPerson, K12StudentDiscipline,
     PersonAddress, PersonTelephone, PersonEmailAddress,
     PersonRelationship, PersonHealth, PersonStatus,
-    PersonDegreeOrCertificate, PersonBirthplace, PersonAllergy,
-    Incident, IncidentPerson, K12StudentDiscipline
+    PersonDegreeOrCertificate, PersonBirthplace, PersonAllergy
 )
+
 from app.models.edugest import (
     EdugestModule, EdugestRolePermission, EdugestOrganizationConfig,
-    EdugestCurriculumPlan, EdugestSessionAttendance,
-    EdugestAssessmentInstrument, EdugestAssessmentQuestion, 
-    EdugestQuestionOption, EdugestStudentResponse, 
-    EdugestBook, EdugestBookLoan, EdugestChatMessage, EdugestAnnouncement,
-    # NUEVOS: Extensión de matrícula
+    EdugestCurriculumPlan, EdugestSessionAttendance, EdugestStudentObservation,
+    EdugestAssessmentInstrument, EdugestAssessmentQuestion, EdugestQuestionOption,
+    EdugestStudentResponse, EdugestBook, EdugestBookLoan,
+    EdugestChatMessage, EdugestAnnouncement,
     EdugestStudentEnrollment, EdugestEmergencyContact,
     EdugestStudentHealth, EdugestStudentPIE,
-    EdugestPersonRelationshipDetail,
-    EdugestManualGrade
+    EdugestPersonRelationshipDetail, EdugestManualGrade,
+    EdugestUser
 )

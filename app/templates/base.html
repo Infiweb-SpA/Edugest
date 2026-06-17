@@ -50,7 +50,6 @@
                         <span>🎒</span>
                         <span>Matrícula</span>
                     </a>
-                    <!-- NUEVO: ENLACE A REPORTES -->
                     <a href="{{ url_for('reportes.index') }}"
                         class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
                         <span>📊</span>
@@ -71,14 +70,29 @@
                     {% block header_title %}Panel de Control{% endblock %}
                 </h2>
                 <div class="flex items-center space-x-4">
+                    {% if current_user.is_authenticated %}
                     <div class="text-right">
-                        <p class="text-sm font-semibold text-gray-700">Administrador</p>
-                        <p class="text-xs text-gray-400">Soporte Infiweb</p>
+                        <p class="text-sm font-semibold text-gray-700">
+                            {% if current_user.RoleId == 1 %}Administrador
+                            {% elif current_user.RoleId == 3 %}Profesor
+                            {% elif current_user.RoleId == 6 %}Apoderado
+                            {% else %}Usuario{% endif %}
+                        </p>
+                        <p class="text-xs text-gray-400">{{ current_user.Username }}</p>
                     </div>
-                    <div
-                        class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                        AI
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
+                        {{ current_user.Username[:2]|upper }}
                     </div>
+                    <a href="{{ url_for('auth.logout') }}"
+                       class="ml-2 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition"
+                       title="Cerrar Sesión">
+                        Salir
+                    </a>
+                    {% else %}
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-gray-700">Invitado</p>
+                    </div>
+                    {% endif %}
                 </div>
             </header>
 
@@ -88,7 +102,7 @@
                 <div class="mb-6 space-y-2">
                     {% for category, message in messages %}
                     <div
-                        class="px-4 py-3 rounded-lg text-sm font-semibold {{ 'bg-red-100 text-red-700 border border-red-200' if category == 'error' else 'bg-green-100 text-green-700 border border-green-200' }}">
+                        class="px-4 py-3 rounded-lg text-sm font-semibold {{ 'bg-red-100 text-red-700 border border-red-200' if category == 'error' else 'bg-green-100 text-green-700 border border-green-200' if category == 'success' else 'bg-amber-100 text-amber-700 border border-amber-200' }}">
                         {{ message }}
                     </div>
                     {% endfor %}
