@@ -782,8 +782,8 @@ with app.app_context():
         2: 'Director',
         3: 'Profesor',
         4: 'Inspector',
-        5: 'Coordinador / UTP',
-        6: 'Apoderado / Tutor'
+        5: 'Apoderado / Tutor',
+        6: 'Alumno' #es este numero para que coincida con el RoleId del mineduc
     }
 
     for role_id, nombre in roles_base.items():

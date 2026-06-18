@@ -98,9 +98,9 @@ def login():
         elif usuario.RoleId == 3:
             return redirect(url_for('libro_digital.listar_grados'))
         elif usuario.RoleId == 6:
-            return redirect(url_for('reportes.index'))
+            return redirect(url_for('portada.bienvenida'))
         else:
-            return redirect(url_for('admin.dashboard'))
+            return redirect(url_for('portada.bienvenida'))
 
     return render_template('auth/login.html')
 

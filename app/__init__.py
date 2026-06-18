@@ -47,6 +47,10 @@ def create_app():
     from app.modules.gestion_roles.routes import gestion_roles_bp
     app.register_blueprint(gestion_roles_bp)
 
+    # 0d. Portada / Bienvenida
+    from app.modules.portada.routes import portada_bp
+    app.register_blueprint(portada_bp)
+
     # 1. Administración
     from app.modules.admin.routes import admin_bp
     app.register_blueprint(admin_bp)

@@ -1,0 +1,1 @@
+from app.modules.portada.routes import portada_bp
