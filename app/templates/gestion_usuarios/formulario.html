@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 
 {% block title %}
-    {% if modo == 'crear' %}Nuevo Usuario{% else %}Editar Usuario{% endif %} - Edugest
+    {% if modo_form == 'crear' %}Nuevo Usuario{% else %}Editar Usuario{% endif %} - Edugest
 {% endblock %}
 {% block header_title %}
-    {% if modo == 'crear' %}Crear Nuevo Usuario{% else %}Editar: {{ usuario.Username }}{% endif %}
+    {% if modo_form == 'crear' %}Crear Nuevo Usuario{% else %}Editar: {{ usuario.Username }}{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -16,36 +16,122 @@
         </a>
 
         <h3 class="text-lg font-bold text-gray-900 mt-4 mb-6">
-            {% if modo == 'crear' %}Nuevo Usuario{% else %}Editar Usuario: {{ usuario.Username }}{% endif %}
+            {% if modo_form == 'crear' %}Nuevo Usuario{% else %}Editar Usuario: {{ usuario.Username }}{% endif %}
         </h3>
 
         <form method="POST" class="space-y-5">
 
-            {% if modo == 'crear' %}
-            <!-- SELECCIONAR PERSONA -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Persona <span class="text-red-500">*</span></label>
-                <select name="person_id" required
-                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                    <option value="">-- Seleccionar persona --</option>
-                    {% for p in personas %}
-                    <option value="{{ p.persona.PersonId }}">
-                        {{ p.persona.FirstName }} {{ p.persona.LastName or '' }} {{ p.persona.SecondLastName or '' }} — {{ p.rut }}
-                    </option>
-                    {% endfor %}
-                </select>
-                <p class="text-xs text-gray-400 mt-1">Solo aparecen personas que no tienen cuenta de usuario.</p>
+            {% if modo_form == 'crear' %}
+            <!-- ============================================================ -->
+            <!-- PESTAÑAS: Existente / Nueva Persona -->
+            <!-- ============================================================ -->
+            <div x-data="{ pestana: 'existente' }">
+                <!-- Botones de pestaña -->
+                <div class="flex border-b border-gray-200 mb-5">
+                    <button type="button" @click="pestana = 'existente'"
+                        :class="pestana === 'existente'
+                            ? 'border-indigo-500 text-indigo-600 border-b-2'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'"
+                        class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition">
+                        Persona Existente
+                    </button>
+                    <button type="button" @click="pestana = 'nueva'"
+                        :class="pestana === 'nueva'
+                            ? 'border-indigo-500 text-indigo-600 border-b-2'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'"
+                        class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition">
+                        Registrar Funcionario Nuevo
+                    </button>
+                </div>
+
+                <input type="hidden" name="modo" :value="pestana">
+
+                <!-- ===== PESTAÑA 1: Persona existente ===== -->
+                <div x-show="pestana === 'existente'" x-transition>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Seleccionar persona <span class="text-red-500">*</span></label>
+                        <select name="person_id"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            <option value="">-- Seleccionar --</option>
+                            {% for p in personas %}
+                            <option value="{{ p.persona.PersonId }}"
+                                {% if datos_form.get('person_id') == p.persona.PersonId|string %}selected{% endif %}>
+                                {{ p.persona.FirstName }} {{ p.persona.LastName or '' }} {{ p.persona.SecondLastName or '' }} — {{ p.rut }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-400 mt-1">
+                            Aparecen alumnos, apoderados y personas registradas que aún no tienen cuenta de usuario.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- ===== PESTAÑA 2: Nueva persona (funcionario) ===== -->
+                <div x-show="pestana === 'nueva'" x-transition>
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4">
+                        <p class="text-xs text-indigo-700 font-medium">
+                            Use esta opción para registrar profesores, directores, UTP, inspectores u otros funcionarios que no están en el sistema.
+                        </p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nombres <span class="text-red-500">*</span></label>
+                                <input type="text" name="nombres"
+                                    value="{{ datos_form.get('nombres', '') }}"
+                                    placeholder="Ej: Juan Carlos"
+                                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
+                                <input type="text" name="apellido_p"
+                                    value="{{ datos_form.get('apellido_p', '') }}"
+                                    placeholder="Ej: González"
+                                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
+                                <input type="text" name="apellido_m"
+                                    value="{{ datos_form.get('apellido_m', '') }}"
+                                    placeholder="Ej: Muñoz"
+                                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">RUT <span class="text-red-500">*</span></label>
+                                <input type="text" name="rut"
+                                    value="{{ datos_form.get('rut', '') }}"
+                                    placeholder="Ej: 12.345.678-9"
+                                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                <p class="text-xs text-gray-400 mt-1">Se usará como nombre de usuario para iniciar sesión.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email (opcional)</label>
+                                <input type="email" name="email"
+                                    value="{{ datos_form.get('email', '') }}"
+                                    placeholder="correo@ejemplo.cl"
+                                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono (opcional)</label>
+                                <input type="text" name="telefono"
+                                    value="{{ datos_form.get('telefono', '') }}"
+                                    placeholder="+56912345678"
+                                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- CONTRASEÑA -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña <span class="text-red-500">*</span></label>
-                <input type="password" name="password" required minlength="4"
-                    placeholder="Mínimo 4 caracteres"
-                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-            </div>
             {% else %}
-            <!-- INFO DE PERSONA (solo lectura) -->
+            <!-- INFO DE PERSONA (solo lectura, modo editar) -->
             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Persona vinculada</p>
                 <p class="text-sm font-bold text-gray-900">
@@ -54,11 +140,21 @@
                 <p class="text-xs text-gray-500 mt-0.5">RUT: {{ rut_persona }}</p>
             </div>
 
-            <!-- NUEVA CONTRASEÑA (opcional) -->
+            <!-- NUEVA CONTRASEÑA (opcional en editar) -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña (opcional)</label>
                 <input type="password" name="new_password" minlength="4"
                     placeholder="Dejar vacío para mantener la actual"
+                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+            </div>
+            {% endif %}
+
+            {% if modo_form == 'crear' %}
+            <!-- CONTRASEÑA (solo crear) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña <span class="text-red-500">*</span></label>
+                <input type="password" name="password" required minlength="4"
+                    placeholder="Mínimo 4 caracteres"
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
             </div>
             {% endif %}
@@ -69,11 +165,11 @@
                 <select name="role_id" required
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                     <option value="1" {% if usuario and usuario.RoleId == 1 %}selected{% endif %}>Administrador</option>
-                    <option value="3" {% if usuario and usuario.RoleId == 3 %}selected{% endif %}>Profesor</option>
-                    <option value="6" {% if usuario and usuario.RoleId == 6 %}selected{% endif %}>Apoderado / Tutor</option>
+                    <option value="3" {% if usuario and usuario.RoleId == 3 %}selected{% elif not usuario %}selected{% endif %}>Profesor</option>
                     <option value="2" {% if usuario and usuario.RoleId == 2 %}selected{% endif %}>Director</option>
                     <option value="4" {% if usuario and usuario.RoleId == 4 %}selected{% endif %}>Inspector</option>
-                    <option value="5" {% if usuario and usuario.RoleId == 5 %}selected{% endif %}>Coordinador</option>
+                    <option value="5" {% if usuario and usuario.RoleId == 5 %}selected{% endif %}>Coordinador / UTP</option>
+                    <option value="6" {% if usuario and usuario.RoleId == 6 %}selected{% endif %}>Apoderado / Tutor</option>
                 </select>
             </div>
 
@@ -87,13 +183,13 @@
                 </label>
             </div>
 
-            {% if modo == 'editar' %}
-            <!-- BOTÓN RESETEAR PASSWORD -->
+            {% if modo_form == 'editar' %}
+            <!-- RESETEAR PASSWORD -->
             <div class="border-t border-gray-200 pt-4">
                 <form method="POST" action="{{ url_for('gestion_usuarios.resetear_password', user_id=usuario.UserId) }}">
                     <button type="submit"
                         class="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition"
-                        onclick="return confirm('¿Generar una nueva contraseña temporal para este usuario?')">
+                        onclick="return confirm('¿Generar una nueva contraseña temporal?')">
                         Resetear Contraseña
                     </button>
                     <span class="text-xs text-gray-400 ml-2">Genera una contraseña aleatoria de 8 caracteres</span>
@@ -109,7 +205,7 @@
                 </a>
                 <button type="submit"
                     class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm cursor-pointer">
-                    {% if modo == 'crear' %}Crear Usuario{% else %}Guardar Cambios{% endif %}
+                    {% if modo_form == 'crear' %}Crear Usuario{% else %}Guardar Cambios{% endif %}
                 </button>
             </div>
         </form>
