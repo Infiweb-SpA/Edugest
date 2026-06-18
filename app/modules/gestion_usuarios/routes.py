@@ -134,7 +134,7 @@ def crear():
             return redirect(url_for('gestion_usuarios.listar'))
 
         # ── MODO 2: Crear nueva persona (funcionario) ──
-        elif modo == 'nueva_persona':
+        elif modo == 'nueva':
             nombres = request.form.get('nombres', '').strip()
             apellido_p = request.form.get('apellido_p', '').strip()
             apellido_m = request.form.get('apellido_m', '').strip()
