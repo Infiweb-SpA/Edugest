@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Roles - Edugest{% endblock %}
+{% block header_title %}Gestión de Roles y Permisos{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Cabecera -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <a href="{{ url_for('admin.dashboard') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                    ← Volver al Panel
+                </a>
+                <h3 class="text-xl font-bold text-gray-900 mt-2">Roles y Permisos</h3>
+                <p class="text-sm text-gray-500 mt-1">
+                    Define qué módulos puede ver o editar cada rol del sistema.
+                </p>
+            </div>
+            <a href="{{ url_for('gestion_roles.crear_rol') }}"
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm">
+                + Nuevo Rol
+            </a>
+        </div>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div class="flex flex-wrap items-center gap-6 text-xs">
+            <p class="font-bold text-gray-600 uppercase tracking-wider">Niveles de permiso:</p>
+            <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded font-semibold">0</span>
+                <span class="text-gray-700">Sin acceso</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded font-semibold">1</span>
+                <span class="text-gray-700">Solo lectura</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded font-semibold">2</span>
+                <span class="text-gray-700">Lectura y escritura</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de roles -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for r in roles %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:border-indigo-300 transition-all">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <h4 class="text-base font-bold text-gray-900">{{ r.nombre }}</h4>
+                    <p class="text-xs text-gray-400 mt-0.5">ID: {{ r.role_id }}</p>
+                </div>
+                {% if r.role_id == 1 %}
+                    <span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold">Admin</span>
+                {% elif r.role_id == 3 %}
+                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">Profesor</span>
+                {% elif r.role_id == 6 %}
+                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold">Apoderado</span>
+                {% else %}
+                    <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-semibold">Personalizado</span>
+                {% endif %}
+            </div>
+
+            <div class="space-y-2 text-xs text-gray-500 mb-4">
+                <div class="flex items-center justify-between">
+                    <span>Usuarios con este rol:</span>
+                    <span class="font-semibold text-gray-700">{{ r.total_usuarios }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>Módulos con acceso:</span>
+                    <span class="font-semibold text-gray-700">{{ r.permisos_activos }} / {{ r.total_modulos }}</span>
+                </div>
+            </div>
+
+            <!-- Barra de progreso de permisos -->
+            <div class="w-full bg-gray-200 rounded-full h-1.5 mb-4">
+                {% if r.total_modulos > 0 %}
+                <div class="bg-indigo-500 h-1.5 rounded-full"
+                     style="width: {{ ((r.permisos_activos / r.total_modulos) * 100)|round }}%"></div>
+                {% endif %}
+            </div>
+
+            <a href="{{ url_for('gestion_roles.editar_permisos', role_id=r.role_id) }}"
+               class="block text-center px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition">
+                Configurar Permisos
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

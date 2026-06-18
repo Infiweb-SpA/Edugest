@@ -39,6 +39,14 @@ def create_app():
     from app.modules.auth.routes import auth_bp
     app.register_blueprint(auth_bp)
 
+    # 0b. Gestión de Usuarios
+    from app.modules.gestion_usuarios.routes import gestion_usuarios_bp
+    app.register_blueprint(gestion_usuarios_bp)
+
+    # 0c. Gestión de Roles
+    from app.modules.gestion_roles.routes import gestion_roles_bp
+    app.register_blueprint(gestion_roles_bp)
+
     # 1. Administración
     from app.modules.admin.routes import admin_bp
     app.register_blueprint(admin_bp)
@@ -81,5 +89,38 @@ def create_app():
     @app.template_filter('tochar')
     def tochar(number):
         return chr(65 + number)
+    
+    # ==========================================
+    # CONTEXTO GLOBAL: Permisos del usuario actual
+    # ==========================================
+    @app.context_processor
+    def injectar_permisos():
+        from flask_login import current_user
+        from app.models.edugest import EdugestModule, EdugestRolePermission
+
+        permisos = {}
+
+        if current_user.is_authenticated:
+            # Admin (RoleId=1) ve todo con nivel 2
+            if current_user.RoleId == 1:
+                modulos = EdugestModule.query.all()
+                for m in modulos:
+                    permisos[m.ModuleName] = 2
+            else:
+                # Buscar permisos del rol actual
+                registros = db.session.query(
+                    EdugestModule.ModuleName,
+                    EdugestRolePermission.PermissionLevel
+                ).join(
+                    EdugestRolePermission,
+                    EdugestModule.ModuleId == EdugestRolePermission.ModuleId
+                ).filter(
+                    EdugestRolePermission.RoleId == current_user.RoleId
+                ).all()
+
+                for nombre, nivel in registros:
+                    permisos[nombre] = nivel
+
+        return dict(user_permisos=permisos)
 
     return app

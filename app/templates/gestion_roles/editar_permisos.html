@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Permisos: {{ rol_nombre }} - Edugest{% endblock %}
+{% block header_title %}Permisos: {{ rol_nombre }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    <!-- Cabecera -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <a href="{{ url_for('gestion_roles.listar') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+            ← Volver a Roles
+        </a>
+        <h3 class="text-xl font-bold text-gray-900 mt-2">
+            Permisos del Rol: <span class="text-indigo-600">{{ rol_nombre }}</span>
+        </h3>
+        <p class="text-sm text-gray-500 mt-1">
+            ID del rol: {{ role_id }} · {{ total_usuarios }} usuario{{ 's' if total_usuarios != 1 else '' }} con este rol
+        </p>
+    </div>
+
+    <!-- Formulario de permisos -->
+    <form method="POST">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h4 class="text-sm font-bold text-gray-600 uppercase tracking-wider">Matriz de Permisos por Módulo</h4>
+            </div>
+
+            <div class="divide-y divide-gray-100">
+                {% for m in modulos_data %}
+                <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        {% if m.modulo.ModuleName == 'Libro Digital' %}
+                            <span class="text-lg">📖</span>
+                        {% elif m.modulo.ModuleName == 'Evaluaciones' %}
+                            <span class="text-lg">📝</span>
+                        {% elif m.modulo.ModuleName == 'Biblioteca CRA' %}
+                            <span class="text-lg">📚</span>
+                        {% elif m.modulo.ModuleName == 'Comunicaciones' %}
+                            <span class="text-lg">📢</span>
+                        {% elif m.modulo.ModuleName == 'Matrícula' %}
+                            <span class="text-lg">🎒</span>
+                        {% elif m.modulo.ModuleName == 'Reportes' %}
+                            <span class="text-lg">📊</span>
+                        {% else %}
+                            <span class="text-lg">⚙️</span>
+                        {% endif %}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900">{{ m.modulo.ModuleName }}</p>
+                            <p class="text-xs text-gray-400">
+                                {% if m.modulo.IsEnabled %}Módulo activo{% else %}Módulo deshabilitado{% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <select name="permiso_{{ m.modulo.ModuleId }}"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+                        {% if m.nivel == 0 %}bg-red-50 text-red-700 border-red-200
+                        {% elif m.nivel == 1 %}bg-amber-50 text-amber-700 border-amber-200
+                        {% else %}bg-emerald-50 text-emerald-700 border-emerald-200{% endif %}"
+                        onchange="actualizarColor(this)">
+                        <option value="0" {% if m.nivel == 0 %}selected{% endif %}>0 — Sin acceso</option>
+                        <option value="1" {% if m.nivel == 1 %}selected{% endif %}>1 — Solo lectura</option>
+                        <option value="2" {% if m.nivel == 2 %}selected{% endif %}>2 — Lectura y escritura</option>
+                    </select>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if not modulos_data %}
+            <div class="px-6 py-12 text-center">
+                <p class="text-gray-400">No hay módulos registrados en el sistema.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Botones -->
+        <div class="flex justify-end gap-2 mt-4">
+            <a href="{{ url_for('gestion_roles.listar') }}"
+               class="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                Cancelar
+            </a>
+            <button type="submit"
+                class="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm cursor-pointer">
+                Guardar Permisos
+            </button>
+        </div>
+    </form>
+
+</div>
+
+<script>
+function actualizarColor(select) {
+    // Limpiar clases de color
+    select.classList.remove(
+        'bg-red-50', 'text-red-700', 'border-red-200',
+        'bg-amber-50', 'text-amber-700', 'border-amber-200',
+        'bg-emerald-50', 'text-emerald-700', 'border-emerald-200'
+    );
+
+    const val = select.value;
+    if (val === '0') {
+        select.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
+    } else if (val === '1') {
+        select.classList.add('bg-amber-50', 'text-amber-700', 'border-amber-200');
+    } else {
+        select.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+    }
+}
+</script>
+
+{% endblock %}

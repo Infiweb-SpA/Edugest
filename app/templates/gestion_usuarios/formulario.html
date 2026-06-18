@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if modo == 'crear' %}Nuevo Usuario{% else %}Editar Usuario{% endif %} - Edugest
+{% endblock %}
+{% block header_title %}
+    {% if modo == 'crear' %}Crear Nuevo Usuario{% else %}Editar: {{ usuario.Username }}{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <a href="{{ url_for('gestion_usuarios.listar') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+            ← Volver a Usuarios
+        </a>
+
+        <h3 class="text-lg font-bold text-gray-900 mt-4 mb-6">
+            {% if modo == 'crear' %}Nuevo Usuario{% else %}Editar Usuario: {{ usuario.Username }}{% endif %}
+        </h3>
+
+        <form method="POST" class="space-y-5">
+
+            {% if modo == 'crear' %}
+            <!-- SELECCIONAR PERSONA -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Persona <span class="text-red-500">*</span></label>
+                <select name="person_id" required
+                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    <option value="">-- Seleccionar persona --</option>
+                    {% for p in personas %}
+                    <option value="{{ p.persona.PersonId }}">
+                        {{ p.persona.FirstName }} {{ p.persona.LastName or '' }} {{ p.persona.SecondLastName or '' }} — {{ p.rut }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-gray-400 mt-1">Solo aparecen personas que no tienen cuenta de usuario.</p>
+            </div>
+
+            <!-- CONTRASEÑA -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña <span class="text-red-500">*</span></label>
+                <input type="password" name="password" required minlength="4"
+                    placeholder="Mínimo 4 caracteres"
+                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+            </div>
+            {% else %}
+            <!-- INFO DE PERSONA (solo lectura) -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Persona vinculada</p>
+                <p class="text-sm font-bold text-gray-900">
+                    {{ persona.FirstName }} {{ persona.LastName or '' }} {{ persona.SecondLastName or '' }}
+                </p>
+                <p class="text-xs text-gray-500 mt-0.5">RUT: {{ rut_persona }}</p>
+            </div>
+
+            <!-- NUEVA CONTRASEÑA (opcional) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña (opcional)</label>
+                <input type="password" name="new_password" minlength="4"
+                    placeholder="Dejar vacío para mantener la actual"
+                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+            </div>
+            {% endif %}
+
+            <!-- ROL -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Rol <span class="text-red-500">*</span></label>
+                <select name="role_id" required
+                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    <option value="1" {% if usuario and usuario.RoleId == 1 %}selected{% endif %}>Administrador</option>
+                    <option value="3" {% if usuario and usuario.RoleId == 3 %}selected{% endif %}>Profesor</option>
+                    <option value="6" {% if usuario and usuario.RoleId == 6 %}selected{% endif %}>Apoderado / Tutor</option>
+                    <option value="2" {% if usuario and usuario.RoleId == 2 %}selected{% endif %}>Director</option>
+                    <option value="4" {% if usuario and usuario.RoleId == 4 %}selected{% endif %}>Inspector</option>
+                    <option value="5" {% if usuario and usuario.RoleId == 5 %}selected{% endif %}>Coordinador</option>
+                </select>
+            </div>
+
+            <!-- ACTIVO -->
+            <div class="flex items-center p-3 bg-slate-50 rounded-lg border border-gray-100">
+                <input id="is_active" name="is_active" type="checkbox"
+                    {% if not usuario or usuario.IsActive %}checked{% endif %}
+                    class="h-4 w-4 rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <label for="is_active" class="ml-2 block text-sm font-medium text-gray-700 cursor-pointer">
+                    Usuario activo (puede iniciar sesión)
+                </label>
+            </div>
+
+            {% if modo == 'editar' %}
+            <!-- BOTÓN RESETEAR PASSWORD -->
+            <div class="border-t border-gray-200 pt-4">
+                <form method="POST" action="{{ url_for('gestion_usuarios.resetear_password', user_id=usuario.UserId) }}">
+                    <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition"
+                        onclick="return confirm('¿Generar una nueva contraseña temporal para este usuario?')">
+                        Resetear Contraseña
+                    </button>
+                    <span class="text-xs text-gray-400 ml-2">Genera una contraseña aleatoria de 8 caracteres</span>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- BOTONES -->
+            <div class="flex justify-end space-x-2 pt-4">
+                <a href="{{ url_for('gestion_usuarios.listar') }}"
+                   class="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Cancelar
+                </a>
+                <button type="submit"
+                    class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm cursor-pointer">
+                    {% if modo == 'crear' %}Crear Usuario{% else %}Guardar Cambios{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
