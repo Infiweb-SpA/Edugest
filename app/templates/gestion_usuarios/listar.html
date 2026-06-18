@@ -51,15 +51,9 @@
                             {% endif %}
                         </td>
                         <td class="px-3 py-3 text-center">
-                            {% if u.usuario.RoleId == 1 %}
-                                <span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold">Admin</span>
-                            {% elif u.usuario.RoleId == 3 %}
-                                <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">Profesor</span>
-                            {% elif u.usuario.RoleId == 6 %}
-                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold">Apoderado</span>
-                            {% else %}
-                                <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-semibold">Rol {{ u.usuario.RoleId }}</span>
-                            {% endif %}
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-semibold">
+                                {{ u.rol_nombre }}
+                            </span>
                         </td>
                         <td class="px-3 py-3 text-center text-gray-500 text-xs">
                             {{ u.permisos_activos }} módulos

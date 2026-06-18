@@ -17,5 +17,5 @@ from app.models.edugest import (
     EdugestStudentEnrollment, EdugestEmergencyContact,
     EdugestStudentHealth, EdugestStudentPIE,
     EdugestPersonRelationshipDetail, EdugestManualGrade,
-    EdugestUser
+    EdugestUser, EdugestRole
 )

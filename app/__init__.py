@@ -96,18 +96,21 @@ def create_app():
     @app.context_processor
     def injectar_permisos():
         from flask_login import current_user
-        from app.models.edugest import EdugestModule, EdugestRolePermission
+        from app.models.edugest import EdugestModule, EdugestRolePermission, EdugestRole
 
         permisos = {}
+        rol_nombre = None
 
         if current_user.is_authenticated:
-            # Admin (RoleId=1) ve todo con nivel 2
+            # Obtener nombre del rol
+            rol = EdugestRole.query.get(current_user.RoleId)
+            rol_nombre = rol.RoleName if rol else 'Usuario'
+
             if current_user.RoleId == 1:
                 modulos = EdugestModule.query.all()
                 for m in modulos:
                     permisos[m.ModuleName] = 2
             else:
-                # Buscar permisos del rol actual
                 registros = db.session.query(
                     EdugestModule.ModuleName,
                     EdugestRolePermission.PermissionLevel
@@ -121,6 +124,6 @@ def create_app():
                 for nombre, nivel in registros:
                     permisos[nombre] = nivel
 
-        return dict(user_permisos=permisos)
+        return dict(user_permisos=permisos, user_rol_nombre=rol_nombre)
 
     return app

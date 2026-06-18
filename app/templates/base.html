@@ -130,10 +130,7 @@
                     {% if current_user.is_authenticated %}
                     <div class="text-right">
                         <p class="text-sm font-semibold text-gray-700">
-                            {% if current_user.RoleId == 1 %}Administrador
-                            {% elif current_user.RoleId == 3 %}Profesor
-                            {% elif current_user.RoleId == 6 %}Apoderado
-                            {% else %}Usuario{% endif %}
+                            {% if user_rol_nombre %}{{ user_rol_nombre }}{% else %}Usuario{% endif %}
                         </p>
                         <p class="text-xs text-gray-400">{{ current_user.Username }}</p>
                     </div>

@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from app.database import db
-from app.models.edugest import EdugestUser, EdugestRolePermission, EdugestModule
+from app.models.edugest import EdugestUser, EdugestRolePermission, EdugestModule, EdugestRole
 from app.models.mineduc import Person, PersonIdentifier, PersonTelephone, PersonEmailAddress
 
 gestion_usuarios_bp = Blueprint('gestion_usuarios', __name__, url_prefix='/gestion-usuarios')
@@ -14,14 +14,17 @@ def _admin_required():
 
 
 def _normalizar_rut(rut):
-    """Limpia y normaliza un RUT chileno."""
     rut = rut.strip().replace('.', '').replace(' ', '').upper()
     return rut
 
 
 def _persona_ya_tiene_usuario(person_id):
-    """Verifica si una PersonId ya tiene cuenta de usuario."""
     return EdugestUser.query.filter_by(PersonId=person_id).first() is not None
+
+
+def _obtener_roles_disponibles():
+    """Obtiene todos los roles desde la tabla EdugestRole."""
+    return EdugestRole.query.order_by(EdugestRole.RoleId).all()
 
 
 # ============================================================================
@@ -33,6 +36,8 @@ def listar():
     if not _admin_required():
         flash('No tienes permisos para acceder a esta sección.', 'error')
         return redirect(url_for('admin.dashboard'))
+
+    roles_dict = {r.RoleId: r.RoleName for r in EdugestRole.query.all()}
 
     usuarios = EdugestUser.query.order_by(EdugestUser.CreatedAt.desc()).all()
     usuarios_data = []
@@ -51,14 +56,15 @@ def listar():
             'usuario': u,
             'persona': persona,
             'rut_persona': ident.Identifier if ident else 'Sin RUT',
-            'permisos_count': permisos_count
+            'permisos_count': permisos_count,
+            'rol_nombre': roles_dict.get(u.RoleId, f'Rol {u.RoleId}')
         })
 
     return render_template('gestion_usuarios/listar.html', usuarios=usuarios_data)
 
 
 # ============================================================================
-# CREAR USUARIO (con dos modos: existente o nueva persona)
+# CREAR USUARIO
 # ============================================================================
 @gestion_usuarios_bp.route('/nuevo', methods=['GET', 'POST'])
 @login_required
@@ -66,6 +72,8 @@ def crear():
     if not _admin_required():
         flash('No tienes permisos para acceder a esta sección.', 'error')
         return redirect(url_for('admin.dashboard'))
+
+    roles_disponibles = _obtener_roles_disponibles()
 
     # Personas existentes sin usuario
     personas_con_usuario = db.session.query(EdugestUser.PersonId).subquery()
@@ -89,12 +97,12 @@ def crear():
         role_id = int(request.form.get('role_id', 6))
         is_active = 'is_active' in request.form
 
-        # Validar contraseña
         if len(password) < 4:
             flash('La contraseña debe tener al menos 4 caracteres.', 'error')
             return render_template('gestion_usuarios/formulario.html',
                                    personas=personas_data, modo_form='crear',
-                                   usuario=None, datos_form=request.form)
+                                   usuario=None, datos_form=request.form,
+                                   roles_disponibles=roles_disponibles)
 
         # ── MODO 1: Seleccionar persona existente ──
         if modo == 'existente':
@@ -104,7 +112,8 @@ def crear():
                 flash('Debes seleccionar una persona.', 'error')
                 return render_template('gestion_usuarios/formulario.html',
                                        personas=personas_data, modo_form='crear',
-                                       usuario=None, datos_form=request.form)
+                                       usuario=None, datos_form=request.form,
+                                       roles_disponibles=roles_disponibles)
 
             persona = Person.query.get(int(person_id))
             if not persona:
@@ -142,30 +151,27 @@ def crear():
             email = request.form.get('email', '').strip()
             telefono = request.form.get('telefono', '').strip()
 
-            # Validaciones
             if not nombres or not apellido_p or not rut:
                 flash('Nombre, apellido paterno y RUT son obligatorios.', 'error')
                 return render_template('gestion_usuarios/formulario.html',
                                        personas=personas_data, modo_form='crear',
-                                       usuario=None, datos_form=request.form)
+                                       usuario=None, datos_form=request.form,
+                                       roles_disponibles=roles_disponibles)
 
-            # Verificar que el RUT no esté repetido en PersonIdentifier
             ident_existente = PersonIdentifier.query.filter_by(
                 Identifier=rut, RefPersonIdentificationSystemId=51
             ).first()
 
             if ident_existente:
-                # La persona ya existe, verificar si tiene usuario
                 if _persona_ya_tiene_usuario(ident_existente.PersonId):
                     flash(f'El RUT {rut} ya tiene una cuenta de usuario.', 'error')
                     return render_template('gestion_usuarios/formulario.html',
                                            personas=personas_data, modo_form='crear',
-                                           usuario=None, datos_form=request.form)
+                                           usuario=None, datos_form=request.form,
+                                           roles_disponibles=roles_disponibles)
                 else:
-                    # La persona existe pero sin usuario, usarla
                     persona = Person.query.get(ident_existente.PersonId)
             else:
-                # Crear persona nueva
                 persona = Person(
                     FirstName=nombres,
                     MiddleName='',
@@ -175,21 +181,18 @@ def crear():
                 db.session.add(persona)
                 db.session.flush()
 
-                # RUT
                 db.session.add(PersonIdentifier(
                     PersonId=persona.PersonId,
                     Identifier=rut,
                     RefPersonIdentificationSystemId=51
                 ))
 
-                # Email (opcional)
                 if email:
                     db.session.add(PersonEmailAddress(
                         PersonId=persona.PersonId,
                         EmailAddress=email
                     ))
 
-                # Teléfono (opcional)
                 if telefono:
                     db.session.add(PersonTelephone(
                         PersonId=persona.PersonId,
@@ -198,7 +201,6 @@ def crear():
 
                 db.session.flush()
 
-            # Crear usuario
             nuevo = EdugestUser(
                 PersonId=persona.PersonId,
                 Username=rut,
@@ -214,7 +216,8 @@ def crear():
 
     return render_template('gestion_usuarios/formulario.html',
                            personas=personas_data, modo_form='crear',
-                           usuario=None, datos_form={})
+                           usuario=None, datos_form={},
+                           roles_disponibles=roles_disponibles)
 
 
 # ============================================================================
@@ -232,6 +235,7 @@ def editar(user_id):
     ident = PersonIdentifier.query.filter_by(
         PersonId=usuario.PersonId, RefPersonIdentificationSystemId=51
     ).first()
+    roles_disponibles = _obtener_roles_disponibles()
 
     if request.method == 'POST':
         role_id = int(request.form.get('role_id', usuario.RoleId))
@@ -248,7 +252,8 @@ def editar(user_id):
                                        personas=[], modo_form='editar',
                                        usuario=usuario, persona=persona,
                                        rut_persona=ident.Identifier if ident else 'Sin RUT',
-                                       datos_form={})
+                                       datos_form={},
+                                       roles_disponibles=roles_disponibles)
             usuario.PasswordHash = generate_password_hash(nueva_password)
 
         db.session.commit()
@@ -259,7 +264,8 @@ def editar(user_id):
                            personas=[], modo_form='editar',
                            usuario=usuario, persona=persona,
                            rut_persona=ident.Identifier if ident else 'Sin RUT',
-                           datos_form={})
+                           datos_form={},
+                           roles_disponibles=roles_disponibles)
 
 
 # ============================================================================
@@ -273,7 +279,6 @@ def resetear_password(user_id):
         return redirect(url_for('admin.dashboard'))
 
     usuario = EdugestUser.query.get_or_404(user_id)
-
     nueva_pass = secrets.token_hex(4)
     usuario.PasswordHash = generate_password_hash(nueva_pass)
     db.session.commit()

@@ -423,3 +423,15 @@ class EdugestUser(db.Model):
 
     def get_id(self):
         return str(self.UserId)
+    
+# ============================================================================
+# MODULO I: ROLES DEL SISTEMA
+# ============================================================================
+
+class EdugestRole(db.Model):
+    """Catálogo de roles del sistema (reemplaza el diccionario hardcodeado)"""
+    __tablename__ = 'edugest_role'
+
+    RoleId = db.Column(db.Integer, primary_key=True)
+    RoleName = db.Column(db.String(100), unique=True, nullable=False)
+    CreatedAt = db.Column(db.DateTime, default=obtener_hora_chile)

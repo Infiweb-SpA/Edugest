@@ -770,6 +770,30 @@ with app.app_context():
     else:
         print(f"   ℹ️ Usuario administrador ya existe: {rut_admin}")
 
+        # ============================================================
+    # CREAR ROLES BASE DEL SISTEMA
+    # ============================================================
+    from app.models.edugest import EdugestRole
 
+    print("\n🛡️  Creando roles base del sistema...")
+
+    roles_base = {
+        1: 'Administrador',
+        2: 'Director',
+        3: 'Profesor',
+        4: 'Inspector',
+        5: 'Coordinador / UTP',
+        6: 'Apoderado / Tutor'
+    }
+
+    for role_id, nombre in roles_base.items():
+        if not EdugestRole.query.get(role_id):
+            db.session.add(EdugestRole(RoleId=role_id, RoleName=nombre))
+            print(f"   ✅ Rol creado: {nombre} (ID: {role_id})")
+        else:
+            print(f"   ℹ️  Rol ya existe: {nombre} (ID: {role_id})")
+
+    db.session.commit()
+    
     print("\n" + "=" * 60)
     print("🎉 ¡Siembra completada!")

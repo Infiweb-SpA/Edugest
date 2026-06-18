@@ -1,20 +1,19 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.database import db
-from app.models.edugest import EdugestRolePermission, EdugestModule, EdugestUser
+from app.models.edugest import EdugestRolePermission, EdugestModule, EdugestUser, EdugestRole
 
 gestion_roles_bp = Blueprint('gestion_roles', __name__, url_prefix='/gestion-roles')
-
-# Nombres amigables para los roles conocidos
-ROLES_NOMBRES = {
-    1: 'Administrador',
-    3: 'Profesor',
-    6: 'Apoderado / Tutor'
-}
 
 
 def _admin_required():
     return current_user.is_authenticated and current_user.RoleId == 1
+
+
+def _obtener_nombre_rol(role_id):
+    """Obtiene el nombre del rol desde la BD. Si no existe, devuelve texto genérico."""
+    rol = EdugestRole.query.get(role_id)
+    return rol.RoleName if rol else f'Rol {role_id}'
 
 
 # ============================================================================
@@ -27,33 +26,39 @@ def listar():
         flash('No tienes permisos para acceder a esta sección.', 'error')
         return redirect(url_for('admin.dashboard'))
 
-    # Obtener todos los RoleId únicos que existen en usuarios + permisos
-    roles_ids_usuarios = db.session.query(EdugestUser.RoleId).distinct().all()
-    roles_ids_permisos = db.session.query(EdugestRolePermission.RoleId).distinct().all()
+    # Obtener todos los roles desde la BD
+    todos_los_roles = EdugestRole.query.order_by(EdugestRole.RoleId).all()
 
-    todos_los_role_ids = set()
-    for r in roles_ids_usuarios:
-        todos_los_role_ids.add(r[0])
-    for r in roles_ids_permisos:
-        todos_los_role_ids.add(r[0])
-
-    # Si no hay ninguno, asegurar que existan los roles base
-    if not todos_los_role_ids:
-        todos_los_role_ids = {1, 3, 6}
+    # También buscar RoleIds que existen en usuarios pero NO en EdugestRole
+    roles_ids_usuarios = set(r[0] for r in db.session.query(EdugestUser.RoleId).distinct().all())
+    roles_ids_bd = set(r.RoleId for r in todos_los_roles)
+    roles_huerfanos = roles_ids_usuarios - roles_ids_bd
 
     roles_data = []
-    for role_id in sorted(todos_los_role_ids):
-        # Contar usuarios con este rol
-        total_usuarios = EdugestUser.query.filter_by(RoleId=role_id).count()
+    for rol in todos_los_roles:
+        total_usuarios = EdugestUser.query.filter_by(RoleId=rol.RoleId).count()
+        permisos = EdugestRolePermission.query.filter_by(RoleId=rol.RoleId).all()
+        permisos_activos = sum(1 for p in permisos if p.PermissionLevel > 0)
+        total_modulos = EdugestModule.query.count()
 
-        # Contar permisos asignados
+        roles_data.append({
+            'role_id': rol.RoleId,
+            'nombre': rol.RoleName,
+            'total_usuarios': total_usuarios,
+            'permisos_activos': permisos_activos,
+            'total_modulos': total_modulos
+        })
+
+    # Agregar roles huérfanos (existen en usuarios pero no en catálogo)
+    for role_id in sorted(roles_huerfanos):
+        total_usuarios = EdugestUser.query.filter_by(RoleId=role_id).count()
         permisos = EdugestRolePermission.query.filter_by(RoleId=role_id).all()
         permisos_activos = sum(1 for p in permisos if p.PermissionLevel > 0)
         total_modulos = EdugestModule.query.count()
 
         roles_data.append({
             'role_id': role_id,
-            'nombre': ROLES_NOMBRES.get(role_id, f'Rol {role_id}'),
+            'nombre': f'Rol {role_id} (sin catálogo)',
             'total_usuarios': total_usuarios,
             'permisos_activos': permisos_activos,
             'total_modulos': total_modulos
@@ -72,28 +77,24 @@ def editar_permisos(role_id):
         flash('No tienes permisos para acceder a esta sección.', 'error')
         return redirect(url_for('admin.dashboard'))
 
-    rol_nombre = ROLES_NOMBRES.get(role_id, f'Rol {role_id}')
+    rol_nombre = _obtener_nombre_rol(role_id)
     modulos = EdugestModule.query.order_by(EdugestModule.ModuleName).all()
 
     if request.method == 'POST':
-        # Limpiar permisos actuales de este rol
         EdugestRolePermission.query.filter_by(RoleId=role_id).delete()
 
-        # Crear nuevos permisos desde el formulario
         for modulo in modulos:
             nivel = int(request.form.get(f'permiso_{modulo.ModuleId}', 0))
-            nuevo_permiso = EdugestRolePermission(
+            db.session.add(EdugestRolePermission(
                 RoleId=role_id,
                 ModuleId=modulo.ModuleId,
                 PermissionLevel=nivel
-            )
-            db.session.add(nuevo_permiso)
+            ))
 
         db.session.commit()
         flash(f'Permisos del rol "{rol_nombre}" actualizados correctamente.', 'success')
         return redirect(url_for('gestion_roles.listar'))
 
-    # Cargar permisos actuales para pre-llenar el formulario
     permisos_actuales = {}
     for p in EdugestRolePermission.query.filter_by(RoleId=role_id).all():
         permisos_actuales[p.ModuleId] = p.PermissionLevel
@@ -132,16 +133,19 @@ def crear_rol():
             flash('Debes indicar el ID numérico y el nombre del rol.', 'error')
             return render_template('gestion_roles/nuevo_rol.html')
 
-        if role_id in ROLES_NOMBRES:
-            flash(f'El ID {role_id} ya está asignado al rol "{ROLES_NOMBRES[role_id]}". Elige otro.', 'error')
+        # Verificar que el ID no exista en el catálogo
+        if EdugestRole.query.get(role_id):
+            flash(f'Ya existe un rol con ID {role_id}. Elige otro.', 'error')
             return render_template('gestion_roles/nuevo_rol.html')
 
-        # Verificar que no tenga permisos ya asignados
-        if EdugestRolePermission.query.filter_by(RoleId=role_id).first():
-            flash(f'El ID {role_id} ya tiene permisos asignados. Elige otro ID.', 'error')
-            return render_template('gestion_roles/nuevo_rol.html')
+        # Crear el rol en el catálogo
+        nuevo_rol = EdugestRole(
+            RoleId=role_id,
+            RoleName=nombre
+        )
+        db.session.add(nuevo_rol)
 
-        # Crear permisos vacíos (todos en 0) para todos los módulos
+        # Crear permisos vacíos para todos los módulos
         modulos = EdugestModule.query.all()
         for m in modulos:
             db.session.add(EdugestRolePermission(
