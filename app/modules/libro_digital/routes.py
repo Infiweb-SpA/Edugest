@@ -22,7 +22,7 @@ libro_digital_bp = Blueprint('libro_digital', __name__, url_prefix='/libro-digit
 # ============================================================================
 @libro_digital_bp.route('/grados', methods=['GET'])
 @login_required
-@permiso_requerido('Libro Digital', 1)
+
 def listar_grados():
 
     # MINEDUC: RefOrganizationTypeId = 46 corresponde a "Grado"
@@ -77,7 +77,7 @@ def actualizar_grado():
 # ============================================================================
 @libro_digital_bp.route('/grados/<int:grado_id>/asignaturas')
 @login_required
-@permiso_requerido('Libro Digital', 1)
+
 def asignaturas_por_grado(grado_id):
     grado = Organization.query.get_or_404(grado_id)
 
@@ -97,7 +97,7 @@ def asignaturas_por_grado(grado_id):
 # ============================================================================
 @libro_digital_bp.route('/asignatura/<int:org_id>/unidades', methods=['GET'])
 @login_required
-@permiso_requerido('Libro Digital', 1)
+
 def ver_unidades(org_id):
     asignatura = Organization.query.get_or_404(org_id)
 
@@ -189,7 +189,7 @@ def crud_unidades_post(org_id):
 # ============================================================================
 @libro_digital_bp.route('/asignatura/<int:org_id>/clase', methods=['GET'])
 @login_required
-@permiso_requerido('Libro Digital', 1)
+
 def registrar_clase_get(org_id):
     asignatura = Organization.query.get_or_404(org_id)
 

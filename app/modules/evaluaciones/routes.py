@@ -63,7 +63,7 @@ def listar_grados():
 # ============================================================================
 @evaluaciones_bp.route('/grado/<int:grado_id>/asignaturas')
 @login_required
-@permiso_requerido('Evaluaciones', 1)
+
 def asignaturas_por_grado(grado_id):
     grado = Organization.query.get_or_404(grado_id)
 
@@ -95,7 +95,7 @@ def asignaturas_por_grado(grado_id):
 # ============================================================================
 @evaluaciones_bp.route('/asignatura/<int:org_id>/unidades')
 @login_required
-@permiso_requerido('Evaluaciones', 1)
+
 def unidades_asignatura(org_id):
     asignatura = Organization.query.get_or_404(org_id)
 
@@ -530,7 +530,7 @@ def rendir(inst_id, alumno_id):
 
 @evaluaciones_bp.route('/instrumento/<int:inst_id>/resultados')
 @login_required
-@permiso_requerido('Evaluaciones', 1)
+
 def resultados(inst_id):
     instrumento = EdugestAssessmentInstrument.query.get_or_404(inst_id)
     preguntas = EdugestAssessmentQuestion.query.filter_by(InstrumentId=inst_id).all()
