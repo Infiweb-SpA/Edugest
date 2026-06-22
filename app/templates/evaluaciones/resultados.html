@@ -100,20 +100,27 @@
                         {% endif %}
                     </td>
 
-                    {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
-                    <!-- SIMULACION RAPIDA: solo nivel 2 -->
+                    {% if instrumento.IsDigital %}
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
+                        {% if r.estado == 'No Rendido' %}
+                        {# Rendir por primera vez: cualquier usuario con acceso #}
                         <a href="{{ url_for('evaluaciones.rendir', inst_id=instrumento.InstrumentId, alumno_id=r.alumno.PersonId) }}"
-                           class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold shadow-xs transition
-                                  {% if r.estado == 'No Rendido' %}
-                                      bg-indigo-600 text-white hover:bg-indigo-500
-                                  {% else %}
-                                      bg-slate-200 text-slate-700 hover:bg-slate-300
-                                  {% endif %}">
-                            {% if r.estado == 'No Rendido' %}📝 Rendir Test{% else %}🔄 Re-rendir{% endif %}
+                           class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold shadow-xs transition bg-indigo-600 text-white hover:bg-indigo-500">
+                            📝 Rendir Test
                         </a>
+                        {% elif user_permisos.get('Evaluaciones', 0) >= 2 %}
+                        {# Re-rendir: solo nivel 2 #}
+                        <a href="{{ url_for('evaluaciones.rendir', inst_id=instrumento.InstrumentId, alumno_id=r.alumno.PersonId) }}"
+                           class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold shadow-xs transition bg-slate-200 text-slate-700 hover:bg-slate-300">
+                            🔄 Re-rendir
+                        </a>
+                        {% else %}
+                        {# Nivel 1, ya rindio: solo mostrar estado #}
+                        <span class="text-xs text-gray-400 italic">Rendido</span>
+                        {% endif %}
                     </td>
-
+                    {% endif %}
+                    {% if instrumento.IsDigital and user_permisos.get('Evaluaciones', 0) >= 2 %}
                     <!-- NOTA MANUAL (checkbox): solo nivel 2 -->
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
                         <input type="checkbox"
