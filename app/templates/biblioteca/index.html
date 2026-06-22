@@ -32,21 +32,30 @@
     </div>
 </div>
 
-<!-- Acciones rápidas -->
+<!-- Acciones rápidas (solo escritura) -->
+{% if user_permisos.get('Biblioteca CRA', 0) >= 2 %}
 <div class="flex flex-wrap gap-3">
-    <a href="{{ url_for('biblioteca.nuevo_libro') }}" 
+    <a href="{{ url_for('biblioteca.nuevo_libro') }}"
        class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm">
         ➕ Nuevo Libro
     </a>
-    <a href="{{ url_for('biblioteca.nuevo_prestamo') }}" 
+    <a href="{{ url_for('biblioteca.nuevo_prestamo') }}"
        class="px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition shadow-sm">
         🔄 Nuevo Préstamo
     </a>
-    <a href="{{ url_for('biblioteca.recursos_digitales') }}" 
+    <a href="{{ url_for('biblioteca.recursos_digitales') }}"
        class="px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition">
         🌐 Bibliotecas Open Source
     </a>
 </div>
+{% else %}
+<div class="flex flex-wrap gap-3">
+    <a href="{{ url_for('biblioteca.recursos_digitales') }}"
+       class="px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition">
+        🌐 Bibliotecas Open Source
+    </a>
+</div>
+{% endif %}
 
 <!-- Préstamos recientes -->
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
@@ -59,11 +68,11 @@
             <div>
                 <p class="text-sm font-medium text-gray-800">{{ p.book.Title }}</p>
                 <p class="text-xs text-gray-500">
-                    Prestado a: {{ p.person_role.person.FirstName }} {{ p.person_role.person.LastName }} | 
+                    Prestado a: {{ p.person_role.person.FirstName }} {{ p.person_role.person.LastName }} |
                     Vence: {{ p.DueDate.strftime('%d/%m/%Y') }}
                 </p>
             </div>
-            <span class="text-xs px-2 py-1 rounded-full font-medium 
+            <span class="text-xs px-2 py-1 rounded-full font-medium
                 {% if p.Status == 'Prestado' %}bg-amber-100 text-amber-700
                 {% elif p.Status == 'Atrasado' %}bg-red-100 text-red-700
                 {% else %}bg-green-100 text-green-700{% endif %}">

@@ -3,27 +3,29 @@
 
 <div class="flex justify-between items-center">
     <h3 class="text-lg font-bold text-gray-900">Gestión de Préstamos</h3>
-    <a href="{{ url_for('biblioteca.nuevo_prestamo') }}" 
+    {% if user_permisos.get('Biblioteca CRA', 0) >= 2 %}
+    <a href="{{ url_for('biblioteca.nuevo_prestamo') }}"
        class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
         ➕ Nuevo Préstamo
     </a>
+    {% endif %}
 </div>
 
 <!-- Filtros -->
 <div class="flex flex-wrap gap-2 bg-white rounded-lg border border-gray-200 p-3">
-    <a href="{{ url_for('biblioteca.prestamos', estado='todos') }}" 
+    <a href="{{ url_for('biblioteca.prestamos', estado='todos') }}"
        class="px-3 py-1 text-xs rounded-full {% if estado == 'todos' %}bg-indigo-600 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">
         Todos
     </a>
-    <a href="{{ url_for('biblioteca.prestamos', estado='prestado') }}" 
+    <a href="{{ url_for('biblioteca.prestamos', estado='prestado') }}"
        class="px-3 py-1 text-xs rounded-full {% if estado == 'prestado' %}bg-amber-600 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">
         Prestados
     </a>
-    <a href="{{ url_for('biblioteca.prestamos', estado='atrasado') }}" 
+    <a href="{{ url_for('biblioteca.prestamos', estado='atrasado') }}"
        class="px-3 py-1 text-xs rounded-full {% if estado == 'atrasado' %}bg-red-600 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">
         Atrasados
     </a>
-    <a href="{{ url_for('biblioteca.prestamos', estado='devuelto') }}" 
+    <a href="{{ url_for('biblioteca.prestamos', estado='devuelto') }}"
        class="px-3 py-1 text-xs rounded-full {% if estado == 'devuelto' %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">
         Devueltos
     </a>
@@ -39,7 +41,9 @@
                 <th class="px-4 py-3">Fecha Préstamo</th>
                 <th class="px-4 py-3">Vencimiento</th>
                 <th class="px-4 py-3">Estado</th>
+                {% if user_permisos.get('Biblioteca CRA', 0) >= 2 %}
                 <th class="px-4 py-3 text-right">Acciones</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -73,6 +77,7 @@
                         {{ p.Status }}
                     </span>
                 </td>
+                {% if user_permisos.get('Biblioteca CRA', 0) >= 2 %}
                 <td class="px-4 py-3 text-right">
                     {% if p.Status in ['Prestado', 'Atrasado'] %}
                     <div class="flex justify-end gap-1">
@@ -92,10 +97,11 @@
                     <span class="text-xs text-gray-400">Devuelto el {{ p.ReturnDate.strftime('%d/%m/%Y') }}</span>
                     {% endif %}
                 </td>
+                {% endif %}
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="px-4 py-8 text-center text-gray-400">No hay préstamos registrados.</td>
+                <td colspan="{{ 6 if user_permisos.get('Biblioteca CRA', 0) >= 2 else 5 }}" class="px-4 py-8 text-center text-gray-400">No hay préstamos registrados.</td>
             </tr>
             {% endfor %}
         </tbody>
