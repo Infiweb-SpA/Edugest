@@ -10,16 +10,24 @@
     <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">
         <div>
             <h3 class="text-lg font-bold text-gray-900">{{ instrumento.Title }}</h3>
+            {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
             <p class="text-xs text-gray-400 mt-0.5">
-                Marque el checkbox en la columna <strong>"Nota Manual"</strong> para habilitar la edición directa de la nota.
-                Desmárquelo para restablecer la calificación automática.
+                Marque el checkbox en la columna <strong>"Nota Manual"</strong> para habilitar la edicion directa de la nota.
+                Desmarquelo para restablecer la calificacion automatica.
             </p>
+            {% else %}
+            <p class="text-xs text-gray-400 mt-0.5">
+                Vista de solo lectura de las calificaciones de esta evaluacion.
+            </p>
+            {% endif %}
         </div>
         <div class="flex items-center gap-2">
+            {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
             <button type="submit" id="btnGuardar"
                     class="text-xs px-4 py-2 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition hidden cursor-pointer">
                 💾 Guardar Notas Manuales
             </button>
+            {% endif %}
             <a href="{{ url_for('evaluaciones.index') }}"
                class="text-xs border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md font-medium">
                 Volver
@@ -36,8 +44,10 @@
                     <th class="p-4 text-center">Puntaje</th>
                     <th class="p-4 text-center">Nota Final</th>
                     <th class="p-4 text-center">Estado</th>
-                    <th class="p-4 text-center">Simulación Rápida</th>
+                    {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
+                    <th class="p-4 text-center">Simulacion Rapida</th>
                     <th class="p-4 text-center whitespace-nowrap">Nota Manual</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -58,7 +68,6 @@
 
                     <!-- NOTA FINAL -->
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-center font-bold">
-                        <!-- Display de nota (se muestra cuando NO es manual) -->
                         <span class="nota-display {% if r.estado == 'No Rendido' %}text-gray-400{% elif r.nota|float >= 4.0 %}text-emerald-600{% else %}text-red-600{% endif %}"
                               id="nota_display_{{ r.opr_id }}"
                               data-nota-auto="{{ r.nota if not r.es_manual else r.nota }}">
@@ -67,7 +76,7 @@
                             <span class="text-[10px] ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium align-middle">Manual</span>
                             {% endif %}
                         </span>
-                        <!-- Input de nota manual (se muestra cuando ES manual) -->
+                        {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
                         <input type="number" step="0.1" min="1.0" max="7.0"
                                name="nota_manual_{{ r.opr_id }}"
                                id="nota_input_{{ r.opr_id }}"
@@ -76,8 +85,8 @@
                                class="nota-input w-20 text-center px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold
                                       {% if not r.es_manual %}hidden{% endif %}"
                                {% if not r.es_manual %}disabled{% endif %}>
-                        <!-- Campo oculto para marcar eliminación -->
                         <input type="hidden" name="eliminar_nota_{{ r.opr_id }}" id="eliminar_{{ r.opr_id }}" value="0">
+                        {% endif %}
                     </td>
 
                     <!-- ESTADO -->
@@ -91,7 +100,8 @@
                         {% endif %}
                     </td>
 
-                    <!-- SIMULACIÓN RÁPIDA -->
+                    {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
+                    <!-- SIMULACION RAPIDA: solo nivel 2 -->
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
                         <a href="{{ url_for('evaluaciones.rendir', inst_id=instrumento.InstrumentId, alumno_id=r.alumno.PersonId) }}"
                            class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold shadow-xs transition
@@ -104,7 +114,7 @@
                         </a>
                     </td>
 
-                    <!-- NOTA MANUAL (checkbox) -->
+                    <!-- NOTA MANUAL (checkbox): solo nivel 2 -->
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
                         <input type="checkbox"
                                id="chk_manual_{{ r.opr_id }}"
@@ -112,6 +122,7 @@
                                onchange="toggleManual({{ r.opr_id }})"
                                {% if r.es_manual %}checked{% endif %}>
                     </td>
+                    {% endif %}
 
                 </tr>
                 {% endfor %}
@@ -122,18 +133,23 @@
     <!-- PIE -->
     <div class="p-4 border-t border-gray-100 flex justify-between items-center bg-slate-50">
         <p class="text-xs text-gray-400">
-            <strong>{{ tabla_resultados|length }}</strong> estudiantes ·
-            <strong id="contadorManuales">{{ tabla_resultados|selectattr('es_manual')|list|length }}</strong> con nota manual
+            <strong>{{ tabla_resultados|length }}</strong> estudiantes
+            {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
+            · <strong id="contadorManuales">{{ tabla_resultados|selectattr('es_manual')|list|length }}</strong> con nota manual
+            {% endif %}
         </p>
+        {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
         <button type="submit" id="btnGuardarBottom"
                 class="text-xs px-4 py-2 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition hidden cursor-pointer">
             💾 Guardar Notas Manuales
         </button>
+        {% endif %}
     </div>
 
 </div>
 </form>
 
+{% if user_permisos.get('Evaluaciones', 0) >= 2 %}
 <script>
 function toggleManual(oprId) {
     const checkbox = document.getElementById('chk_manual_' + oprId);
@@ -143,7 +159,6 @@ function toggleManual(oprId) {
     const row = document.getElementById('row_' + oprId);
 
     if (checkbox.checked) {
-        // ACTIVAR modo manual: mostrar input, ocultar display
         display.classList.add('hidden');
         input.classList.remove('hidden');
         input.disabled = false;
@@ -152,13 +167,11 @@ function toggleManual(oprId) {
         input.focus();
         input.select();
     } else {
-        // DESACTIVAR modo manual: restaurar nota automática
         input.classList.add('hidden');
         input.disabled = true;
         eliminarField.value = '1';
         row.classList.remove('bg-amber-50/40');
 
-        // Restaurar display con la nota automática
         const notaAuto = parseFloat(display.dataset.notaAuto);
         display.textContent = notaAuto.toFixed(1);
         display.classList.remove('text-gray-400', 'text-emerald-600', 'text-red-600');
@@ -169,7 +182,6 @@ function toggleManual(oprId) {
         }
         display.classList.remove('hidden');
 
-        // Actualizar estado visual
         updateEstadoFromNota(oprId, notaAuto);
     }
 
@@ -218,7 +230,6 @@ function updateContador() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Guardar nota automática para cada estudiante
     {% for r in tabla_resultados %}
     (function() {
         var display = document.getElementById('nota_display_{{ r.opr_id }}');
@@ -228,6 +239,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     refreshGuardarBtn();
 });
-
 </script>
+{% endif %}
 {% endblock %}

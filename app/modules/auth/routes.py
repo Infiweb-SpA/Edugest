@@ -10,10 +10,10 @@ login_manager = LoginManager()
 
 
 def init_login_manager(app):
-    """Inicializa Flask-Login en la aplicación."""
+    """Inicializa Flask-Login en la aplicacion."""
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'Debes iniciar sesión para acceder.'
+    login_manager.login_message = 'Debes iniciar sesion para acceder.'
     login_manager.login_message_category = 'warning'
 
 
@@ -24,11 +24,11 @@ def load_user(user_id):
 
 
 # ============================================================================
-# DECORADOR DE PERMISOS POR MÓDULO
+# DECORADOR DE PERMISOS POR MODULO
 # ============================================================================
 def permiso_requerido(module_name, nivel=1):
     """
-    Decorador que verifica si el usuario tiene acceso a un módulo.
+    Decorador que verifica si el usuario tiene acceso a un modulo.
     nivel 1 = Lectura, nivel 2 = Escritura
     """
     def decorator(f):
@@ -46,7 +46,7 @@ def permiso_requerido(module_name, nivel=1):
             modulo = EdugestModule.query.filter_by(ModuleName=module_name).first()
             if not modulo:
                 return render_template('auth/unauthorized.html',
-                                       mensaje=f'El módulo "{module_name}" no existe.'), 403
+                                       mensaje=f'El modulo "{module_name}" no existe.'), 403
 
             permiso = EdugestRolePermission.query.filter_by(
                 RoleId=current_user.RoleId,
@@ -62,8 +62,33 @@ def permiso_requerido(module_name, nivel=1):
     return decorator
 
 
+def verificar_escritura(module_name):
+    """
+    Funcion helper para verificar permisos de escritura (nivel 2).
+    Usar dentro de rutas mixtas GET/POST cuando solo el POST requiere nivel 2.
+    Lanza 403 si el usuario no tiene permiso.
+    """
+    if current_user.RoleId == 1:
+        return  # Admin tiene acceso total
+
+    from app.models.edugest import EdugestModule, EdugestRolePermission
+    from flask import abort
+
+    modulo = EdugestModule.query.filter_by(ModuleName=module_name).first()
+    if not modulo:
+        abort(403)
+
+    permiso = EdugestRolePermission.query.filter_by(
+        RoleId=current_user.RoleId,
+        ModuleId=modulo.ModuleId
+    ).first()
+
+    if not permiso or permiso.PermissionLevel < 2:
+        abort(403)
+
+
 # ============================================================================
-# RUTAS DE AUTENTICACIÓN
+# RUTAS DE AUTENTICACION
 # ============================================================================
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -75,7 +100,7 @@ def login():
         password = request.form.get('password', '')
 
         if not username or not password:
-            flash('Debes ingresar RUT y contraseña.', 'error')
+            flash('Debes ingresar RUT y contrasena.', 'error')
             return render_template('auth/login.html')
 
         from app.models.edugest import EdugestUser
@@ -83,12 +108,12 @@ def login():
         usuario = EdugestUser.query.filter_by(Username=username, IsActive=True).first()
 
         if not usuario or not check_password_hash(usuario.PasswordHash, password):
-            flash('RUT o contraseña incorrectos.', 'error')
+            flash('RUT o contrasena incorrectos.', 'error')
             return render_template('auth/login.html')
 
         login_user(usuario, remember=True)
 
-        # Redirigir según el rol
+        # Redirigir segun el rol
         next_page = request.args.get('next')
         if next_page:
             return redirect(next_page)
@@ -109,12 +134,12 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('Sesión cerrada correctamente.', 'success')
+    flash('Sesion cerrada correctamente.', 'success')
     return redirect(url_for('auth.login'))
 
 
 # ============================================================================
-# RUTA: GESTIÓN DE USUARIOS (solo admin)
+# RUTA: GESTION DE USUARIOS (solo admin)
 # ============================================================================
 @auth_bp.route('/usuarios')
 @login_required

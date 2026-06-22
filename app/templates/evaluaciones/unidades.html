@@ -8,9 +8,13 @@
     <div class="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
         <div>
             <h3 class="text-lg font-bold text-gray-900">Unidades Curriculares y Clases</h3>
-            <p class="text-sm text-gray-500">Cree evaluaciones vinculadas a clases específicas.</p>
+            {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
+            <p class="text-sm text-gray-500">Cree evaluaciones vinculadas a clases especificas.</p>
+            {% else %}
+            <p class="text-sm text-gray-500">Visualiza las evaluaciones publicadas por unidad.</p>
+            {% endif %}
         </div>
-        <a href="{{ url_for('evaluaciones.asignaturas_por_grado', grado_id=grado_id) }}" 
+        <a href="{{ url_for('evaluaciones.asignaturas_por_grado', grado_id=grado_id) }}"
            class="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
             ← Volver a Asignaturas
         </a>
@@ -21,7 +25,7 @@
         <details class="group bg-white rounded-xl border border-gray-200 overflow-hidden" open>
             <summary class="flex justify-between items-center font-semibold cursor-pointer list-none p-5 bg-gray-50 hover:bg-gray-100 transition border-b border-gray-200">
                 <span class="text-indigo-900 text-lg flex items-center gap-2">
-                    📁 {{ titulo }} 
+                    📁 {{ titulo }}
                     <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
                         {{ data.clases|length }} Clases
                     </span>
@@ -30,7 +34,7 @@
                     <svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
                 </span>
             </summary>
-            
+
             <div class="p-6 bg-white space-y-4">
                 {% for clase in data.clases %}
                 <div class="p-4 border border-gray-100 rounded-lg bg-gray-50">
@@ -41,18 +45,21 @@
                                 {{ clase.plan.CreatedAt.strftime('%d/%m/%Y') if clase.plan.CreatedAt else '' }}
                             </p>
                         </div>
-                        <a href="{{ url_for('evaluaciones.crear_evaluacion_clase', plan_id=clase.plan.PlanId) }}" 
+                        {# ── BOTON NUEVA EVALUACION: solo nivel 2 ── #}
+                        {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
+                        <a href="{{ url_for('evaluaciones.crear_evaluacion_clase', plan_id=clase.plan.PlanId) }}"
                            class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition">
-                            + Nueva Evaluación
+                            + Nueva Evaluacion
                         </a>
+                        {% endif %}
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-4 text-sm mb-3">
                         <div><strong class="text-gray-600 text-xs">Objetivo:</strong> {{ clase.plan.Objetivo or '—' }}</div>
                         <div><strong class="text-gray-600 text-xs">Contenido:</strong> {{ clase.plan.Contenido or '—' }}</div>
                     </div>
 
-                    <!-- EVALUACIONES VINCULADAS A ESTA CLASE -->
+                    {# ── EVALUACIONES VINCULADAS ── #}
                     {% if clase.evaluaciones %}
                     <div class="mt-3 pt-3 border-t border-gray-200">
                         <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Evaluaciones de esta clase:</p>
@@ -70,22 +77,33 @@
                                     <span class="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">Borrador</span>
                                     {% endif %}
                                 </div>
-                                                                <div class="flex gap-2">
-                                    <a href="{{ url_for('evaluaciones.disenar_preguntas', inst_id=eval.InstrumentId) }}" 
-                                       class="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50">✏️ Preguntas</a>
-                                    <a href="{{ url_for('evaluaciones.resultados', inst_id=eval.InstrumentId) }}" 
-                                       class="text-xs px-2 py-1 bg-slate-800 text-white rounded hover:bg-slate-700">📊 Resultados</a>
-                                    <form action="{{ url_for('evaluaciones.cambiar_visibilidad', inst_id=eval.InstrumentId) }}" method="POST" class="inline">
-                                        <button type="submit" 
-                                                class="text-xs px-2 py-1 rounded font-medium cursor-pointer text-white {% if eval.IsVisible %} bg-red-600 hover:bg-red-700 {% else %} bg-emerald-600 hover:bg-emerald-700 {% endif %}">
-                                            {% if eval.IsVisible %}🚫 Ocultar{% else %}✅ Publicar{% endif %}
-                                        </button>
-                                    </form>
+                                <div class="flex gap-2">
+                                    {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
+                                        {# ── NIVEL 2: acceso completo ── #}
+                                        <a href="{{ url_for('evaluaciones.disenar_preguntas', inst_id=eval.InstrumentId) }}"
+                                           class="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50">✏️ Preguntas</a>
+                                        <a href="{{ url_for('evaluaciones.resultados', inst_id=eval.InstrumentId) }}"
+                                           class="text-xs px-2 py-1 bg-slate-800 text-white rounded hover:bg-slate-700">📊 Resultados</a>
+                                        <form action="{{ url_for('evaluaciones.cambiar_visibilidad', inst_id=eval.InstrumentId) }}" method="POST" class="inline">
+                                            <button type="submit"
+                                                    class="text-xs px-2 py-1 rounded font-medium cursor-pointer text-white {% if eval.IsVisible %} bg-red-600 hover:bg-red-700 {% else %} bg-emerald-600 hover:bg-emerald-700 {% endif %}">
+                                                {% if eval.IsVisible %}🚫 Ocultar{% else %}✅ Publicar{% endif %}
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        {# ── NIVEL 1: solo lectura, solo ve publicadas ── #}
+                                        <a href="{{ url_for('evaluaciones.resultados', inst_id=eval.InstrumentId) }}"
+                                           class="text-xs px-2 py-1 bg-slate-800 text-white rounded hover:bg-slate-700">📊 Resultados</a>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
                     </div>
+                    {% else %}
+                    {% if user_permisos.get('Evaluaciones', 0) >= 2 %}
+                    <p class="text-xs text-gray-400 italic mt-2">Sin evaluaciones vinculadas a esta clase.</p>
+                    {% endif %}
                     {% endif %}
                 </div>
                 {% else %}
@@ -98,7 +116,7 @@
         {% else %}
         <div class="p-10 text-center bg-white rounded-xl border border-gray-200">
             <span class="text-4xl">📭</span>
-            <p class="mt-4 text-gray-500">Aún no hay unidades creadas.</p>
+            <p class="mt-4 text-gray-500">Aun no hay unidades creadas.</p>
         </div>
         {% endfor %}
     </div>
