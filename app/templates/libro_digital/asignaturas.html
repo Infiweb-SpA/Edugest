@@ -13,7 +13,7 @@
             </h3>
             <p class="text-sm text-gray-500">Gestione la planificación y el libro de clases de cada asignatura.</p>
         </div>
-        
+        {% if user_permisos.get('Libro Digital', 0) > 1 %}
         <div class="flex items-center space-x-3">
             <a href="{{ url_for('libro_digital.listar_grados') }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 ⬅️ Volver a Grados
@@ -23,6 +23,7 @@
                 ➕ Agregar Asignatura Manual
             </button>
         </div>
+        {% endif %}
     </div>
 
     <div class="bg-rose-50 border border-rose-200 rounded-2xl p-6 shadow-sm">
