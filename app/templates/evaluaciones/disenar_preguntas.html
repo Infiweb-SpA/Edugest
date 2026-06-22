@@ -9,7 +9,7 @@
     <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-xs h-fit">
         <h3 class="text-base font-bold text-gray-900 mb-4">Nueva Pregunta</h3>
 
-        <form method="POST" enctype="multipart/form-data" class="space-y-3" id="formPregunta">
+        <form method="POST" action="{{ url_for('evaluaciones.disenar_preguntas_post', inst_id=instrumento.InstrumentId) }}" enctype="multipart/form-data">
 
             <!-- TIPO DE PREGUNTA -->
             <div>

@@ -13,7 +13,7 @@
         </p>
     </div>
 
-    <form method="POST" class="space-y-4">
+    <form method="POST" action="{{ url_for('evaluaciones.crear_evaluacion_clase_post', plan_id=plan.PlanId) }}" class="space-y-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Título de la Evaluación</label>
             <input type="text" name="title" required 

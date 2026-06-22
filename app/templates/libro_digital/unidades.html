@@ -148,7 +148,7 @@
 <div id="modalUnidad" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
         <h3 class="text-lg font-bold mb-4">Crear Nueva Unidad</h3>
-        <form method="POST">
+        <form method="POST" action="{{ url_for('libro_digital.crud_unidades_post', org_id=asignatura.OrganizationId) }}">
             <input type="hidden" name="action" value="crear_unidad">
             <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Unidad</label>
             <input type="text" name="titulo_unidad" required placeholder="Ej: Unidad 1: Fracciones" class="w-full rounded-lg border-gray-300 p-2.5 border text-sm mb-4">
@@ -166,7 +166,7 @@
         <h3 class="text-lg font-bold mb-1">Registrar Clase</h3>
         <p class="text-sm text-gray-500 mb-4">Se agregara a la unidad: <strong id="claseUnitNameDisplay" class="text-indigo-600"></strong></p>
 
-        <form method="POST" class="space-y-4">
+        <form method="POST" action="{{ url_for('libro_digital.crud_unidades_post', org_id=asignatura.OrganizationId) }}" class="space-y-4">
             <input type="hidden" name="action" value="crear_clase">
             <input type="hidden" name="unit_title" id="claseUnitTitleHidden">
 

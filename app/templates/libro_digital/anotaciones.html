@@ -37,7 +37,7 @@
     <!-- Formulario para Nueva Anotación -->
     <div class="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
         <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4">Nueva Anotación</h4>
-        <form method="POST" class="space-y-4">
+        <form method="POST" action="{{ url_for('libro_digital.registrar_anotacion_post', rol_id=rol_id, asignatura_id=asignatura.OrganizationId) }}" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Observación</label>
                 <div class="grid grid-cols-3 gap-3">

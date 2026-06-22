@@ -48,10 +48,10 @@
                 </div>
                 
                 <div class="border-t border-gray-100 bg-gray-50 p-3 space-y-2">
-                    <a href="{{ url_for('libro_digital.crud_unidades', org_id=asig.OrganizationId) }}" class="w-full block text-center px-3 py-1.5 text-xs font-bold rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition">
+                    <a href="{{ url_for('libro_digital.ver_unidades', org_id=asig.OrganizationId) }}"class="w-full block text-center px-3 py-1.5 text-xs font-bold rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition">
                         📝 Planificar
                     </a>
-                    <a href="{{ url_for('libro_digital.registrar_clase_dinamica', org_id=asig.OrganizationId) }}" class="w-full block text-center px-3 py-1.5 text-xs font-bold rounded-md text-white bg-slate-800 hover:bg-slate-700 transition shadow-sm">
+                    <a href="{{ url_for('libro_digital.registrar_clase_get', org_id=asig.OrganizationId) }}" class="w-full block text-center px-3 py-1.5 text-xs font-bold rounded-md text-white bg-slate-800 hover:bg-slate-700 transition shadow-sm">
                         Abrir Libro ➡️
                     </a>
                 </div>
