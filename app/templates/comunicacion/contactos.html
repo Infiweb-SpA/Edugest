@@ -10,7 +10,7 @@
         <form method="GET" action="{{ url_for('comunicacion.contactos') }}" class="flex flex-wrap items-end gap-4">
             <div class="flex-1 min-w-[200px]">
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Curso / Letra</label>
-                <select name="curso_id" onchange="this.form.submit()" 
+                <select name="curso_id" onchange="this.form.submit()"
                         class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm">
                     <option value="">Seleccione un curso...</option>
                     {% for c in cursos %}
@@ -21,7 +21,7 @@
                 </select>
             </div>
             <div>
-                <a href="{{ url_for('comunicacion.contactos') }}" 
+                <a href="{{ url_for('comunicacion.contactos') }}"
                    class="inline-block px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition">
                     Limpiar filtro
                 </a>
@@ -83,7 +83,7 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 text-center">
-                            <a href="{{ url_for('comunicacion.contacto_detalle', person_id=item.estudiante.PersonId) }}" 
+                            <a href="{{ url_for('comunicacion.contacto_detalle', person_id=item.estudiante.PersonId) }}"
                                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition shadow-sm">
                                 <span>👁️</span> Ver Ficha Completa
                             </a>

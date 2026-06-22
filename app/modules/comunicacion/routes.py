@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask_login import login_required
 from app.database import db
 from app.models.mineduc import (
     Person, Organization, OrganizationPersonRole, PersonRelationship,
@@ -9,6 +10,7 @@ from app.models.edugest import (
     EdugestAnnouncement, EdugestStudentHealth, EdugestStudentEnrollment,
     EdugestEmergencyContact, EdugestPersonRelationshipDetail
 )
+from app.modules.auth.routes import permiso_requerido
 from sqlalchemy import or_
 
 comunicacion_bp = Blueprint('comunicacion', __name__, url_prefix='/comunicacion')
@@ -103,6 +105,8 @@ def enriquecer_cursos(cursos):
 # =============================================================================
 
 @comunicacion_bp.route('/anuncios')
+@login_required
+@permiso_requerido('Comunicaciones', nivel=1)
 def anuncios():
     # --- BLOQUE ANUNCIOS ---
     curso_id_anuncio = request.args.get('curso_id_anuncio', type=int)
@@ -155,14 +159,16 @@ def anuncios():
             })
 
     return render_template('comunicacion/anuncios.html',
-                         anuncios=anuncios_list, 
-                         cursos=cursos, 
+                         anuncios=anuncios_list,
+                         cursos=cursos,
                          curso_id_anuncio=curso_id_anuncio,
                          curso_id_contacto=curso_id_contacto,
                          contactos=contactos_data)
 
 
 @comunicacion_bp.route('/anuncios/nuevo', methods=['POST'])
+@login_required
+@permiso_requerido('Comunicaciones', nivel=2)
 def nuevo_anuncio():
     titulo = request.form.get('titulo', '').strip()
     contenido = request.form.get('contenido', '').strip()
@@ -202,6 +208,8 @@ def nuevo_anuncio():
 # =============================================================================
 
 @comunicacion_bp.route('/contactos')
+@login_required
+@permiso_requerido('Comunicaciones', nivel=1)
 def contactos():
     curso_id = request.args.get('curso_id', type=int)
 
@@ -238,6 +246,8 @@ def contactos():
 
 
 @comunicacion_bp.route('/contacto/<int:person_id>')
+@login_required
+@permiso_requerido('Comunicaciones', nivel=2)
 def contacto_detalle(person_id):
     estudiante = db.session.get(Person, person_id)
     if not estudiante:
