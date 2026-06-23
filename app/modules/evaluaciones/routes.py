@@ -405,6 +405,9 @@ def rendir(inst_id, alumno_id):
             if not permiso or permiso.PermissionLevel < 2:
                 flash('Esta evaluacion no esta disponible aun.', 'warning')
                 return redirect(url_for('portada.bienvenida'))
+            if not matricula:
+                flash('El estudiante no está matriculado en ningún curso de esta asignatura.', 'danger')
+                return redirect(url_for('evaluaciones.resultados', inst_id=inst_id))
 
     # FIX: Buscar matricula en el CURSO (Tipo 21), no en la asignatura
     relacion_grado = OrganizationRelationship.query.filter_by(

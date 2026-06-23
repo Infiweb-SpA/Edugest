@@ -16,6 +16,7 @@
                 Desmarquelo para restablecer la calificacion automatica.
             </p>
             {% else %}
+            
             <p class="text-xs text-gray-400 mt-0.5">
                 Vista de solo lectura de las calificaciones de esta evaluacion.
             </p>
@@ -124,21 +125,21 @@
 
                     {% if instrumento.IsDigital %}
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
-                        {% if r.estado == 'No Rendido' %}
-                        {# Rendir por primera vez: cualquier usuario con acceso #}
+                        {% if r.estado == 'No Rendido' and r.alumno.PersonId == current_user.PersonId %}
+                        {# Solo el alumno logueado puede rendir su propio test #}
                         <a href="{{ url_for('evaluaciones.rendir', inst_id=instrumento.InstrumentId, alumno_id=r.alumno.PersonId) }}"
                            class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold shadow-xs transition bg-indigo-600 text-white hover:bg-indigo-500">
                             📝 Rendir Test
                         </a>
                         {% elif user_permisos.get('Evaluaciones', 0) >= 2 %}
-                        {# Re-rendir: solo nivel 2 #}
+                        {# Re-rendir: solo nivel 2 (para cualquier alumno) #}
                         <a href="{{ url_for('evaluaciones.rendir', inst_id=instrumento.InstrumentId, alumno_id=r.alumno.PersonId) }}"
                            class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold shadow-xs transition bg-slate-200 text-slate-700 hover:bg-slate-300">
                             🔄 Re-rendir
                         </a>
                         {% else %}
-                        {# Nivel 1, ya rindio: solo mostrar estado #}
-                        <span class="text-xs text-gray-400 italic">Rendido</span>
+                        {# Otros alumnos o ya rendido: solo mostrar estado #}
+                        <span class="text-xs text-gray-400 italic">No disponible</span>
                         {% endif %}
                     </td>
                     {% endif %}
