@@ -23,6 +23,24 @@ evaluaciones_bp = Blueprint('evaluaciones', __name__, url_prefix='/evaluaciones'
 
 
 # ============================================================================
+# HELPER: Determinar si el usuario actual tiene nivel 2 en Evaluaciones
+# ============================================================================
+def _es_nivel_2_evaluaciones():
+    """Retorna True si el usuario actual tiene permiso nivel 2 en Evaluaciones o es admin."""
+    if current_user.RoleId == 1:
+        return True
+    from app.models.edugest import EdugestModule, EdugestRolePermission
+    modulo = EdugestModule.query.filter_by(ModuleName='Evaluaciones').first()
+    if modulo:
+        perm = EdugestRolePermission.query.filter_by(
+            RoleId=current_user.RoleId, ModuleId=modulo.ModuleId
+        ).first()
+        if perm and perm.PermissionLevel >= 2:
+            return True
+    return False
+
+
+# ============================================================================
 # PASO 1: LISTAR GRADOS
 # ============================================================================
 @evaluaciones_bp.route('/grados')
@@ -63,7 +81,6 @@ def listar_grados():
 # ============================================================================
 @evaluaciones_bp.route('/grado/<int:grado_id>/asignaturas')
 @login_required
-
 def asignaturas_por_grado(grado_id):
     grado = Organization.query.get_or_404(grado_id)
 
@@ -95,7 +112,6 @@ def asignaturas_por_grado(grado_id):
 # ============================================================================
 @evaluaciones_bp.route('/asignatura/<int:org_id>/unidades')
 @login_required
-
 def unidades_asignatura(org_id):
     asignatura = Organization.query.get_or_404(org_id)
 
@@ -405,9 +421,17 @@ def rendir(inst_id, alumno_id):
             if not permiso or permiso.PermissionLevel < 2:
                 flash('Esta evaluacion no esta disponible aun.', 'warning')
                 return redirect(url_for('portada.bienvenida'))
-            if not matricula:
-                flash('El estudiante no está matriculado en ningún curso de esta asignatura.', 'danger')
-                return redirect(url_for('evaluaciones.resultados', inst_id=inst_id))
+
+    # ── BLOQUEO: verificar que sea digital ──
+    if not instrumento.IsDigital:
+        if not _es_nivel_2_evaluaciones():
+            flash('Esta evaluacion es presencial y no se puede rendir en linea.', 'warning')
+            return redirect(url_for('evaluaciones.resultados', inst_id=inst_id))
+
+    # ── BLOQUEO: solo el propio alumno puede rendir su examen ──
+    if not _es_nivel_2_evaluaciones() and current_user.PersonId != alumno_id:
+        flash('No tienes permiso para rendir esta evaluacion.', 'danger')
+        return redirect(url_for('evaluaciones.resultados', inst_id=inst_id))
 
     # FIX: Buscar matricula en el CURSO (Tipo 21), no en la asignatura
     relacion_grado = OrganizationRelationship.query.filter_by(
@@ -533,7 +557,6 @@ def rendir(inst_id, alumno_id):
 
 @evaluaciones_bp.route('/instrumento/<int:inst_id>/resultados')
 @login_required
-
 def resultados(inst_id):
     instrumento = EdugestAssessmentInstrument.query.get_or_404(inst_id)
     preguntas = EdugestAssessmentQuestion.query.filter_by(InstrumentId=inst_id).all()
@@ -543,23 +566,58 @@ def resultados(inst_id):
         OrganizationId=instrumento.OrganizationId
     ).first()
 
-    matriculas = []
-    if relacion_grado:
-        cursos = Organization.query.join(
-            OrganizationRelationship,
-            Organization.OrganizationId == OrganizationRelationship.OrganizationId
-        ).filter(
-            Organization.RefOrganizationTypeId == 21,
-            OrganizationRelationship.ParentOrganizationId == relacion_grado.ParentOrganizationId
-        ).all()
+    # ── Determinar si el usuario actual tiene nivel 2 ──
+    is_nivel_2 = _es_nivel_2_evaluaciones()
 
-        for curso in cursos:
-            mats = OrganizationPersonRole.query.filter_by(
-                OrganizationId=curso.OrganizationId,
+    matriculas = []
+    curso_info = None
+
+    if relacion_grado:
+        if is_nivel_2:
+            # ── NIVEL 2: mostrar todos los cursos del grado ──
+            cursos = Organization.query.join(
+                OrganizationRelationship,
+                Organization.OrganizationId == OrganizationRelationship.OrganizationId
+            ).filter(
+                Organization.RefOrganizationTypeId == 21,
+                OrganizationRelationship.ParentOrganizationId == relacion_grado.ParentOrganizationId
+            ).all()
+
+            for curso in cursos:
+                mats = OrganizationPersonRole.query.filter_by(
+                    OrganizationId=curso.OrganizationId,
+                    RoleId=6,
+                    ExitDate=None
+                ).all()
+                matriculas.extend(mats)
+        else:
+            # ── NIVEL 1 (alumno): solo su propio curso ──
+            mi_matricula = OrganizationPersonRole.query.filter_by(
+                PersonId=current_user.PersonId,
                 RoleId=6,
                 ExitDate=None
-            ).all()
-            matriculas.extend(mats)
+            ).first()
+
+            if mi_matricula:
+                mi_curso = Organization.query.get(mi_matricula.OrganizationId)
+                if mi_curso and mi_curso.RefOrganizationTypeId == 21:
+                    curso_info = mi_curso.Name
+
+                    # Buscar el grado padre para mostrar contexto
+                    rel_curso = OrganizationRelationship.query.filter_by(
+                        OrganizationId=mi_curso.OrganizationId
+                    ).first()
+                    if rel_curso:
+                        grado = Organization.query.get(rel_curso.ParentOrganizationId)
+                        if grado:
+                            curso_info = f"{grado.Name} {mi_curso.Name}"
+
+                    mats = OrganizationPersonRole.query.filter_by(
+                        OrganizationId=mi_curso.OrganizationId,
+                        RoleId=6,
+                        ExitDate=None
+                    ).all()
+                    matriculas.extend(mats)
 
     calificaciones = EdugestManualGrade.query.filter_by(InstrumentId=inst_id).all()
     calificaciones_dict = {c.OrganizationPersonRoleId: c for c in calificaciones}
@@ -633,7 +691,9 @@ def resultados(inst_id):
 
     return render_template('evaluaciones/resultados.html',
                            instrumento=instrumento,
-                           tabla_resultados=tabla_resultados)
+                           tabla_resultados=tabla_resultados,
+                           is_nivel_2=is_nivel_2,
+                           curso_info=curso_info)
 
 
 @evaluaciones_bp.route('/instrumento/<int:inst_id>/nota-manual', methods=['POST'])
