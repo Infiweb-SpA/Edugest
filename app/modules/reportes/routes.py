@@ -2,6 +2,7 @@ import csv
 from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, send_file, current_app, jsonify
+from flask_login import current_user
 from app.database import db
 from sqlalchemy import func, extract
 from app.models.mineduc import (
@@ -10,7 +11,8 @@ from app.models.mineduc import (
 )
 from app.models.edugest import (
     EdugestSessionAttendance, EdugestStudentObservation,
-    EdugestManualGrade, EdugestAssessmentInstrument
+    EdugestManualGrade, EdugestAssessmentInstrument,
+    EdugestRolePermission, EdugestModule
 )
 import matplotlib
 matplotlib.use('Agg')
@@ -33,6 +35,20 @@ reportes_bp = Blueprint('reportes', __name__, url_prefix='/reportes')
 TIPO_SUMATIVA = 1       # AssessmentTypeId para evaluaciones Sumativas
 TIPO_CALIFICATIVA = 2   # AssessmentTypeId para evaluaciones Calificativas
 
+# ============================================================
+# FUNCIÓN AUXILIAR - PERMISOS
+# ============================================================
+def get_permiso_modulo(module_name):
+    """Obtiene el nivel de permiso del usuario actual para un módulo específico.
+    Retorna: 0=Sin acceso, 1=Solo lectura, 2=Lectura y escritura"""
+    modulo = EdugestModule.query.filter_by(ModuleName=module_name, IsEnabled=True).first()
+    if not modulo:
+        return 0
+    permiso = EdugestRolePermission.query.filter_by(
+        RoleId=current_user.RoleId,
+        ModuleId=modulo.ModuleId
+    ).first()
+    return permiso.PermissionLevel if permiso else 0
 
 # ============================================================
 # FUNCIONES AUXILIARES
@@ -66,6 +82,29 @@ def calcular_rango_fechas(fecha_base, periodo):
 # ============================================================
 @reportes_bp.route('/')
 def index():
+    # ── Verificar nivel de permisos ──
+    nivel = get_permiso_modulo('Reportes')
+
+    if nivel == 0:
+        # Sin acceso al módulo: redirigir a página de no autorizado
+        return redirect(url_for('auth.unauthorized'))
+
+    if nivel == 1:
+        # Solo lectura (estudiante): buscar su curso y redirigir directamente
+        person_id = current_user.PersonId
+        rol_estudiante = OrganizationPersonRole.query.filter_by(
+            PersonId=person_id,
+            RoleId=6,
+            ExitDate=None
+        ).first()
+
+        if rol_estudiante:
+            return redirect(url_for('reportes.reporte_curso', curso_id=rol_estudiante.OrganizationId))
+        else:
+            flash('No se encontró un curso asignado.', 'error')
+            return redirect(url_for('portada.bienvenida'))
+
+    # ── Nivel 2+: mostrar panel completo de selección de cursos ──
     grados = Organization.query.filter_by(RefOrganizationTypeId=46).order_by(Organization.Name).all()
     cursos_data = []
     for grado in grados:
@@ -81,18 +120,16 @@ def index():
                 OrganizationId=curso.OrganizationId, RoleId=6, ExitDate=None
             ).count()
             if total_alumnos > 0:
-                # Obtener asignaturas vinculadas a este curso
                 asignaturas = Organization.query.join(
                     OrganizationRelationship,
                     Organization.OrganizationId == OrganizationRelationship.OrganizationId
                 ).filter(
                     OrganizationRelationship.ParentOrganizationId == curso.OrganizationId,
-                    Organization.RefOrganizationTypeId == 20  # Tipo Asignatura
+                    Organization.RefOrganizationTypeId == 20
                 ).order_by(Organization.Name).all()
 
                 asignaturas_data = []
                 for asig in asignaturas:
-                    # Contar instrumentos de evaluación por asignatura
                     total_instrumentos = EdugestAssessmentInstrument.query.filter_by(
                         OrganizationId=asig.OrganizationId
                     ).count()
@@ -342,12 +379,16 @@ def reporte_curso(curso_id):
                 'total_instrumentos': total_instrumentos
             })
 
+        # ── Determinar si el usuario puede volver al panel de reportes ──
+    nivel_permiso = get_permiso_modulo('Reportes')
+
     return render_template('reportes/curso.html', curso=curso, grado=grado,
                            alumnos=alumnos_reporte, asignaturas=asignaturas_data,
                            chart_data=chart_data, resumen_notas=resumen_notas,
                            resumen_anotaciones=resumen_anotaciones, periodo=periodo,
                            fecha_inicio=fecha_inicio.strftime('%Y-%m-%d'),
-                           fecha_fin=fecha_fin.strftime('%Y-%m-%d'), fecha_ref=fecha_ref)
+                           fecha_fin=fecha_fin.strftime('%Y-%m-%d'), fecha_ref=fecha_ref,
+                           puede_volver_panel=(nivel_permiso >= 2))
 
 
 # ============================================================
@@ -613,19 +654,29 @@ def reporte_notas_sumativas(org_id):
 
     estudiantes.sort(key=lambda x: (x['alumno'].LastName or '', x['alumno'].FirstName or ''))
 
+        # ── Determinar si el usuario puede configurar sumativas ──
+    nivel_permiso = get_permiso_modulo('Reportes')
+
     return render_template('reportes/notas_sumativas.html',
                            asignatura=asignatura,
                            estudiantes=estudiantes,
                            todas_sumativas=todas_sumativas,
                            calificativas=calificativas,
                            sumativas_seleccionadas=sumativas_seleccionadas,
-                           sumativas_no_seleccionadas=sumativas_no_seleccionadas)
+                           sumativas_no_seleccionadas=sumativas_no_seleccionadas,
+                           puede_configurar=(nivel_permiso >= 2))
 
 # ============================================================
 # RUTA: CONFIGURAR SUMATIVAS (EXISTENTE)
 # ============================================================
 @reportes_bp.route('/asignatura/<int:org_id>/configurar-sumativas', methods=['GET', 'POST'])
 def configurar_sumativas(org_id):
+    # ── Solo nivel 2 (lectura + escritura) puede configurar ──
+    nivel = get_permiso_modulo('Reportes')
+    if nivel < 2:
+        flash('No tiene permisos para realizar esta acción.', 'error')
+        return redirect(url_for('reportes.index'))
+
     asignatura = Organization.query.get_or_404(org_id)
 
     # Obtener solo instrumentos de tipo Sumativa
@@ -660,6 +711,11 @@ def configurar_sumativas(org_id):
 @reportes_bp.route('/api/guardar-sumativa/<int:instrument_id>', methods=['POST'])
 def guardar_sumativa_ajax(instrument_id):
     """Guarda el estado de selección de una evaluación Sumativa vía AJAX."""
+    # ── Solo nivel 2 puede modificar selección ──
+    nivel = get_permiso_modulo('Reportes')
+    if nivel < 2:
+        return jsonify({'success': False, 'message': 'Sin permisos para esta acción'}), 403
+
     data = request.get_json()
     if not data or 'seleccionada' not in data:
         return jsonify({'success': False, 'message': 'Datos inválidos'}), 400
@@ -818,10 +874,13 @@ def informe_notas_pdf(curso_id, rol_id):
 
     anio_actual = datetime.now().year
 
-    # Notas del alumno agrupadas por asignatura
+        # ── Notas del alumno agrupadas por asignatura y tipo ──
     notas_raw = db.session.query(
         EdugestManualGrade.Score, EdugestManualGrade.CreatedAt,
-        Organization.Name.label('asignatura_nombre')
+        EdugestManualGrade.InstrumentId,
+        Organization.Name.label('asignatura_nombre'),
+        EdugestAssessmentInstrument.AssessmentTypeId,
+        EdugestAssessmentInstrument.Seleccionada
     ).join(
         EdugestAssessmentInstrument,
         EdugestManualGrade.InstrumentId == EdugestAssessmentInstrument.InstrumentId
@@ -830,24 +889,63 @@ def informe_notas_pdf(curso_id, rol_id):
         EdugestAssessmentInstrument.OrganizationId == Organization.OrganizationId
     ).filter(
         EdugestManualGrade.OrganizationPersonRoleId == rol_id
-    ).order_by(Organization.Name, EdugestManualGrade.CreatedAt).all()
+    ).all()
 
-    notas_por_asignatura = defaultdict(list)
+    # Paso 1: Promediar múltiples intentos por instrumento
+    scores_por_instrumento = defaultdict(list)
+    meta_instrumento = {}
     for n in notas_raw:
-        notas_por_asignatura[n.asignatura_nombre].append({'nota': round(n.Score, 1), 'fecha': n.CreatedAt})
+        scores_por_instrumento[n.InstrumentId].append(round(n.Score, 1))
+        meta_instrumento[n.InstrumentId] = {
+            'asignatura': n.asignatura_nombre,
+            'assessment_type': n.AssessmentTypeId,
+            'seleccionada': bool(n.Seleccionada) if n.Seleccionada is not None else False
+        }
 
-    # Construir filas de asignaturas
+    # Paso 2: Agrupar por asignatura separando tipos
+    notas_por_asignatura = defaultdict(lambda: {'calificativas': [], 'sum_sel_scores': []})
+
+    for inst_id, scores in scores_por_instrumento.items():
+        meta = meta_instrumento[inst_id]
+        promedio_inst = round(sum(scores) / len(scores), 1)
+        asig = meta['asignatura']
+
+        if meta['assessment_type'] == TIPO_SUMATIVA:
+            # Solo las seleccionadas ingresan al promedio
+            if meta['seleccionada']:
+                notas_por_asignatura[asig]['sum_sel_scores'].append(promedio_inst)
+            # Las NO seleccionadas se excluyen del cálculo y la vista
+        else:
+            # Calificativas (o tipo indefinido)
+            notas_por_asignatura[asig]['calificativas'].append(promedio_inst)
+
+    # Paso 3: Construir filas de asignaturas con cálculo correcto
     filas_asignaturas = []
     suma_promedios = 0
     count_promedios = 0
+
     for asignatura in sorted(notas_por_asignatura.keys()):
-        notas = sorted(notas_por_asignatura[asignatura], key=lambda x: x['fecha'] if x['fecha'] else datetime.min)
-        n1 = str(notas[0]['nota']) if len(notas) > 0 else ''
-        n2 = str(notas[1]['nota']) if len(notas) > 1 else ''
-        n3 = str(notas[2]['nota']) if len(notas) > 2 else ''
-        n4 = str(notas[3]['nota']) if len(notas) > 3 else ''
-        vals = [n['nota'] for n in notas]
-        promedio = round(sum(vals) / len(vals), 1) if vals else ''
+        data = notas_por_asignatura[asignatura]
+
+        calif = data['calificativas']
+        sum_sel = data['sum_sel_scores']
+
+        # Promedio de sumativas seleccionadas (= 1 calificativa más)
+        prom_sum_sel = round(sum(sum_sel) / len(sum_sel), 1) if sum_sel else None
+
+        # Notas efectivas para mostrar: calificativas individuales + promedio sum. selec.
+        notas_display = list(calif)
+        if prom_sum_sel is not None:
+            notas_display.append(prom_sum_sel)
+
+        n1 = str(notas_display[0]) if len(notas_display) > 0 else ''
+        n2 = str(notas_display[1]) if len(notas_display) > 1 else ''
+        n3 = str(notas_display[2]) if len(notas_display) > 2 else ''
+        n4 = str(notas_display[3]) if len(notas_display) > 3 else ''
+
+        # Promedio final de la asignatura
+        promedio = round(sum(notas_display) / len(notas_display), 1) if notas_display else ''
+
         if promedio != '':
             suma_promedios += promedio
             count_promedios += 1

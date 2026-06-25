@@ -18,25 +18,29 @@ def crear_jerarquia_completa():
     import string
 
     # 0. MÓDULOS DEL SISTEMA
+        # 0. MÓDULOS DEL SISTEMA
     if not EdugestModule.query.first():
         modulos_iniciales = [
             EdugestModule(ModuleName="Libro Digital", IsEnabled=True),
             EdugestModule(ModuleName="Evaluaciones", IsEnabled=True),
             EdugestModule(ModuleName="Biblioteca CRA", IsEnabled=True),
             EdugestModule(ModuleName="Comunicaciones", IsEnabled=True),
-            EdugestModule(ModuleName="Matrícula", IsEnabled=True)
+            EdugestModule(ModuleName="Matrícula", IsEnabled=True),
+            EdugestModule(ModuleName="Reportes", IsEnabled=True)
         ]
         db.session.add_all(modulos_iniciales)
         db.session.commit()
         print("✅ Módulos base creados.")
     else:
-        modulo_matricula = EdugestModule.query.filter_by(ModuleName="Matrícula").first()
-        if not modulo_matricula:
-            db.session.add(EdugestModule(ModuleName="Matrícula", IsEnabled=True))
-            db.session.commit()
-            print("✅ Módulo Matrícula agregado.")
-        else:
-            print("ℹ️ Módulos ya existen.")
+        # Verificar módulos faltantes y agregarlos
+        modulos_faltantes = ["Matrícula", "Reportes"]
+        for nombre_modulo in modulos_faltantes:
+            if not EdugestModule.query.filter_by(ModuleName=nombre_modulo).first():
+                db.session.add(EdugestModule(ModuleName=nombre_modulo, IsEnabled=True))
+                db.session.commit()
+                print(f"✅ Módulo '{nombre_modulo}' agregado.")
+            else:
+                print(f"ℹ️ Módulo '{nombre_modulo}' ya existe.")
 
     # 1. ESTABLECIMIENTO (RBD)
     rbd = Organization.query.filter_by(ShortName="RBD09599", RefOrganizationTypeId=10).first()

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if rol %}Editar{% else %}Nuevo{% endif %} Rol - Edugest{% endblock %}
+{% block header_title %}{% if rol %}Editar{% else %}Crear{% endif %} Rol del Sistema{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <form method="POST" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Rol *</label>
+                <input type="text" name="nombre" value="{{ rol.RoleName if rol else '' }}" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       {% if rol and rol.RoleName == 'Administrador' %}readonly{% endif %}>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                <textarea name="descripcion" rows="3"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">{{ rol.RoleDescription if rol else '' }}</textarea>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="is_active" id="is_active" {% if not rol or rol.IsActive %}checked{% endif %}
+                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                <label for="is_active" class="ml-2 block text-sm text-gray-900">Rol activo</label>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <a href="{{ url_for('admin.listar_roles') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Cancelar</a>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                    {% if rol %}Actualizar{% else %}Crear{% endif %} Rol
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

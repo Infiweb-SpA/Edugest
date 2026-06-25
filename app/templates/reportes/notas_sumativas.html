@@ -25,10 +25,12 @@
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
+                {% if puede_configurar %}
                 <a href="{{ url_for('reportes.configurar_sumativas', org_id=asignatura.OrganizationId) }}"
                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition">
                     ⚙️ Configurar Sumativas
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -113,6 +115,7 @@
                                 <span class="{% if s.Seleccionada %}text-emerald-800{% else %}text-gray-400{% endif %}">
                                     {{ s.Title|truncate(20, True) }}
                                 </span>
+                                                                {% if puede_configurar %}
                                 <label class="inline-flex items-center gap-1 cursor-pointer select-none">
                                     <input type="checkbox"
                                            class="chk-sumativa rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
@@ -123,6 +126,11 @@
                                         {% if s.Seleccionada %}Seleccionada{% else %}Seleccionar{% endif %}
                                     </span>
                                 </label>
+                                {% else %}
+                                <span class="text-[10px] {% if s.Seleccionada %}text-emerald-600{% else %}text-gray-400{% endif %}">
+                                    {% if s.Seleccionada %}Seleccionada{% else %}No seleccionada{% endif %}
+                                </span>
+                                {% endif %}
                             </div>
                         </th>
                         {% endfor %}

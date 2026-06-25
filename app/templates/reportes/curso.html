@@ -9,13 +9,15 @@
     <!-- ============================================================ -->
     <!-- CABECERA -->
     <!-- ============================================================ -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
+                {% if puede_volver_panel %}
                 <a href="{{ url_for('reportes.index') }}"
                     class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
                     ← Volver a Reportes
                 </a>
+                {% endif %}
                 <h3 class="text-xl font-bold text-gray-900 mt-2">
                     {{ grado.Name if grado else 'Grado' }} - {{ curso.Name }} (Letra {{ curso.ShortName or 'N/A' }})
                 </h3>
