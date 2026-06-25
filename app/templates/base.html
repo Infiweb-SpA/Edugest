@@ -11,23 +11,39 @@
 
 <body class="bg-gray-50 text-gray-900 font-sans antialiased">
 
-    <div class="flex h-screen overflow-hidden">
+    <div class="flex h-screen overflow-hidden" x-data="{ mobileSidebarOpen: false }">
 
-        <!-- ============================================================ -->
-        <!-- SIDEBAR -->
-        <!-- ============================================================ -->
-        <aside class="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between hidden md:flex z-10 shadow-lg">
-            <div class="p-5">
-                <div class="flex items-center space-x-2">
+        <div x-show="mobileSidebarOpen" 
+             @click="mobileSidebarOpen = false" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-20 bg-black/50 md:hidden"
+             style="display: none;">
+        </div>
+
+        <aside 
+            class="fixed inset-y-0 left-0 z-30 w-64 bg-slate-900 text-slate-200 flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 shadow-lg"
+            :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+            
+            <div class="p-5 overflow-y-auto flex-1">
+                <div class="flex items-center justify-between">
                     <a href="{{ url_for('portada.bienvenida') }}" class="flex items-center space-x-2 hover:opacity-80 transition">
                         <span class="text-2xl">🎓</span>
                         <h1 class="text-xl font-bold tracking-wider text-white">Edugest</h1>
                     </a>
+                    <button @click="mobileSidebarOpen = false" class="text-slate-400 hover:text-white md:hidden focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <nav class="mt-10 space-y-1">
 
-                    <!-- ===== ADMINISTRACIÓN (solo admin) ===== -->
                     {% if current_user.is_authenticated and current_user.RoleId == 1 %}
                     <div x-data="{ open: window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/gestion-') }">
                         <button @click="open = !open"
@@ -40,7 +56,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div x-show="open" x-transition class="ml-4 mt-1 space-y-0.5">
+                        <div x-show="open" x-transition class="ml-4 mt-1 space-y-0.5" style="display: none;">
                             <a href="{{ url_for('admin.dashboard') }}"
                                class="block py-2 px-4 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition">
                                 Panel Principal
@@ -57,7 +73,6 @@
                     </div>
                     {% endif %}
 
-                    <!-- ===== LIBRO DIGITAL ===== -->
                     {% if user_permisos.get('Libro Digital', 0) >= 1 %}
                     <a href="{{ url_for('libro_digital.listar_grados') }}"
                         class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
@@ -66,7 +81,6 @@
                     </a>
                     {% endif %}
 
-                    <!-- ===== EVALUACIONES ===== -->
                     {% if user_permisos.get('Evaluaciones', 0) >= 1 %}
                     <a href="{{ url_for('evaluaciones.listar_grados') }}"
                         class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
@@ -75,7 +89,6 @@
                     </a>
                     {% endif %}
 
-                    <!-- ===== COMUNICACIONES ===== -->
                     {% if user_permisos.get('Comunicaciones', 0) >= 1 %}
                     <a href="{{ url_for('comunicacion.anuncios') }}"
                         class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
@@ -84,7 +97,6 @@
                     </a>
                     {% endif %}
 
-                    <!-- ===== BIBLIOTECA CRA ===== -->
                     {% if user_permisos.get('Biblioteca CRA', 0) >= 1 %}
                     <a href="{{ url_for('biblioteca.index') }}"
                         class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
@@ -93,7 +105,6 @@
                     </a>
                     {% endif %}
 
-                    <!-- ===== MATRÍCULA ===== -->
                     {% if user_permisos.get('Matrícula', 0) >= 1 %}
                     <a href="{{ url_for('matricula.listar_estudiantes') }}"
                         class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
@@ -102,7 +113,6 @@
                     </a>
                     {% endif %}
 
-                    <!-- ===== REPORTES ===== -->
                     {% if user_permisos.get('Reportes', 0) >= 1 %}
                     <a href="{{ url_for('reportes.index') }}"
                         class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
@@ -110,38 +120,42 @@
                         <span>Reportes</span>
                     </a>
                     {% endif %}
-                    
 
                 </nav>
             </div>
 
-            <div class="p-4 border-t border-slate-800 bg-slate-950 text-xs text-slate-500 text-center">
+            <div class="p-4 border-t border-slate-800 bg-slate-950 text-xs text-slate-500 text-center shrink-0">
                 Edugest SpA &copy; 2026 <br> Región de La Araucanía
             </div>
         </aside>
 
-        <!-- ============================================================ -->
-        <!-- CONTENIDO PRINCIPAL -->
-        <!-- ============================================================ -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex-1 flex flex-col overflow-hidden w-full">
 
-            <header class="bg-white shadow-sm border-b border-gray-200 py-4 px-6 flex justify-between items-center z-0">
-                <h2 class="text-xl font-semibold text-gray-800">
-                    {% block header_title %}Panel de Control{% endblock %}
-                </h2>
-                <div class="flex items-center space-x-4">
+            <header class="bg-white shadow-sm border-b border-gray-200 py-4 px-4 sm:px-6 flex justify-between items-center z-10 shrink-0">
+                <div class="flex items-center space-x-3">
+                    <button @click="mobileSidebarOpen = true" class="text-gray-600 hover:text-gray-900 focus:outline-none md:hidden p-1 rounded-md hover:bg-gray-100">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-800 truncate max-w-[180px] sm:max-w-none">
+                        {% block header_title %}Panel de Control{% endblock %}
+                    </h2>
+                </div>
+                
+                <div class="flex items-center space-x-2 sm:space-x-4">
                     {% if current_user.is_authenticated %}
-                    <div class="text-right">
+                    <div class="text-right hidden sm:block">
                         <p class="text-sm font-semibold text-gray-700">
                             {% if user_rol_nombre %}{{ user_rol_nombre }}{% else %}Usuario{% endif %}
                         </p>
-                        <p class="text-xs text-gray-400">{{ current_user.Username }}</p>
+                        <p class="text-xs text-gray-400 max-w-[120px] truncate">{{ current_user.Username }}</p>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs sm:text-sm shrink-0" title="{{ current_user.Username }}">
                         {{ current_user.Username[:2]|upper }}
                     </div>
                     <a href="{{ url_for('auth.logout') }}"
-                       class="ml-2 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition"
+                       class="px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition shrink-0"
                        title="Cerrar Sesión">
                         Salir
                     </a>
@@ -153,7 +167,7 @@
                 </div>
             </header>
 
-            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 bg-slate-50">
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 bg-slate-50">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                 <div class="mb-6 space-y-2">
