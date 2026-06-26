@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import current_user
 from datetime import datetime
 import re
 from app.database import db
@@ -8,7 +9,7 @@ from app.models.mineduc import (
     PersonRelationship, PersonDegreeOrCertificate, PersonEmailAddress
 )
 from app.models.edugest import (
-    EdugestModule,
+    EdugestModule, EdugestRolePermission,
     EdugestStudentEnrollment, EdugestEmergencyContact,
     EdugestStudentHealth, EdugestStudentPIE,
     EdugestPersonRelationshipDetail
@@ -518,6 +519,17 @@ def _serialize_estudiante(person_id):
         } if pie else None,
     }
 
+def get_permiso_modulo(module_name):
+    """Obtiene el nivel de permiso del usuario actual para un modulo especifico.
+    Retorna: 0=Sin acceso, 1=Solo lectura, 2=Lectura y escritura"""
+    modulo = EdugestModule.query.filter_by(ModuleName=module_name, IsEnabled=True).first()
+    if not modulo:
+        return 0
+    permiso = EdugestRolePermission.query.filter_by(
+        RoleId=current_user.RoleId,
+        ModuleId=modulo.ModuleId
+    ).first()
+    return permiso.PermissionLevel if permiso else 0
 
 # ============================================================================
 # LISTADO DE ESTUDIANTES (agrupado por RUT para evitar duplicados de persona)
@@ -527,35 +539,40 @@ def listar_estudiantes():
     if not verificar_modulo_habilitado():
         return redirect(url_for('admin.dashboard'))
 
+    # ── Verificar nivel de permisos ──
+    nivel = get_permiso_modulo('Matrícula')
+
+    if nivel == 0:
+        flash("No tiene acceso al módulo de Matrícula.", "warning")
+        return redirect(url_for('portada.bienvenida'))
+
     # Obtener TODOS los roles activos con sus identificadores RUT
     roles = OrganizationPersonRole.query.filter_by(RoleId=6, ExitDate=None).all()
-    
+
     # Agrupar por RUT (normalizado) y quedarse con el rol de EntryDate más reciente
     mejores_por_rut = {}
     for rol in roles:
-        # Obtener el RUT del estudiante
         rut_id = PersonIdentifier.query.filter_by(
             PersonId=rol.PersonId, RefPersonIdentificationSystemId=51
         ).first()
         rut = rut_id.Identifier if rut_id else None
         if not rut:
-            # Si no tiene RUT, usar PersonId como fallback (pero idealmente todos tienen RUT)
             rut = f"ID_{rol.PersonId}"
-        
+
         if rut not in mejores_por_rut:
             mejores_por_rut[rut] = rol
         else:
             if rol.EntryDate > mejores_por_rut[rut].EntryDate:
                 mejores_por_rut[rut] = rol
-    
+
     estudiantes_data = []
     for rol in mejores_por_rut.values():
         jerarquia = obtener_jerarquia_curso(rol.OrganizationId)
         estudiantes_data.append({'rol': rol, 'jerarquia': jerarquia})
-    
-    # Opcional: detectar si hay personas duplicadas (mismo RUT pero diferente PersonId)
-    # Esto se puede loguear para depuración
-    return render_template('matricula/listar.html', estudiantes=estudiantes_data)
+
+    return render_template('matricula/listar.html',
+                           estudiantes=estudiantes_data,
+                           puede_crear=(nivel >= 2))
 
 
 # ============================================================================
@@ -565,6 +582,12 @@ def listar_estudiantes():
 def nuevo_estudiante():
     if not verificar_modulo_habilitado():
         return redirect(url_for('admin.dashboard'))
+
+    # ── Solo nivel 2 puede crear/editar estudiantes ──
+    nivel = get_permiso_modulo('Matrícula')
+    if nivel < 2:
+        flash("No tiene permisos para crear o editar estudiantes.", "danger")
+        return redirect(url_for('matricula.listar_estudiantes'))
 
     niveles = Organization.query.filter_by(RefOrganizationTypeId=40).order_by(Organization.Name).all()
 

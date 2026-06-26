@@ -7,8 +7,9 @@ from app.database import db
 from sqlalchemy import func, extract
 from app.models.mineduc import (
     Organization, OrganizationPersonRole, OrganizationCalendarSession,
-    PersonIdentifier, Person, OrganizationRelationship
+    PersonIdentifier, Person, OrganizationRelationship, PersonRelationship
 )
+
 from app.models.edugest import (
     EdugestSessionAttendance, EdugestStudentObservation,
     EdugestManualGrade, EdugestAssessmentInstrument,
@@ -86,12 +87,14 @@ def index():
     nivel = get_permiso_modulo('Reportes')
 
     if nivel == 0:
-        # Sin acceso al módulo: redirigir a página de no autorizado
+        # Sin acceso al modulo: redirigir a pagina de no autorizado
         return redirect(url_for('auth.unauthorized'))
 
     if nivel == 1:
-        # Solo lectura (estudiante): buscar su curso y redirigir directamente
+        # Solo lectura: determinar si es Alumno o Apoderado/Tutor
         person_id = current_user.PersonId
+
+        # ── Caso A: Es Alumno (RoleId=6) ──
         rol_estudiante = OrganizationPersonRole.query.filter_by(
             PersonId=person_id,
             RoleId=6,
@@ -100,11 +103,58 @@ def index():
 
         if rol_estudiante:
             return redirect(url_for('reportes.reporte_curso', curso_id=rol_estudiante.OrganizationId))
-        else:
+
+        # ── Caso B: Es Apoderado/Tutor (RoleId=5) ──
+        # Buscar hijos vinculados a este apoderado en PersonRelationship
+        relaciones = PersonRelationship.query.filter_by(RelatedPersonId=person_id).all()
+        hijos_info = []
+        for rel in relaciones:
+            # Verificar que el vinculado sea un alumno activo
+            rol_hijo = OrganizationPersonRole.query.filter_by(
+                PersonId=rel.PersonId,
+                RoleId=6,
+                ExitDate=None
+            ).first()
+
+            if rol_hijo:
+                persona_hijo = Person.query.get(rel.PersonId)
+                if not persona_hijo:
+                    continue
+
+                # Obtener RUT del hijo
+                ident = PersonIdentifier.query.filter_by(
+                    PersonId=persona_hijo.PersonId,
+                    RefPersonIdentificationSystemId=51
+                ).first()
+
+                # Obtener nombre del curso
+                curso = Organization.query.get(rol_hijo.OrganizationId)
+                relacion_curso = OrganizationRelationship.query.filter_by(
+                    OrganizationId=rol_hijo.OrganizationId
+                ).first()
+                grado = Organization.query.get(relacion_curso.ParentOrganizationId) if relacion_curso else None
+
+                hijos_info.append({
+                    'person_id': persona_hijo.PersonId,
+                    'nombre': f"{persona_hijo.FirstName} {persona_hijo.LastName or ''} {persona_hijo.SecondLastName or ''}".strip(),
+                    'rut': ident.Identifier if ident else 'Sin RUT',
+                    'curso_id': rol_hijo.OrganizationId,
+                    'curso_nombre': f"{grado.Name if grado else ''} {curso.Name if curso else ''}".strip(),
+                    'letra': (curso.ShortName if curso else '') or ''
+                })
+
+        if len(hijos_info) == 0:
             flash('No se encontró un curso asignado.', 'error')
             return redirect(url_for('portada.bienvenida'))
 
-    # ── Nivel 2+: mostrar panel completo de selección de cursos ──
+        if len(hijos_info) == 1:
+            # Un solo hijo: redirigir directo al reporte
+            return redirect(url_for('reportes.reporte_curso', curso_id=hijos_info[0]['curso_id']))
+
+        # Multiples hijos: mostrar seleccion
+        return render_template('reportes/apoderado_hijos.html', hijos=hijos_info)
+
+    # ── Nivel 2+: mostrar panel completo de seleccion de cursos ──
     grados = Organization.query.filter_by(RefOrganizationTypeId=46).order_by(Organization.Name).all()
     cursos_data = []
     for grado in grados:
