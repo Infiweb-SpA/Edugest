@@ -1060,6 +1060,52 @@ def informe_notas_pdf(curso_id, rol_id):
     ) if total_sesiones > 0 else 0
 
     # ==================================================================
+    # ANOTACIONES Y OBSERVACIONES DEL ALUMNO
+    # ==================================================================
+    anotaciones_raw = db.session.query(
+        EdugestStudentObservation.Tipo,
+        EdugestStudentObservation.Detalle,
+        EdugestStudentObservation.FechaRegistro,
+        Organization.Name.label('asignatura_nombre')
+    ).outerjoin(
+        Organization,
+        EdugestStudentObservation.AsignaturaId == Organization.OrganizationId
+    ).filter(
+        EdugestStudentObservation.OrganizationPersonRoleId == rol_id
+    ).order_by(EdugestStudentObservation.FechaRegistro.desc()).all()
+
+    conteo_positivas = 0
+    conteo_negativas = 0
+    conteo_observaciones = 0
+    detalle_anotaciones = []
+
+    for a in anotaciones_raw:
+        tipo = a.Tipo
+        if tipo == 'Positiva':
+            conteo_positivas += 1
+        elif tipo == 'Negativa':
+            conteo_negativas += 1
+        else:
+            conteo_observaciones += 1
+
+        detalle_anotaciones.append({
+            'fecha': a.FechaRegistro.strftime('%d/%m/%Y') if a.FechaRegistro else 'N/A',
+            'tipo': tipo,
+            'asignatura': a.asignatura_nombre or 'General',
+            'detalle': a.Detalle
+        })
+
+    # Comentarios del establecimiento (desde matrícula)
+    from app.models.edugest import EdugestStudentEnrollment
+    enrollment = EdugestStudentEnrollment.query.filter_by(
+        PersonId=persona.PersonId
+    ).first()
+    comentarios_establecimiento = (
+        enrollment.ComentariosEstablecimiento if enrollment
+        and enrollment.ComentariosEstablecimiento else None
+    )
+
+    # ==================================================================
     # GENERACIÓN DEL PDF
     # ==================================================================
     buffer = BytesIO()
@@ -1170,14 +1216,12 @@ def informe_notas_pdf(curso_id, rol_id):
         [ancho_asignatura] + [ancho_eval] * n_cols_eval + [ancho_promedio]
     )
 
-    # Encabezado: Asignaturas | N1 | N2 | ... | Prom.
     header = [Paragraph("<b>Asignaturas</b>", style_celda_bold_center)]
     for i in range(n_cols_eval):
         header.append(Paragraph(f"<b>N{i + 1}</b>", style_celda_bold_center))
     header.append(Paragraph("<b>Prom.</b>", style_celda_bold_center))
     data_rows = [header]
 
-    # Filas de asignaturas
     for fila in filas_asignaturas:
         row = [Paragraph(fila['nombre'], style_celda_left)]
         for i in range(n_cols_eval):
@@ -1193,7 +1237,6 @@ def informe_notas_pdf(curso_id, rol_id):
         )
         data_rows.append(row)
 
-    # Fila de promedio general
     row_prom = [Paragraph("<b>Promedio general</b>", style_celda_bold_left)]
     for i in range(n_cols_eval):
         row_prom.append(Paragraph('', style_celda_center))
@@ -1262,11 +1305,54 @@ def informe_notas_pdf(curso_id, rol_id):
     elements.append(tabla_asistencia)
     elements.append(Spacer(1, 0.5 * cm))
 
-    # ── 6. OBSERVACIONES ──
+    # ── 6. TABLA DE ANOTACIONES ──
+    anot_col_widths = [4.125 * cm, 4.125 * cm, 4.125 * cm, 4.125 * cm]
+    anot_rows = [
+        [
+            Paragraph("Anotaciones positivas", style_celda_bold_center),
+            Paragraph("Anotaciones negativas", style_celda_bold_center),
+            Paragraph("Observaciones", style_celda_bold_center),
+            Paragraph("Comentarios", style_celda_bold_center),
+        ],
+        [
+            Paragraph(f"<b>{conteo_positivas}</b>", style_celda_bold_center),
+            Paragraph(f"<b>{conteo_negativas}</b>", style_celda_bold_center),
+            Paragraph(f"<b>{conteo_observaciones}</b>", style_celda_bold_center),
+            Paragraph(
+                f"<b>{'Sí' if comentarios_establecimiento else 'No'}</b>",
+                style_celda_bold_center
+            ),
+        ],
+    ]
+
+    tabla_anotaciones = Table(anot_rows, colWidths=anot_col_widths)
+    tabla_anotaciones.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.92, 0.92, 0.92)),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(tabla_anotaciones)
+    elements.append(Spacer(1, 0.3 * cm))
+
+
+    # ── 7. COMENTARIOS DEL ESTABLECIMIENTO (si existen) ──
+    if comentarios_establecimiento:
+        elements.append(Paragraph(
+            "<b>Comentarios del establecimiento:</b>", style_left_bold
+        ))
+        elements.append(Spacer(1, 0.1 * cm))
+        elements.append(Paragraph(comentarios_establecimiento, style_left))
+        elements.append(Spacer(1, 0.3 * cm))
+
+    # ── 8. OBSERVACIÓN GENERAL ──
     elements.append(Paragraph("<b>Observación:</b>", style_left_bold))
     elements.append(Spacer(1, 1.5 * cm))
 
-    # ── 7. FIRMAS ──
+    # ── 9. FIRMAS ──
     firma_data = [
         [
             Paragraph(f"<b>{nombre_prof_jefe}</b>", style_center),
@@ -1287,7 +1373,6 @@ def informe_notas_pdf(curso_id, rol_id):
     elements.append(tabla_firmas)
     elements.append(Spacer(1, 1.5 * cm))
 
-    # Líneas de firma
     lineas = [[
         Paragraph("_" * 35, style_center),
         Paragraph("_" * 35, style_center)
@@ -1299,7 +1384,7 @@ def informe_notas_pdf(curso_id, rol_id):
     elements.append(tabla_lineas)
     elements.append(Spacer(1, 0.5 * cm))
 
-    # ── 8. PIE DE PÁGINA ──
+    # ── 10. PIE DE PÁGINA ──
     meses = {
         1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril',
         5: 'mayo', 6: 'junio', 7: 'julio', 8: 'agosto',
