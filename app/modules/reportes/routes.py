@@ -899,11 +899,11 @@ def exportar_asistencia(curso_id):
 
 
 # ============================================================
-# RUTA: INFORME DE NOTAS EN PDF
+# RUTA: INFORME DE NOTAS EN PDF (FORMATO ISETT)
 # ============================================================
 @reportes_bp.route('/curso/<int:curso_id>/informe_notas/<int:rol_id>')
 def informe_notas_pdf(curso_id, rol_id):
-    """Genera informe de notas parciales en PDF con formato oficial."""
+    """Genera informe de calificaciones en PDF con formato ISETT."""
     rol = OrganizationPersonRole.query.get_or_404(rol_id)
     persona = Person.query.get_or_404(rol.PersonId)
     curso = Organization.query.get_or_404(curso_id)
@@ -912,7 +912,7 @@ def informe_notas_pdf(curso_id, rol_id):
     colegio = Organization.query.filter_by(RefOrganizationTypeId=1).first()
     nombre_colegio = colegio.Name if colegio else 'NombreColegio'
 
-    # Profesor jefe
+    # ── Profesor(a) jefe del curso ──
     prof_jefe = db.session.query(Person).join(
         OrganizationPersonRole, Person.PersonId == OrganizationPersonRole.PersonId
     ).filter(
@@ -920,11 +920,33 @@ def informe_notas_pdf(curso_id, rol_id):
         OrganizationPersonRole.RoleId == 3,
         OrganizationPersonRole.ExitDate == None
     ).first()
-    nombre_prof_jefe = f"{prof_jefe.FirstName} {prof_jefe.LastName or ''}".strip() if prof_jefe else 'No asignado'
+    nombre_prof_jefe = (
+        f"{prof_jefe.FirstName} {prof_jefe.LastName or ''}".strip()
+        if prof_jefe else 'No asignado'
+    )
+
+    # ── Director(a) del establecimiento (RoleId=1 en la org del colegio) ──
+    director = None
+    if colegio:
+        director_rol = OrganizationPersonRole.query.filter_by(
+            OrganizationId=colegio.OrganizationId,
+            RoleId=1,
+            ExitDate=None
+        ).first()
+        if director_rol:
+            director = Person.query.get(director_rol.PersonId)
+    nombre_director = (
+        f"{director.FirstName} {director.LastName or ''} {director.SecondLastName or ''}".strip()
+        if director else 'No asignado'
+    )
 
     anio_actual = datetime.now().year
+    mes_actual = datetime.now().month
+    semestre = '1º Semestre' if mes_actual <= 6 else '2º Semestre'
 
-        # ── Notas del alumno agrupadas por asignatura y tipo ──
+    # ==================================================================
+    # NOTAS DEL ALUMNO — AGRUPADAS POR ASIGNATURA Y TIPO
+    # ==================================================================
     notas_raw = db.session.query(
         EdugestManualGrade.Score, EdugestManualGrade.CreatedAt,
         EdugestManualGrade.InstrumentId,
@@ -953,120 +975,283 @@ def informe_notas_pdf(curso_id, rol_id):
         }
 
     # Paso 2: Agrupar por asignatura separando tipos
-    notas_por_asignatura = defaultdict(lambda: {'calificativas': [], 'sum_sel_scores': []})
-
+    notas_por_asignatura = defaultdict(
+        lambda: {'calificativas': [], 'sum_sel_scores': []}
+    )
     for inst_id, scores in scores_por_instrumento.items():
         meta = meta_instrumento[inst_id]
         promedio_inst = round(sum(scores) / len(scores), 1)
         asig = meta['asignatura']
-
         if meta['assessment_type'] == TIPO_SUMATIVA:
-            # Solo las seleccionadas ingresan al promedio
             if meta['seleccionada']:
                 notas_por_asignatura[asig]['sum_sel_scores'].append(promedio_inst)
-            # Las NO seleccionadas se excluyen del cálculo y la vista
         else:
-            # Calificativas (o tipo indefinido)
             notas_por_asignatura[asig]['calificativas'].append(promedio_inst)
 
-    # Paso 3: Construir filas de asignaturas con cálculo correcto
+    # Paso 3: Construir filas y determinar máximo de columnas dinámicas
     filas_asignaturas = []
+    max_notas = 0
     suma_promedios = 0
     count_promedios = 0
 
     for asignatura in sorted(notas_por_asignatura.keys()):
         data = notas_por_asignatura[asignatura]
-
         calif = data['calificativas']
         sum_sel = data['sum_sel_scores']
-
-        # Promedio de sumativas seleccionadas (= 1 calificativa más)
         prom_sum_sel = round(sum(sum_sel) / len(sum_sel), 1) if sum_sel else None
 
-        # Notas efectivas para mostrar: calificativas individuales + promedio sum. selec.
         notas_display = list(calif)
         if prom_sum_sel is not None:
             notas_display.append(prom_sum_sel)
 
-        n1 = str(notas_display[0]) if len(notas_display) > 0 else ''
-        n2 = str(notas_display[1]) if len(notas_display) > 1 else ''
-        n3 = str(notas_display[2]) if len(notas_display) > 2 else ''
-        n4 = str(notas_display[3]) if len(notas_display) > 3 else ''
+        if len(notas_display) > max_notas:
+            max_notas = len(notas_display)
 
-        # Promedio final de la asignatura
-        promedio = round(sum(notas_display) / len(notas_display), 1) if notas_display else ''
+        promedio = (
+            round(sum(notas_display) / len(notas_display), 1)
+            if notas_display else ''
+        )
+
+        filas_asignaturas.append({
+            'nombre': asignatura,
+            'notas': [round(n, 1) for n in notas_display],
+            'promedio': promedio
+        })
 
         if promedio != '':
             suma_promedios += promedio
             count_promedios += 1
-        filas_asignaturas.append([asignatura, n1, n2, n3, n4, str(promedio)])
 
-    promedio_general = round(suma_promedios / count_promedios, 1) if count_promedios > 0 else ''
+    promedio_general = (
+        round(suma_promedios / count_promedios, 1) if count_promedios > 0 else ''
+    )
+    if max_notas < 1:
+        max_notas = 1
 
-    # Anotaciones del alumno
-    anotaciones_raw = db.session.query(
-        EdugestStudentObservation.Tipo, EdugestStudentObservation.Detalle,
-        EdugestStudentObservation.FechaRegistro, Organization.Name.label('asignatura_nombre')
-    ).outerjoin(
-        Organization, EdugestStudentObservation.AsignaturaId == Organization.OrganizationId
+    # ==================================================================
+    # ASISTENCIA DEL ALUMNO
+    # ==================================================================
+    asist_raw = db.session.query(
+        EdugestSessionAttendance.AttendanceStatusId,
+        func.count(EdugestSessionAttendance.SessionAttendanceId)
     ).filter(
-        EdugestStudentObservation.OrganizationPersonRoleId == rol_id
-    ).order_by(EdugestStudentObservation.FechaRegistro.desc()).all()
+        EdugestSessionAttendance.OrganizationPersonRoleId == rol_id
+    ).group_by(EdugestSessionAttendance.AttendanceStatusId).all()
 
-    # Generar PDF
+    asist_presentes = asist_ausentes = asist_atrasos = 0
+    for sid, cnt in asist_raw:
+        if sid == 1:
+            asist_presentes = cnt
+        elif sid == 2:
+            asist_ausentes = cnt
+        elif sid == 3:
+            asist_atrasos = cnt
+
+    total_sesiones = OrganizationCalendarSession.query.filter_by(
+        OrganizationId=curso_id
+    ).count()
+
+    total_registros = asist_presentes + asist_ausentes + asist_atrasos
+    porcentaje_asistencia = round(
+        ((asist_presentes + asist_atrasos) / total_registros * 100), 0
+    ) if total_registros > 0 else 0
+    porcentaje_atrasos = round(
+        (asist_atrasos / total_sesiones * 100), 0
+    ) if total_sesiones > 0 else 0
+
+    # ==================================================================
+    # GENERACIÓN DEL PDF
+    # ==================================================================
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4,
-                            rightMargin=1.2 * cm, leftMargin=1.2 * cm,
-                            topMargin=1.2 * cm, bottomMargin=1.2 * cm)
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        rightMargin=1.5 * cm, leftMargin=1.5 * cm,
+        topMargin=1.2 * cm, bottomMargin=1.2 * cm
+    )
     elements = []
     styles = getSampleStyleSheet()
 
-    style_center_bold = ParagraphStyle('CenterBold', parent=styles['Normal'], fontSize=10,
-                                       alignment=TA_CENTER, fontName='Helvetica-Bold', leading=14)
-    style_center = ParagraphStyle('Center', parent=styles['Normal'], fontSize=10,
-                                  alignment=TA_CENTER, fontName='Helvetica', leading=14)
-    style_left_bold = ParagraphStyle('LeftBold', parent=styles['Normal'], fontSize=10,
-                                     alignment=TA_LEFT, fontName='Helvetica-Bold', leading=14)
-    style_left = ParagraphStyle('Left', parent=styles['Normal'], fontSize=10,
-                                alignment=TA_LEFT, fontName='Helvetica', leading=14)
-    style_title = ParagraphStyle('Title', parent=styles['Normal'], fontSize=14,
-                                 alignment=TA_CENTER, fontName='Helvetica-Bold', leading=18, spaceAfter=4)
-    style_subtitle = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=12,
-                                    alignment=TA_CENTER, fontName='Helvetica-Bold', leading=16, spaceAfter=8)
-    style_celda_center = ParagraphStyle('CeldaCenter', parent=styles['Normal'], fontSize=9,
-                                        alignment=TA_CENTER, fontName='Helvetica', leading=12)
-    style_celda_left = ParagraphStyle('CeldaLeft', parent=styles['Normal'], fontSize=9,
-                                      alignment=TA_LEFT, fontName='Helvetica', leading=12)
-    style_celda_bold_center = ParagraphStyle('CeldaBoldCenter', parent=styles['Normal'], fontSize=9,
-                                             alignment=TA_CENTER, fontName='Helvetica-Bold', leading=12)
-    style_celda_bold_left = ParagraphStyle('CeldaBoldLeft', parent=styles['Normal'], fontSize=9,
-                                           alignment=TA_LEFT, fontName='Helvetica-Bold', leading=12)
+    # ── Estilos ──
+    style_center_bold = ParagraphStyle(
+        'CenterBold', parent=styles['Normal'], fontSize=10,
+        alignment=TA_CENTER, fontName='Helvetica-Bold', leading=14
+    )
+    style_center = ParagraphStyle(
+        'Center', parent=styles['Normal'], fontSize=10,
+        alignment=TA_CENTER, fontName='Helvetica', leading=14
+    )
+    style_left_bold = ParagraphStyle(
+        'LeftBold', parent=styles['Normal'], fontSize=10,
+        alignment=TA_LEFT, fontName='Helvetica-Bold', leading=14
+    )
+    style_left = ParagraphStyle(
+        'Left', parent=styles['Normal'], fontSize=9.5,
+        alignment=TA_LEFT, fontName='Helvetica', leading=13
+    )
+    style_title = ParagraphStyle(
+        'Title', parent=styles['Normal'], fontSize=14,
+        alignment=TA_CENTER, fontName='Helvetica-Bold', leading=18, spaceAfter=4
+    )
+    style_subtitle = ParagraphStyle(
+        'Subtitle', parent=styles['Normal'], fontSize=11,
+        alignment=TA_CENTER, fontName='Helvetica', leading=14, spaceAfter=4
+    )
+    style_celda_center = ParagraphStyle(
+        'CeldaCenter', parent=styles['Normal'], fontSize=9,
+        alignment=TA_CENTER, fontName='Helvetica', leading=12
+    )
+    style_celda_left = ParagraphStyle(
+        'CeldaLeft', parent=styles['Normal'], fontSize=9,
+        alignment=TA_LEFT, fontName='Helvetica', leading=12
+    )
+    style_celda_bold_center = ParagraphStyle(
+        'CeldaBoldCenter', parent=styles['Normal'], fontSize=9,
+        alignment=TA_CENTER, fontName='Helvetica-Bold', leading=12
+    )
+    style_celda_bold_left = ParagraphStyle(
+        'CeldaBoldLeft', parent=styles['Normal'], fontSize=9,
+        alignment=TA_LEFT, fontName='Helvetica-Bold', leading=12
+    )
 
-    # Logo
+    # ── 1. LOGO ──
     logo_path = os.path.join(current_app.root_path, 'static', 'img', 'logo.png')
     if os.path.exists(logo_path):
         img = RLImage(logo_path, width=2 * cm, height=2 * cm)
-        logo_table = Table([[img]], colWidths=[16 * cm])
-        logo_table.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER')]))
+        logo_table = Table([[img]], colWidths=[16.5 * cm])
+        logo_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER')
+        ]))
         elements.append(logo_table)
         elements.append(Spacer(1, 0.2 * cm))
 
-    elements.append(Paragraph(f'Escuela Particular N°XXX "{nombre_colegio}"', style_center_bold))
-    elements.append(Spacer(1, 0.2 * cm))
-    elements.append(Paragraph("INFORME AVANCE DE NOTAS PARCIALES 1° SEMESTRE", style_title))
-    elements.append(Paragraph(f"Año {anio_actual}", style_subtitle))
-    elements.append(Spacer(1, 0.2 * cm))
+    # ── 2. ENCABEZADO DEL ESTABLECIMIENTO ──
+    elements.append(Paragraph(nombre_colegio, style_center_bold))
+    elements.append(Spacer(1, 0.1 * cm))
+    elements.append(Paragraph("INFORME DE CALIFICACIONES", style_title))
+    elements.append(Paragraph(semestre, style_subtitle))
+    elements.append(Spacer(1, 0.3 * cm))
 
-    nombre_alumno = f"{persona.FirstName} {persona.LastName or ''} {persona.SecondLastName or ''}".strip()
-    curso_texto = f"{grado.Name if grado else 'N/A'} {curso.ShortName or ''}".strip()
-
-    datos_data = [
-        [Paragraph("<b>Alumno</b>", style_celda_bold_left), Paragraph(nombre_alumno, style_celda_left)],
-        [Paragraph("<b>Curso</b>", style_celda_bold_left), Paragraph(curso_texto, style_celda_left)],
-        [Paragraph("<b>Profesor (a) Jefe</b>", style_celda_bold_left), Paragraph(nombre_prof_jefe, style_celda_left)],
+    # ── 3. DATOS DEL ESTUDIANTE (FORMATO NARRATIVO) ──
+    parts_nombre = [
+        persona.FirstName, persona.MiddleName,
+        persona.LastName, persona.SecondLastName
     ]
-    tabla_datos = Table(datos_data, colWidths=[4 * cm, 12.5 * cm])
-    tabla_datos.setStyle(TableStyle([
+    nombre_alumno = ' '.join(p for p in parts_nombre if p).strip()
+
+    curso_texto = (
+        f"{grado.Name if grado else 'N/A'} {curso.ShortName or ''}".strip()
+    )
+    ident = PersonIdentifier.query.filter_by(
+        PersonId=persona.PersonId, RefPersonIdentificationSystemId=51
+    ).first()
+    rut_alumno = ident.Identifier if ident else 'Sin RUT'
+    fecha_actual_str = datetime.now().strftime('%d/%m/%Y')
+
+    texto_info = (
+        f'Se otorga el presente informe de calificaciones a '
+        f'<b>{nombre_alumno}</b> RUN: <b>{rut_alumno}</b> '
+        f'estudiante del Curso <b>{curso_texto}</b> '
+        f'con fecha <b>{fecha_actual_str}</b>, de acuerdo al plan '
+        f'y programas de estudios aprobados por decreto o resolución '
+        f'exenta de educación N° 1358 de 2011 y reglamento de evaluación '
+        f'y promoción escolar decreto exento N° 67 de 2018.'
+    )
+    elements.append(Paragraph(texto_info, style_left))
+    elements.append(Spacer(1, 0.4 * cm))
+
+    # ── 4. TABLA DE CALIFICACIONES (COLUMNAS DINÁMICAS) ──
+    n_cols_eval = max_notas
+    ancho_disponible = 16.5 * cm
+    ancho_asignatura = 5.5 * cm
+    ancho_promedio = 1.8 * cm
+    ancho_restante = ancho_disponible - ancho_asignatura - ancho_promedio
+    ancho_eval = ancho_restante / n_cols_eval if n_cols_eval > 0 else 2 * cm
+    col_widths = (
+        [ancho_asignatura] + [ancho_eval] * n_cols_eval + [ancho_promedio]
+    )
+
+    # Encabezado: Asignaturas | N1 | N2 | ... | Prom.
+    header = [Paragraph("<b>Asignaturas</b>", style_celda_bold_center)]
+    for i in range(n_cols_eval):
+        header.append(Paragraph(f"<b>N{i + 1}</b>", style_celda_bold_center))
+    header.append(Paragraph("<b>Prom.</b>", style_celda_bold_center))
+    data_rows = [header]
+
+    # Filas de asignaturas
+    for fila in filas_asignaturas:
+        row = [Paragraph(fila['nombre'], style_celda_left)]
+        for i in range(n_cols_eval):
+            if i < len(fila['notas']):
+                row.append(
+                    Paragraph(str(fila['notas'][i]), style_celda_center)
+                )
+            else:
+                row.append(Paragraph('', style_celda_center))
+        prom_text = str(fila['promedio']) if fila['promedio'] != '' else ''
+        row.append(
+            Paragraph(f"<b>{prom_text}</b>", style_celda_bold_center)
+        )
+        data_rows.append(row)
+
+    # Fila de promedio general
+    row_prom = [Paragraph("<b>Promedio general</b>", style_celda_bold_left)]
+    for i in range(n_cols_eval):
+        row_prom.append(Paragraph('', style_celda_center))
+    row_prom.append(
+        Paragraph(f"<b>{promedio_general}</b>", style_celda_bold_center)
+    )
+    data_rows.append(row_prom)
+
+    tabla_notas = Table(data_rows, colWidths=col_widths)
+    tabla_notas.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.92, 0.92, 0.92)),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.Color(0.95, 0.95, 0.95)),
+    ]))
+    elements.append(tabla_notas)
+    elements.append(Spacer(1, 0.5 * cm))
+
+    # ── 5. TABLA DE ASISTENCIA ──
+    asist_col_widths = [5.5 * cm, 5.5 * cm, 5.5 * cm]
+    asist_rows = [
+        [
+            Paragraph(
+                f"Asistencia: <b>{int(porcentaje_asistencia)}%</b>",
+                style_celda_center
+            ),
+            Paragraph(
+                f"Inasistencias: <b>{asist_ausentes}</b>",
+                style_celda_center
+            ),
+            Paragraph(
+                f"{total_sesiones} días trabajados",
+                style_celda_center
+            ),
+        ],
+        [
+            Paragraph(
+                f"Número de atrasos: <b>{asist_atrasos}</b>",
+                style_celda_center
+            ),
+            Paragraph(
+                "Tiempo acumulado en atrasos: <b>0 minutos</b>",
+                style_celda_center
+            ),
+            Paragraph(
+                f"Porcentaje de atrasos: <b>{int(porcentaje_atrasos)}%</b>"
+                f" ({total_sesiones} días considerados)",
+                style_celda_center
+            ),
+        ],
+    ]
+
+    tabla_asistencia = Table(asist_rows, colWidths=asist_col_widths)
+    tabla_asistencia.setStyle(TableStyle([
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING', (0, 0), (-1, -1), 5),
@@ -1074,116 +1259,65 @@ def informe_notas_pdf(curso_id, rol_id):
         ('LEFTPADDING', (0, 0), (-1, -1), 6),
         ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ]))
-    elements.append(tabla_datos)
-    elements.append(Spacer(1, 0.3 * cm))
-
-    # Tabla principal de notas
-    col_widths = [6 * cm, 1.3 * cm, 1.3 * cm, 1.3 * cm, 1.3 * cm, 1.3 * cm, 1.3 * cm, 1.3 * cm, 2.5 * cm]
-
-    header_row1 = [
-        Paragraph("<b>Asignaturas</b>", style_celda_bold_center),
-        Paragraph("<b>Calificaciones</b>", style_celda_bold_center), '', '', '', '', '', '',
-        Paragraph("<b>Promedio</b>", style_celda_bold_center)
-    ]
-    header_row2 = [
-        '',
-        Paragraph("<b>1</b>", style_celda_bold_center),
-        Paragraph("<b>2</b>", style_celda_bold_center),
-        Paragraph("<b>3</b>", style_celda_bold_center),
-        Paragraph("<b>4</b>", style_celda_bold_center),
-        '', '', '',
-        Paragraph("<b>Promedio</b>", style_celda_bold_center)
-    ]
-
-    data_rows = []
-    for fila in filas_asignaturas:
-        data_rows.append([
-            Paragraph(fila[0], style_celda_left),
-            Paragraph(fila[1], style_celda_center) if fila[1] else Paragraph("", style_celda_center),
-            Paragraph(fila[2], style_celda_center) if fila[2] else Paragraph("", style_celda_center),
-            Paragraph(fila[3], style_celda_center) if fila[3] else Paragraph("", style_celda_center),
-            Paragraph(fila[4], style_celda_center) if fila[4] else Paragraph("", style_celda_center),
-            '', '', '',
-            Paragraph(f"<b>{fila[5]}</b>" if fila[5] else "", style_celda_bold_center)
-        ])
-
-    if not data_rows:
-        for i in range(5):
-            data_rows.append([Paragraph(f'Asignatura {i + 1}', style_celda_left),
-                              '', '', '', '', '', '', '', ''])
-
-    promedio_row = ['', '', '', '', '', '', '', '',
-                    Paragraph("<b>Promedio General</b>", style_celda_bold_center)]
-    promedio_val_row = ['', '', '', '', '', '', '', '',
-                        Paragraph(f"<b>{promedio_general}</b>" if promedio_general else "",
-                                  style_celda_bold_center)]
-
-    all_rows = [header_row1, header_row2] + data_rows + [promedio_row, promedio_val_row]
-    tabla_notas = Table(all_rows, colWidths=col_widths, repeatRows=2)
-
-    tabla_style = TableStyle([
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('BOX', (0, 0), (-1, -1), 1, colors.black),
-        ('LINEBELOW', (0, 0), (-1, 0), 1, colors.black),
-        ('LINEBELOW', (0, 1), (-1, 1), 1, colors.black),
-        ('LINEAFTER', (0, 0), (0, -1), 1, colors.black),
-        ('LINEAFTER', (4, 1), (4, -1), 0.5, colors.black),
-        ('LINEAFTER', (8, 0), (8, -1), 1, colors.black),
-        ('BACKGROUND', (5, 1), (7, -3), colors.HexColor('#cccccc')),
-        ('BACKGROUND', (0, 0), (0, 1), colors.HexColor('#f5f5f5')),
-        ('BACKGROUND', (1, 0), (7, 0), colors.HexColor('#f5f5f5')),
-        ('BACKGROUND', (8, 0), (8, 1), colors.HexColor('#f5f5f5')),
-        ('BACKGROUND', (1, 1), (4, 1), colors.HexColor('#f5f5f5')),
-        ('BACKGROUND', (0, -2), (-1, -1), colors.HexColor('#f5f5f5')),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('LEFTPADDING', (0, 0), (0, -1), 6),
-        ('RIGHTPADDING', (0, 0), (0, -1), 6),
-    ])
-
-    for i in range(2, 2 + len(data_rows)):
-        tabla_style.add('LINEBELOW', (0, i), (-1, i), 0.5, colors.black)
-
-    tabla_style.add('SPAN', (0, 0), (0, 1))
-    tabla_style.add('SPAN', (1, 0), (7, 0))
-    tabla_style.add('SPAN', (8, 0), (8, 1))
-    tabla_style.add('SPAN', (5, 1), (7, 1))
-
-    tabla_notas.setStyle(tabla_style)
-    elements.append(tabla_notas)
+    elements.append(tabla_asistencia)
     elements.append(Spacer(1, 0.5 * cm))
 
-    # Observaciones
-    if anotaciones_raw:
-        elements.append(Paragraph("<b>Observaciones:</b>", style_left_bold))
-        elements.append(Spacer(1, 0.2 * cm))
-        for anot in anotaciones_raw[:10]:
-            fecha_str = anot.FechaRegistro.strftime('%d/%m/%Y') if anot.FechaRegistro else ''
-            texto = f"[{anot.Tipo}] {fecha_str}: {anot.Detalle or ''}"
-            elements.append(Paragraph(f"• {texto}", style_left))
-        elements.append(Spacer(1, 0.3 * cm))
+    # ── 6. OBSERVACIONES ──
+    elements.append(Paragraph("<b>Observación:</b>", style_left_bold))
+    elements.append(Spacer(1, 1.5 * cm))
 
-    # Firma
-    elements.append(Spacer(1, 1 * cm))
+    # ── 7. FIRMAS ──
     firma_data = [
-        ['_' * 30, '', '_' * 30],
-        [Paragraph('Firma Profesor(a) Jefe', style_center), '',
-         Paragraph('Firma Apoderado(a)', style_center)]
+        [
+            Paragraph(f"<b>{nombre_prof_jefe}</b>", style_center),
+            Paragraph(f"<b>{nombre_director}</b>", style_center),
+        ],
+        [
+            Paragraph("Profesor(a) jefe", style_center),
+            Paragraph("Director(a)", style_center),
+        ],
     ]
-    tabla_firma = Table(firma_data, colWidths=[6 * cm, 4 * cm, 6 * cm])
-    tabla_firma.setStyle(TableStyle([
+    tabla_firmas = Table(firma_data, colWidths=[8.25 * cm, 8.25 * cm])
+    tabla_firmas.setStyle(TableStyle([
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
     ]))
-    elements.append(tabla_firma)
+    elements.append(tabla_firmas)
+    elements.append(Spacer(1, 1.5 * cm))
 
+    # Líneas de firma
+    lineas = [[
+        Paragraph("_" * 35, style_center),
+        Paragraph("_" * 35, style_center)
+    ]]
+    tabla_lineas = Table(lineas, colWidths=[8.25 * cm, 8.25 * cm])
+    tabla_lineas.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER')
+    ]))
+    elements.append(tabla_lineas)
+    elements.append(Spacer(1, 0.5 * cm))
+
+    # ── 8. PIE DE PÁGINA ──
+    meses = {
+        1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril',
+        5: 'mayo', 6: 'junio', 7: 'julio', 8: 'agosto',
+        9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre'
+    }
+    elements.append(Paragraph(
+        f"Temuco, {meses.get(mes_actual, 'junio')} {anio_actual}",
+        style_center
+    ))
+
+    # ── Construir y retornar PDF ──
     doc.build(elements)
     buffer.seek(0)
 
-    filename = f"informe_notas_{persona.FirstName}_{persona.LastName}.pdf"
-    return send_file(buffer, mimetype='application/pdf', download_name=filename, as_attachment=True)
+    return send_file(
+        buffer, mimetype='application/pdf',
+        download_name=f'informe_notas_{persona.FirstName}_{persona.LastName}.pdf'
+    )
 
 
 
