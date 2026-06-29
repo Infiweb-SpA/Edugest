@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Chat – {{ contacto.FirstName }} {{ contacto.LastName }}{% endblock %}
+{% block header_title %}Mensajería{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto h-[calc(100vh-14rem)] flex flex-col">
+
+    <!-- Cabecera del chat -->
+    <div class="flex items-center gap-4 p-4 bg-white rounded-t-xl border border-gray-200 shadow-sm shrink-0">
+        <a href="{{ url_for('comunicacion.chat_lista') }}"
+           class="text-gray-400 hover:text-indigo-600 transition p-1">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+        </a>
+        <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm shrink-0">
+            {{ contacto.FirstName[0] }}{{ contacto.LastName[0] }}
+        </div>
+        <div class="min-w-0">
+            <h3 class="font-bold text-gray-800 truncate">
+                {{ contacto.FirstName }} {{ contacto.MiddleName or '' }} {{ contacto.LastName }} {{ contacto.SecondLastName or '' }}
+            </h3>
+            <p class="text-xs text-gray-500">{{ contacto_rol }}</p>
+        </div>
+    </div>
+
+    <!-- Área de mensajes -->
+    <div id="chat-messages"
+         class="flex-1 overflow-y-auto p-4 bg-gray-50 border-x border-gray-200 space-y-3">
+
+        {% if mensajes %}
+            {% set ns = namespace(last_date='') %}
+            {% for msg in mensajes %}
+                {%- set fecha_msg = msg.SentAt.strftime('%d/%m/%Y') if msg.SentAt else '' -%}
+                {% if fecha_msg != ns.last_date %}
+                <div class="text-center my-2">
+                    <span class="inline-block px-3 py-1 bg-gray-200 text-gray-600 text-xs font-semibold rounded-full">
+                        {{ fecha_msg }}
+                    </span>
+                </div>
+                {% set ns.last_date = fecha_msg %}
+                {% endif %}
+
+                <div class="flex {{ 'justify-end' if msg.SenderPersonId == mi_person_id else 'justify-start' }}">
+                    <div class="max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm
+                        {% if msg.SenderPersonId == mi_person_id %}
+                            bg-indigo-600 text-white rounded-br-md
+                        {% else %}
+                            bg-white text-gray-800 border border-gray-200 rounded-bl-md
+                        {% endif %}">
+                        <p class="leading-relaxed whitespace-pre-wrap break-words">{{ msg.MessageText }}</p>
+                        <p class="text-[10px] mt-1.5 text-right {{ 'text-indigo-200' if msg.SenderPersonId == mi_person_id else 'text-gray-400' }}">
+                            {{ msg.SentAt.strftime('%H:%M') if msg.SentAt else '' }}
+                            {% if msg.SenderPersonId == mi_person_id %}
+                                {% if msg.IsRead %}
+                                <span title="Leído"> ✓✓</span>
+                                {% else %}
+                                <span title="Enviado"> ✓</span>
+                                {% endif %}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            {% endfor %}
+
+        {% else %}
+            <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                <p class="text-4xl mb-3">💬</p>
+                <p class="text-sm">Inicia la conversación enviando un mensaje.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Formulario de envío -->
+        <!-- Formulario de envío (solo si tiene permiso de escritura) -->
+    {% if puede_escribir %}
+    <form method="POST"
+          action="{{ url_for('comunicacion.chat_enviar', contacto_id=contacto.PersonId) }}"
+          class="flex items-center gap-3 p-4 bg-white rounded-b-xl border border-gray-200 shadow-sm shrink-0">
+        <input type="text"
+               name="mensaje"
+               id="chat-input"
+               placeholder="Escribe tu mensaje..."
+               autocomplete="off"
+               maxlength="5000"
+               required
+               class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition">
+        <button type="submit"
+                class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow-sm text-sm shrink-0 active:scale-95">
+            Enviar
+        </button>
+    </form>
+    {% else %}
+    <div class="p-4 bg-white rounded-b-xl border border-gray-200 shadow-sm shrink-0 text-center">
+        <p class="text-sm text-gray-400">No tienes permisos para enviar mensajes en esta conversación.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-scroll al último mensaje
+    const box = document.getElementById('chat-messages');
+    if (box) box.scrollTop = box.scrollHeight;
+
+    // Focus en el input
+    const input = document.getElementById('chat-input');
+    if (input) input.focus();
+
+    // Polling cada 8 segundos para mensajes nuevos
+    const contactoId = {{ contacto.PersonId }};
+    const ultimoMsgId = {{ mensajes[-1].MessageId if mensajes else 0 }};
+
+    let ultimoId = ultimoMsgId;
+
+    setInterval(function() {
+        fetch(`/comunicacion/chat/${contactoId}/mensajes-nuevos?desde=${ultimoId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) return;
+                data.forEach(m => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'flex ' + (m.enviado ? 'justify-end' : 'justify-start');
+
+                    const bubble = document.createElement('div');
+                    bubble.className = 'max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm ' +
+                        (m.enviado
+                            ? 'bg-indigo-600 text-white rounded-br-md'
+                            : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md');
+
+                    bubble.innerHTML =
+                        '<p class="leading-relaxed whitespace-pre-wrap break-words">' + m.texto + '</p>' +
+                        '<p class="text-[10px] mt-1.5 text-right ' +
+                        (m.enviado ? 'text-indigo-200' : 'text-gray-400') + '">' +
+                        m.hora.split(' ')[1] + '</p>';
+
+                    wrapper.appendChild(bubble);
+                    box.appendChild(wrapper);
+                    ultimoId = m.id;
+                });
+                box.scrollTop = box.scrollHeight;
+            })
+            .catch(() => {});
+    }, 8000);
+});
+</script>
+{% endblock %}

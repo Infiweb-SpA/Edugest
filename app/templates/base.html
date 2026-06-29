@@ -90,11 +90,33 @@
                     {% endif %}
 
                     {% if user_permisos.get('Comunicaciones', 0) >= 1 %}
-                    <a href="{{ url_for('comunicacion.anuncios') }}"
-                        class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
-                        <span>📢</span>
-                        <span>Comunicaciones</span>
-                    </a>
+                    <div x-data="{ open: window.location.pathname.startsWith('/comunicacion') }">
+                        <button @click="open = !open"
+                            class="w-full flex items-center justify-between py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
+                            <div class="flex items-center space-x-3">
+                                <span>📢</span>
+                                <span>Comunicaciones</span>
+                            </div>
+                            <svg class="w-4 h-4 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div x-show="open" x-transition class="ml-4 mt-1 space-y-0.5" style="display: none;">
+                            <a href="{{ url_for('comunicacion.anuncios') }}"
+                               class="block py-2 px-4 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition">
+                                📩 Anuncios
+                            </a>
+                            <a href="{{ url_for('comunicacion.contactos') }}"
+                               class="block py-2 px-4 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition">
+                                📱 Contactos
+                            </a>
+                            
+                            <a href="{{ url_for('comunicacion.chat_lista') }}"
+                               class="block py-2 px-4 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition">
+                                💬 Mensajería
+                            </a>
+                        </div>
+                    </div>
                     {% endif %}
 
                     {% if user_permisos.get('Biblioteca CRA', 0) >= 1 %}
