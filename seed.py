@@ -3,8 +3,8 @@ from app.database import db
 from app.models import (
     Person, PersonIdentifier, Organization, OrganizationRelationship,
     OrganizationIdentifier, OrganizationPersonRole,
+    PersonEmailAddress, PersonTelephone,
     EdugestCurriculumPlan, EdugestModule,
-    # NUEVOS MODELOS DE MATRÍCULA
     EdugestStudentEnrollment, EdugestEmergencyContact,
     EdugestStudentHealth, EdugestStudentPIE,
     EdugestPersonRelationshipDetail
@@ -18,7 +18,6 @@ def crear_jerarquia_completa():
     import string
 
     # 0. MÓDULOS DEL SISTEMA
-        # 0. MÓDULOS DEL SISTEMA
     if not EdugestModule.query.first():
         modulos_iniciales = [
             EdugestModule(ModuleName="Libro Digital", IsEnabled=True),
@@ -241,7 +240,7 @@ def crear_apoderado_completo(estudiante_id, datos_apoderado, orden=0):
     y lo vincula al estudiante.
     """
     from app.models.mineduc import PersonRelationship, PersonTelephone, PersonEmailAddress, PersonAddress, PersonDegreeOrCertificate
-    
+
     apoderado = Person(
         FirstName=datos_apoderado["nombre"],
         MiddleName="",
@@ -258,28 +257,28 @@ def crear_apoderado_completo(estudiante_id, datos_apoderado, orden=0):
             Identifier=datos_apoderado["rut"],
             RefPersonIdentificationSystemId=51
         ))
-    
+
     # Teléfono
     if datos_apoderado.get("telefono"):
         db.session.add(PersonTelephone(
             PersonId=apoderado.PersonId,
             TelephoneNumber=datos_apoderado["telefono"]
         ))
-    
+
     # Email
     if datos_apoderado.get("email"):
         db.session.add(PersonEmailAddress(
             PersonId=apoderado.PersonId,
             EmailAddress=datos_apoderado["email"]
         ))
-    
+
     # Dirección
     if datos_apoderado.get("direccion"):
         db.session.add(PersonAddress(
             PersonId=apoderado.PersonId,
             StreetNumberAndName=datos_apoderado["direccion"]
         ))
-    
+
     # Nivel educacional
     if datos_apoderado.get("nivel_educativo"):
         db.session.add(PersonDegreeOrCertificate(
@@ -320,12 +319,12 @@ def crear_alumnos_prueba(curso_id):
     """Crea 5 alumnos ficticios con datos completos de matrícula extendida"""
     from datetime import date
     from app.models.mineduc import PersonAddress, PersonTelephone, PersonEmailAddress
-    
+
     alumnos_datos = [
         {
-            "rut": "21.345.678-9", 
-            "nombre": "Juan Carlos", 
-            "apellido_p": "Pérez", 
+            "rut": "21.345.678-9",
+            "nombre": "Juan Carlos",
+            "apellido_p": "Pérez",
             "apellido_m": "Muñoz",
             "sexo": 1,
             "nacimiento": date(2015, 3, 15),
@@ -370,9 +369,9 @@ def crear_alumnos_prueba(curso_id):
             }
         },
         {
-            "rut": "22.456.789-K", 
-            "nombre": "María José", 
-            "apellido_p": "González", 
+            "rut": "22.456.789-K",
+            "nombre": "María José",
+            "apellido_p": "González",
             "apellido_m": "Tapia",
             "sexo": 2,
             "nacimiento": date(2015, 7, 22),
@@ -416,9 +415,9 @@ def crear_alumnos_prueba(curso_id):
             "apoderado_suplente": None
         },
         {
-            "rut": "21.987.654-3", 
-            "nombre": "Diego Andrés", 
-            "apellido_p": "San Martín", 
+            "rut": "21.987.654-3",
+            "nombre": "Diego Andrés",
+            "apellido_p": "San Martín",
             "apellido_m": "Araya",
             "sexo": 1,
             "nacimiento": date(2015, 1, 10),
@@ -463,9 +462,9 @@ def crear_alumnos_prueba(curso_id):
             }
         },
         {
-            "rut": "23.111.222-3", 
-            "nombre": "Valentina Paz", 
-            "apellido_p": "Contreras", 
+            "rut": "23.111.222-3",
+            "nombre": "Valentina Paz",
+            "apellido_p": "Contreras",
             "apellido_m": "Silva",
             "sexo": 2,
             "nacimiento": date(2016, 5, 30),
@@ -505,9 +504,9 @@ def crear_alumnos_prueba(curso_id):
             "apoderado_suplente": None
         },
         {
-            "rut": "22.888.999-4", 
-            "nombre": "Sebastián Igor", 
-            "apellido_p": "Muñoz", 
+            "rut": "22.888.999-4",
+            "nombre": "Sebastián Igor",
+            "apellido_p": "Muñoz",
             "apellido_m": "Vergara",
             "sexo": 1,
             "nacimiento": date(2015, 11, 5),
@@ -602,7 +601,7 @@ def crear_alumnos_prueba(curso_id):
                 EntryDate=date(2025, 3, 1)
             ))
 
-             # 6. DATOS EXTENDIDOS DE MATRÍCULA
+            # 6. DATOS EXTENDIDOS DE MATRÍCULA
             db.session.add(EdugestStudentEnrollment(
                 PersonId=persona.PersonId,
                 Nacionalidad=data.get("nacionalidad"),
@@ -686,6 +685,106 @@ def crear_alumnos_prueba(curso_id):
 
 
 # ============================================================
+# NUEVA FUNCIÓN: CREAR PROFESOR JEFE DE PRUEBA
+# ============================================================
+def crear_profesor_jefe_prueba(curso_id, rut_profesor="11.222.333-4"):
+    """
+    Crea un profesor de prueba con usuario, datos de contacto,
+    y lo asigna como Profesor Jefe de un curso específico.
+
+    Args:
+        curso_id: OrganizationId del curso (Tipo 21) al que será jefe
+        rut_profesor: RUT del profesor a crear
+    """
+    from datetime import date
+    from werkzeug.security import generate_password_hash
+    from app.models.edugest import EdugestUser
+
+    # Verificar si ya existe
+    ident = PersonIdentifier.query.filter_by(
+        Identifier=rut_profesor, RefPersonIdentificationSystemId=51
+    ).first()
+
+    if ident:
+        print(f"ℹ️ Profesor ya existe: {rut_profesor}")
+        # Verificar si ya tiene asignación de jefe
+        jefe_existente = OrganizationPersonRole.query.filter_by(
+            PersonId=ident.PersonId, EsProfesorJefe=True, ExitDate=None
+        ).first()
+        if not jefe_existente:
+            # Solo crear la asignación si no existe
+            db.session.add(OrganizationPersonRole(
+                OrganizationId=curso_id,
+                PersonId=ident.PersonId,
+                RoleId=3,
+                EntryDate=date(2025, 3, 1),
+                EsProfesorJefe=True
+            ))
+            db.session.commit()
+            print(f"   ✅ Asignación de Profesor Jefe creada para Curso ID {curso_id}")
+        else:
+            print(f"   ℹ️ Ya tiene asignación de Profesor Jefe en Curso ID {jefe_existente.OrganizationId}")
+        return
+
+    # 1. Crear persona
+    persona = Person(
+        FirstName="Carlos Alberto",
+        MiddleName="",
+        LastName="Mendoza",
+        SecondLastName="Riquelme",
+        RefSexId=1,
+        Birthdate=date(1985, 8, 20)
+    )
+    db.session.add(persona)
+    db.session.flush()
+
+    # 2. RUT
+    db.session.add(PersonIdentifier(
+        PersonId=persona.PersonId,
+        Identifier=rut_profesor,
+        RefPersonIdentificationSystemId=51
+    ))
+
+    # 3. Contacto
+    db.session.add(PersonEmailAddress(
+        PersonId=persona.PersonId,
+        EmailAddress="carlos.mendoza@liceo.cl"
+    ))
+    db.session.add(PersonTelephone(
+        PersonId=persona.PersonId,
+        TelephoneNumber="+56955556666"
+    ))
+
+    db.session.flush()
+
+    # 4. Cuenta de usuario
+    db.session.add(EdugestUser(
+        PersonId=persona.PersonId,
+        Username=rut_profesor,
+        PasswordHash=generate_password_hash("1234"),
+        IsActive=True,
+        RoleId=3  # Profesor
+    ))
+
+    # 5. Asignación como Profesor Jefe del curso
+    db.session.add(OrganizationPersonRole(
+        OrganizationId=curso_id,
+        PersonId=persona.PersonId,
+        RoleId=3,
+        EntryDate=date(2025, 3, 1),
+        EsProfesorJefe=True
+    ))
+
+    db.session.commit()
+
+    # Buscar nombre del curso para el log
+    curso = Organization.query.get(curso_id)
+    print(f"✅ Profesor Jefe creado: Carlos Alberto Mendoza Riquelme ({rut_profesor})")
+    print(f"   Asignado como jefe de: {curso.Name if curso else f'Curso ID {curso_id}'}")
+    print(f"   Usuario: {rut_profesor} / Contraseña: 1234")
+
+
+# ============================================================
 # EJECUCIÓN PRINCIPAL
 # ============================================================
 with app.app_context():
@@ -715,6 +814,13 @@ with app.app_context():
 
         if curso_1A:
             crear_alumnos_prueba(curso_1A.OrganizationId)
+
+            # ============================================================
+            # CREAR PROFESOR JEFE para 1° Básico A
+            # ============================================================
+            print("\n👩‍🏫 Creando Profesor Jefe de prueba...")
+            crear_profesor_jefe_prueba(curso_1A.OrganizationId)
+
         else:
             print("❌ No se encontró el curso 1° Básico A")
     else:
@@ -774,7 +880,7 @@ with app.app_context():
     else:
         print(f"   ℹ️ Usuario administrador ya existe: {rut_admin}")
 
-        # ============================================================
+    # ============================================================
     # CREAR ROLES BASE DEL SISTEMA
     # ============================================================
     from app.models.edugest import EdugestRole
@@ -787,17 +893,17 @@ with app.app_context():
         3: 'Profesor',
         4: 'Inspector',
         5: 'Apoderado / Tutor',
-        6: 'Alumno' #es este numero para que coincida con el RoleId del mineduc
+        6: 'Alumno'
     }
 
     for role_id, nombre in roles_base.items():
-        if not EdugestRole.query.get(role_id):
+        if not db.session.get(EdugestRole, role_id):
             db.session.add(EdugestRole(RoleId=role_id, RoleName=nombre))
             print(f"   ✅ Rol creado: {nombre} (ID: {role_id})")
         else:
             print(f"   ℹ️  Rol ya existe: {nombre} (ID: {role_id})")
 
     db.session.commit()
-    
+
     print("\n" + "=" * 60)
     print("🎉 ¡Siembra completada!")

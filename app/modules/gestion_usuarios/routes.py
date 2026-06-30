@@ -1,13 +1,21 @@
 import secrets
+from datetime import datetime, date
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from app.database import db
 from app.models.edugest import EdugestUser, EdugestRolePermission, EdugestModule, EdugestRole
-from app.models.mineduc import Person, PersonIdentifier, PersonTelephone, PersonEmailAddress
+from app.models.mineduc import (
+    Person, PersonIdentifier, PersonTelephone, PersonEmailAddress,
+    Organization, OrganizationRelationship, OrganizationPersonRole
+)
 
 gestion_usuarios_bp = Blueprint('gestion_usuarios', __name__, url_prefix='/gestion-usuarios')
 
+
+# ============================================================================
+# HELPERS
+# ============================================================================
 
 def _admin_required():
     return current_user.is_authenticated and current_user.RoleId == 1
@@ -25,6 +33,128 @@ def _persona_ya_tiene_usuario(person_id):
 def _obtener_roles_disponibles():
     """Obtiene todos los roles desde la tabla EdugestRole."""
     return EdugestRole.query.order_by(EdugestRole.RoleId).all()
+
+
+def _es_profesor_rol(role_id):
+    """Verifica si el RoleId corresponde a un rol de tipo Profesor."""
+    rol = EdugestRole.query.get(role_id)
+    return rol and rol.RoleName.lower() == 'profesor'
+
+
+def _obtener_grados_con_cursos():
+    """
+    Retorna una lista de grados (RefOrganizationTypeId=46),
+    cada uno con sus cursos hijos (RefOrganizationTypeId=21).
+    Estructura: [{'grado': Organization, 'cursos': [Organization, ...]}, ...]
+    """
+    grados = Organization.query.filter_by(
+        RefOrganizationTypeId=46
+    ).order_by(Organization.Name).all()
+
+    resultado = []
+    for grado in grados:
+        cursos = Organization.query.join(
+            OrganizationRelationship,
+            Organization.OrganizationId == OrganizationRelationship.OrganizationId
+        ).filter(
+            Organization.RefOrganizationTypeId == 21,
+            OrganizationRelationship.ParentOrganizationId == grado.OrganizationId
+        ).order_by(Organization.ShortName).all()
+        resultado.append({'grado': grado, 'cursos': cursos})
+    return resultado
+
+
+def _obtener_profesor_jefe(person_id):
+    """
+    Retorna el OrganizationPersonRole donde esta persona es Profesor Jefe activo.
+    Retorna None si no tiene asignación.
+    """
+    return OrganizationPersonRole.query.filter_by(
+        PersonId=person_id,
+        EsProfesorJefe=True,
+        ExitDate=None
+    ).first()
+
+
+def _obtener_info_jefe(person_id):
+    """
+    Retorna un diccionario con el nombre del curso y grado
+    si la persona es profesor jefe, o None si no lo es.
+    """
+    jefe_asignacion = _obtener_profesor_jefe(person_id)
+    if not jefe_asignacion:
+        return None
+
+    curso_org = Organization.query.get(jefe_asignacion.OrganizationId)
+    if not curso_org:
+        return None
+
+    rel = OrganizationRelationship.query.filter_by(
+        OrganizationId=curso_org.OrganizationId
+    ).first()
+    grado_org = Organization.query.get(rel.ParentOrganizationId) if rel else None
+
+    return {
+        'curso': curso_org.Name,
+        'grado': grado_org.Name if grado_org else '',
+        'curso_id': curso_org.OrganizationId,
+        'grado_id': grado_org.OrganizationId if grado_org else None,
+        'asignacion': jefe_asignacion
+    }
+
+
+def _crear_asignacion_profesor_jefe(person_id, curso_id, role_id):
+    """
+    Crea un nuevo OrganizationPersonRole marcando al profesor como jefe.
+    Primero cierra cualquier asignación anterior activa.
+    """
+    # Cerrar asignación anterior si existe
+    OrganizationPersonRole.query.filter_by(
+        PersonId=person_id, EsProfesorJefe=True, ExitDate=None
+    ).update({'ExitDate': date.today()})
+
+    # Crear nueva asignación
+    nueva_asignacion = OrganizationPersonRole(
+        OrganizationId=int(curso_id),
+        PersonId=person_id,
+        RoleId=role_id,
+        EntryDate=date.today(),
+        EsProfesorJefe=True
+    )
+    db.session.add(nueva_asignacion)
+
+
+def _quitar_asignacion_profesor_jefe(person_id):
+    """
+    Cierra la asignación activa de profesor jefe (marca ExitDate).
+    """
+    OrganizationPersonRole.query.filter_by(
+        PersonId=person_id, EsProfesorJefe=True, ExitDate=None
+    ).update({'ExitDate': date.today()})
+
+
+# ============================================================================
+# API: CURSOS POR GRADO (para dropdown dependiente via AJAX)
+# ============================================================================
+@gestion_usuarios_bp.route('/api/cursos/<int:grado_id>')
+@login_required
+def api_cursos_por_grado(grado_id):
+    """Retorna JSON con los cursos de un grado para carga dinámica."""
+    if not _admin_required():
+        return {'cursos': []}
+
+    cursos = Organization.query.join(
+        OrganizationRelationship,
+        Organization.OrganizationId == OrganizationRelationship.OrganizationId
+    ).filter(
+        Organization.RefOrganizationTypeId == 21,
+        OrganizationRelationship.ParentOrganizationId == grado_id
+    ).order_by(Organization.ShortName).all()
+
+    return {'cursos': [
+        {'id': c.OrganizationId, 'nombre': c.Name, 'letra': c.ShortName or ''}
+        for c in cursos
+    ]}
 
 
 # ============================================================================
@@ -52,12 +182,18 @@ def listar():
             RoleId=u.RoleId
         ).filter(EdugestRolePermission.PermissionLevel > 0).count()
 
+        # Buscar si es profesor jefe de algún curso
+        jefe_info = None
+        if _es_profesor_rol(u.RoleId):
+            jefe_info = _obtener_info_jefe(u.PersonId)
+
         usuarios_data.append({
             'usuario': u,
             'persona': persona,
             'rut_persona': ident.Identifier if ident else 'Sin RUT',
             'permisos_count': permisos_count,
-            'rol_nombre': roles_dict.get(u.RoleId, f'Rol {u.RoleId}')
+            'rol_nombre': roles_dict.get(u.RoleId, f'Rol {u.RoleId}'),
+            'jefe_info': jefe_info
         })
 
     return render_template('gestion_usuarios/listar.html', usuarios=usuarios_data)
@@ -74,6 +210,7 @@ def crear():
         return redirect(url_for('admin.dashboard'))
 
     roles_disponibles = _obtener_roles_disponibles()
+    grados_con_cursos = _obtener_grados_con_cursos()
 
     # Personas existentes sin usuario
     personas_con_usuario = db.session.query(EdugestUser.PersonId).subquery()
@@ -97,12 +234,18 @@ def crear():
         role_id = int(request.form.get('role_id', 6))
         is_active = 'is_active' in request.form
 
+        # Campos de profesor jefe
+        grado_id = request.form.get('grado_id')
+        curso_id = request.form.get('curso_id')
+        es_profesor_jefe = 'es_profesor_jefe' in request.form
+
         if len(password) < 4:
             flash('La contraseña debe tener al menos 4 caracteres.', 'error')
             return render_template('gestion_usuarios/formulario.html',
                                    personas=personas_data, modo_form='crear',
                                    usuario=None, datos_form=request.form,
-                                   roles_disponibles=roles_disponibles)
+                                   roles_disponibles=roles_disponibles,
+                                   grados_con_cursos=grados_con_cursos)
 
         # ── MODO 1: Seleccionar persona existente ──
         if modo == 'existente':
@@ -113,7 +256,8 @@ def crear():
                 return render_template('gestion_usuarios/formulario.html',
                                        personas=personas_data, modo_form='crear',
                                        usuario=None, datos_form=request.form,
-                                       roles_disponibles=roles_disponibles)
+                                       roles_disponibles=roles_disponibles,
+                                       grados_con_cursos=grados_con_cursos)
 
             persona = Person.query.get(int(person_id))
             if not persona:
@@ -137,6 +281,12 @@ def crear():
                 RoleId=role_id
             )
             db.session.add(nuevo)
+            db.session.flush()  # flush para que el usuario exista antes de crear asignación
+
+            # Asignar profesor jefe si corresponde
+            if _es_profesor_rol(role_id) and curso_id and es_profesor_jefe:
+                _crear_asignacion_profesor_jefe(persona.PersonId, curso_id, role_id)
+
             db.session.commit()
 
             flash(f'Usuario creado: {username}', 'success')
@@ -156,7 +306,8 @@ def crear():
                 return render_template('gestion_usuarios/formulario.html',
                                        personas=personas_data, modo_form='crear',
                                        usuario=None, datos_form=request.form,
-                                       roles_disponibles=roles_disponibles)
+                                       roles_disponibles=roles_disponibles,
+                                       grados_con_cursos=grados_con_cursos)
 
             ident_existente = PersonIdentifier.query.filter_by(
                 Identifier=rut, RefPersonIdentificationSystemId=51
@@ -168,7 +319,8 @@ def crear():
                     return render_template('gestion_usuarios/formulario.html',
                                            personas=personas_data, modo_form='crear',
                                            usuario=None, datos_form=request.form,
-                                           roles_disponibles=roles_disponibles)
+                                           roles_disponibles=roles_disponibles,
+                                           grados_con_cursos=grados_con_cursos)
                 else:
                     persona = Person.query.get(ident_existente.PersonId)
             else:
@@ -209,6 +361,12 @@ def crear():
                 RoleId=role_id
             )
             db.session.add(nuevo)
+            db.session.flush()
+
+            # Asignar profesor jefe si corresponde
+            if _es_profesor_rol(role_id) and curso_id and es_profesor_jefe:
+                _crear_asignacion_profesor_jefe(persona.PersonId, curso_id, role_id)
+
             db.session.commit()
 
             flash(f'Funcionario registrado y usuario creado: {rut}', 'success')
@@ -217,7 +375,8 @@ def crear():
     return render_template('gestion_usuarios/formulario.html',
                            personas=personas_data, modo_form='crear',
                            usuario=None, datos_form={},
-                           roles_disponibles=roles_disponibles)
+                           roles_disponibles=roles_disponibles,
+                           grados_con_cursos=grados_con_cursos)
 
 
 # ============================================================================
@@ -236,6 +395,7 @@ def editar(user_id):
         PersonId=usuario.PersonId, RefPersonIdentificationSystemId=51
     ).first()
     roles_disponibles = _obtener_roles_disponibles()
+    grados_con_cursos = _obtener_grados_con_cursos()
 
     if request.method == 'POST':
         role_id = int(request.form.get('role_id', usuario.RoleId))
@@ -248,24 +408,42 @@ def editar(user_id):
         if nueva_password:
             if len(nueva_password) < 4:
                 flash('La contraseña debe tener al menos 4 caracteres.', 'error')
+                jefe_info = _obtener_info_jefe(usuario.PersonId)
                 return render_template('gestion_usuarios/formulario.html',
                                        personas=[], modo_form='editar',
                                        usuario=usuario, persona=persona,
                                        rut_persona=ident.Identifier if ident else 'Sin RUT',
                                        datos_form={},
-                                       roles_disponibles=roles_disponibles)
+                                       roles_disponibles=roles_disponibles,
+                                       grados_con_cursos=grados_con_cursos,
+                                       jefe_info=jefe_info)
             usuario.PasswordHash = generate_password_hash(nueva_password)
+
+        # Gestionar asignación de profesor jefe
+        grado_id = request.form.get('grado_id')
+        curso_id = request.form.get('curso_id')
+        es_profesor_jefe = 'es_profesor_jefe' in request.form
+
+        if _es_profesor_rol(role_id) and es_profesor_jefe and grado_id and curso_id:
+            _crear_asignacion_profesor_jefe(usuario.PersonId, curso_id, role_id)
+        elif not es_profesor_jefe or not _es_profesor_rol(role_id):
+            _quitar_asignacion_profesor_jefe(usuario.PersonId)
 
         db.session.commit()
         flash(f'Usuario {usuario.Username} actualizado correctamente.', 'success')
         return redirect(url_for('gestion_usuarios.listar'))
+
+    # GET: cargar info actual del profesor jefe
+    jefe_info = _obtener_info_jefe(usuario.PersonId)
 
     return render_template('gestion_usuarios/formulario.html',
                            personas=[], modo_form='editar',
                            usuario=usuario, persona=persona,
                            rut_persona=ident.Identifier if ident else 'Sin RUT',
                            datos_form={},
-                           roles_disponibles=roles_disponibles)
+                           roles_disponibles=roles_disponibles,
+                           grados_con_cursos=grados_con_cursos,
+                           jefe_info=jefe_info)
 
 
 # ============================================================================
@@ -304,3 +482,40 @@ def toggle_activo(user_id):
     estado = "activado" if usuario.IsActive else "desactivado"
     flash(f'Usuario {usuario.Username} {estado}.', 'success')
     return redirect(url_for('gestion_usuarios.listar'))
+
+def _es_profesor_rol(role_id):
+    """Verifica si el RoleId corresponde a un rol de tipo Profesor."""
+    rol = EdugestRole.query.get(role_id)
+    return rol and rol.RoleName.lower() == 'profesor'
+
+
+def _obtener_grados_con_cursos():
+    """
+    Retorna una lista de grados (RefOrganizationTypeId=46),
+    cada uno con sus cursos hijos (RefOrganizationTypeId=21).
+    Estructura: [{'grado': Organization, 'cursos': [Organization, ...]}, ...]
+    """
+    grados = Organization.query.filter_by(RefOrganizationTypeId=46).order_by(Organization.Name).all()
+    resultado = []
+    for grado in grados:
+        cursos = Organization.query.join(
+            OrganizationRelationship,
+            Organization.OrganizationId == OrganizationRelationship.OrganizationId
+        ).filter(
+            Organization.RefOrganizationTypeId == 21,
+            OrganizationRelationship.ParentOrganizationId == grado.OrganizationId
+        ).order_by(Organization.ShortName).all()
+        resultado.append({'grado': grado, 'cursos': cursos})
+    return resultado
+
+
+def _obtener_profesor_jefe(person_id):
+    """
+    Retorna el OrganizationPersonRole donde esta persona es Profesor Jefe activo.
+    Retorna None si no tiene asignación.
+    """
+    return OrganizationPersonRole.query.filter_by(
+        PersonId=person_id,
+        EsProfesorJefe=True,
+        ExitDate=None
+    ).first()

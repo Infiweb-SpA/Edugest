@@ -86,6 +86,7 @@ class OrganizationPersonRole(db.Model):
     RoleId = db.Column(db.Integer, nullable=False)
     EntryDate = db.Column(db.Date, nullable=True)
     ExitDate = db.Column(db.Date, nullable=True)
+    EsProfesorJefe = db.Column(db.Boolean, default=False, nullable=False)  # ← NUEVO
 
     person = db.relationship('Person', backref='roles', lazy=True)
 

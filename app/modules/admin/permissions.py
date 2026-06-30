@@ -47,6 +47,13 @@ FEATURE_CATALOG = {
         'description': 'Configurar permisos granulares por rol'
     },
 
+    # === MODULO GESTION DE USUARIOS ===
+    'gest_usuarios_profesor_jefe': {
+        'name': 'Asignar Profesor Jefe',
+        'module': 'Gestion Usuarios',
+        'description': 'Designar, modificar o quitar la asignacion de Profesor Jefe de un curso a un usuario con rol Profesor'
+    },
+
     # === MODULO LIBRO DIGITAL ===
     'libro_grados_list': {
         'name': 'Ver Listado de Grados',
@@ -408,6 +415,7 @@ def init_default_permissions():
         'Soporte': {
             'admin_dashboard': (1,1,0), 'admin_roles_crud': (1,1,0), 'admin_users_crud': (1,1,0),
             'admin_modules_toggle': (1,1,0), 'admin_permissions_matrix': (1,1,0),
+            'gest_usuarios_profesor_jefe': (1,1,0),
             'libro_grados_list': (1,0,0), 'libro_grados_estado_column': (1,1,0),
             'libro_asignaturas_list': (1,0,0), 'libro_asignatura_agregar_manual': (1,1,0),
             'libro_planificar': (1,1,0), 'libro_abrir_libro': (1,1,0),
@@ -432,6 +440,7 @@ def init_default_permissions():
             'rep_configurar_sumativas': (1,1,0), 'rep_checkbox_sumativas': (1,1,0),
         },
         'UTP': {
+            'gest_usuarios_profesor_jefe': (1,1,0),
             'libro_grados_list': (1,0,0), 'libro_grados_estado_column': (1,1,0),
             'libro_asignaturas_list': (1,0,0), 'libro_asignatura_agregar_manual': (1,1,0),
             'libro_planificar': (1,1,0), 'libro_abrir_libro': (1,1,0),

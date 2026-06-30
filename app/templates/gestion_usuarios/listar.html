@@ -34,6 +34,7 @@
                         <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">RUT</th>
                         <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Nombre</th>
                         <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Rol</th>
+                        <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Profesor Jefe</th>
                         <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Permisos</th>
                         <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Estado</th>
                         <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Acciones</th>
@@ -55,8 +56,25 @@
                                 {{ u.rol_nombre }}
                             </span>
                         </td>
+                        <td class="px-3 py-3 text-center">
+                            {% if u.jefe_info %}
+                                <div class="inline-flex flex-col items-center">
+                                    <span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-semibold">
+                                        Jefe
+                                    </span>
+                                    <span class="text-[11px] text-gray-500 mt-0.5">
+                                        {{ u.jefe_info.curso }}
+                                    </span>
+                                    <span class="text-[10px] text-gray-400">
+                                        {{ u.jefe_info.grado }}
+                                    </span>
+                                </div>
+                            {% else %}
+                                <span class="text-gray-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
                         <td class="px-3 py-3 text-center text-gray-500 text-xs">
-                            {{ u.permisos_activos }} módulos
+                            {{ u.permisos_count }} módulos
                         </td>
                         <td class="px-3 py-3 text-center">
                             {% if u.usuario.IsActive %}
