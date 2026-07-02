@@ -909,7 +909,7 @@ def informe_notas_pdf(curso_id, rol_id):
     curso = Organization.query.get_or_404(curso_id)
     relacion = OrganizationRelationship.query.filter_by(OrganizationId=curso_id).first()
     grado = Organization.query.get(relacion.ParentOrganizationId) if relacion else None
-    colegio = Organization.query.filter_by(RefOrganizationTypeId=1).first()
+    colegio = Organization.query.filter_by(RefOrganizationTypeId=10).first()
     nombre_colegio = colegio.Name if colegio else 'NombreColegio'
 
     # ── Profesor(a) jefe del curso ──
@@ -930,7 +930,7 @@ def informe_notas_pdf(curso_id, rol_id):
     if colegio:
         director_rol = OrganizationPersonRole.query.filter_by(
             OrganizationId=colegio.OrganizationId,
-            RoleId=1,
+            RoleId=2,
             ExitDate=None
         ).first()
         if director_rol:

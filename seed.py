@@ -783,6 +783,104 @@ def crear_profesor_jefe_prueba(curso_id, rut_profesor="11.222.333-4"):
     print(f"   Asignado como jefe de: {curso.Name if curso else f'Curso ID {curso_id}'}")
     print(f"   Usuario: {rut_profesor} / Contraseña: 1234")
 
+# ============================================================
+# NUEVA FUNCIÓN: CREAR DIRECTOR DE PRUEBA
+# ============================================================
+def crear_director_prueba(org_colegio_id, rut_director="17.557.967-2"):
+    """
+    Crea un director de prueba con usuario, datos de contacto,
+    y lo asigna como Director del establecimiento en OrganizationPersonRole.
+
+    Args:
+        org_colegio_id: OrganizationId del establecimiento (Tipo 10)
+        rut_director: RUT del director a crear
+    """
+    from datetime import date
+    from werkzeug.security import generate_password_hash
+    from app.models.edugest import EdugestUser
+
+    # Verificar si ya existe una persona con ese RUT
+    ident = PersonIdentifier.query.filter_by(
+        Identifier=rut_director, RefPersonIdentificationSystemId=51
+    ).first()
+
+    if ident:
+        print(f"ℹ️ Director ya existe: {rut_director}")
+        # Verificar si ya tiene asignación activa como director
+        director_existente = OrganizationPersonRole.query.filter_by(
+            PersonId=ident.PersonId, RoleId=2, ExitDate=None
+        ).first()
+        if not director_existente:
+            # Solo crear la asignación si no existe
+            db.session.add(OrganizationPersonRole(
+                OrganizationId=org_colegio_id,
+                PersonId=ident.PersonId,
+                RoleId=2,  # Director
+                EntryDate=date(2025, 3, 1),
+                EsProfesorJefe=False
+            ))
+            db.session.commit()
+            print(f"   ✅ Asignación de Director creada para Establecimiento ID {org_colegio_id}")
+        else:
+            print(f"   ℹ️ Ya tiene asignación de Director en Org ID {director_existente.OrganizationId}")
+        return
+
+    # 1. Crear persona
+    persona = Person(
+        FirstName="Jean",
+        MiddleName="",
+        LastName="Pacheco",
+        SecondLastName="Morales",
+        RefSexId=1,
+        Birthdate=date(1978, 4, 12)
+    )
+    db.session.add(persona)
+    db.session.flush()
+
+    # 2. RUT
+    db.session.add(PersonIdentifier(
+        PersonId=persona.PersonId,
+        Identifier=rut_director,
+        RefPersonIdentificationSystemId=51
+    ))
+
+    # 3. Contacto
+    db.session.add(PersonEmailAddress(
+        PersonId=persona.PersonId,
+        EmailAddress="jean.pacheco@liceo.cl"
+    ))
+    db.session.add(PersonTelephone(
+        PersonId=persona.PersonId,
+        TelephoneNumber="+56977778888"
+    ))
+
+    db.session.flush()
+
+    # 4. Cuenta de usuario
+    db.session.add(EdugestUser(
+        PersonId=persona.PersonId,
+        Username=rut_director,
+        PasswordHash=generate_password_hash("1234"),
+        IsActive=True,
+        RoleId=2  # Director
+    ))
+
+    # 5. Asignación como Director del establecimiento
+    db.session.add(OrganizationPersonRole(
+        OrganizationId=org_colegio_id,
+        PersonId=persona.PersonId,
+        RoleId=2,  # Director
+        EntryDate=date(2025, 3, 1),
+        EsProfesorJefe=False
+    ))
+
+    db.session.commit()
+
+    # Buscar nombre del colegio para el log
+    org = Organization.query.get(org_colegio_id)
+    print(f"✅ Director creado: Jean Pacheco Morales ({rut_director})")
+    print(f"   Asignado a: {org.Name if org else f'Org ID {org_colegio_id}'}")
+    print(f"   Usuario: {rut_director} / Contraseña: 1234")
 
 # ============================================================
 # EJECUCIÓN PRINCIPAL
@@ -904,6 +1002,15 @@ with app.app_context():
             print(f"   ℹ️  Rol ya existe: {nombre} (ID: {role_id})")
 
     db.session.commit()
-
+    # ============================================================
+    # CREAR DIRECTOR DEL ESTABLECIMIENTO
+    # ============================================================
+    print("\n🏛️  Creando Director del establecimiento...")
+    org_colegio = Organization.query.filter_by(ShortName="RBD09599", RefOrganizationTypeId=10).first()
+    if org_colegio:
+        crear_director_prueba(org_colegio.OrganizationId)
+    else:
+        print("❌ No se encontró el establecimiento para asignar Director")
+    
     print("\n" + "=" * 60)
     print("🎉 ¡Siembra completada!")
