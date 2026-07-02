@@ -449,7 +449,7 @@ def editar(user_id):
 # ============================================================================
 # RESETEAR CONTRASEÑA
 # ============================================================================
-@gestion_usuarios_bp.route('/<int:user_id>/resetear-password', methods=['POST'])
+@gestion_usuarios_bp.route('/<int:user_id>/resetear-password', methods=['GET', 'POST'])
 @login_required
 def resetear_password(user_id):
     if not _admin_required():

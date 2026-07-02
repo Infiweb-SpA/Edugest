@@ -55,7 +55,6 @@
                           const resp = await fetch('/gestion-usuarios/api/cursos/' + gradoId);
                           const data = await resp.json();
                           this.cursos = data.cursos || [];
-                          // Si el curso seleccionado no pertenece al grado actual, resetear
                           const cursoValido = this.cursos.find(c => c.id == this.cursoSeleccionado);
                           if (!cursoValido) {
                               this.cursoSeleccionado = '';
@@ -312,14 +311,12 @@
             {% if modo_form == 'editar' %}
             <!-- RESETEAR PASSWORD -->
             <div class="border-t border-gray-200 pt-4">
-                <form method="POST" action="{{ url_for('gestion_usuarios.resetear_password', user_id=usuario.UserId) }}">
-                    <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition"
-                        onclick="return confirm('¿Generar una nueva contraseña temporal?')">
-                        Resetear Contraseña
-                    </button>
-                    <span class="text-xs text-gray-400 ml-2">Genera una contraseña aleatoria de 8 caracteres</span>
-                </form>
+                <a href="{{ url_for('gestion_usuarios.resetear_password', user_id=usuario.UserId) }}"
+                   class="inline-block px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition"
+                   onclick="return confirm('¿Generar una nueva contraseña temporal?')">
+                    Resetear Contraseña
+                </a>
+                <span class="text-xs text-gray-400 ml-2">Genera una contraseña aleatoria de 8 caracteres</span>
             </div>
             {% endif %}
 
