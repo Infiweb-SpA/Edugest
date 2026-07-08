@@ -17,10 +17,12 @@
     margin-bottom: 1.5rem;
     overflow-x: auto;
     white-space: nowrap;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .ficha-nav::-webkit-scrollbar { display: none; }
+}
+.ficha-nav::-webkit-scrollbar { height: 6px; }
+.ficha-nav::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+.ficha-nav::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+.ficha-nav::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
   .ficha-nav a {
     display: inline-block;
     padding: 0.35rem 0.75rem;

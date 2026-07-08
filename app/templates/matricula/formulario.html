@@ -27,11 +27,13 @@
     gap: 0.25rem;
     overflow-x: auto;
     white-space: nowrap;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
     padding-bottom: 0.375rem;
-  }
-  .form-nav-links::-webkit-scrollbar { display: none; }
+}
+.form-nav-links::-webkit-scrollbar { height: 6px; }
+.form-nav-links::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+.form-nav-links::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+.form-nav-links::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
   .form-nav-links a {
     display: inline-flex;
     align-items: center;
