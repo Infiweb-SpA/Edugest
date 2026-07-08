@@ -29,10 +29,10 @@
                     class="text-xs px-4 py-2 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition hidden cursor-pointer">
                 💾 Guardar Notas Manuales
             </button>
-            <a href="{{ url_for('evaluaciones.index') }}"
-               class="text-xs border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md font-medium">
-                Volver al Panel
-            </a>
+            <a href="{{ url_for('evaluaciones.unidades_asignatura', org_id=instrumento.OrganizationId) }}"
+   class="text-xs border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md font-medium">
+    Volver a Unidades
+</a>
             {% else %}
             <a href="{{ url_for('portada.bienvenida') }}"
                class="text-xs border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md font-medium">
