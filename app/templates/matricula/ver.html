@@ -974,4 +974,54 @@
     </a>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var navLinks = document.querySelectorAll('.ficha-nav a');
+  var sections = document.querySelectorAll('.seccion-card[id], #socioeconomica');
+
+  /* ---------- Scroll suave al hacer clic ---------- */
+  navLinks.forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      var targetId = this.getAttribute('href').substring(1);
+      var target = document.getElementById(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  /* ---------- Resaltar sección activa al hacer scroll ---------- */
+  function updateActiveNav() {
+    var scrollPos = window.scrollY + 100;
+    var currentId = '';
+
+    sections.forEach(function (section) {
+      if (section.offsetTop <= scrollPos) {
+        currentId = section.id;
+      }
+    });
+
+    navLinks.forEach(function (link) {
+      link.classList.remove('nav-activo-ficha');
+      if (link.getAttribute('href') === '#' + currentId) {
+        link.classList.add('nav-activo-ficha');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateActiveNav, { passive: true });
+  updateActiveNav();
+});
+</script>
+
+<style>
+  /* Enlace activo en la ficha-nav */
+  .ficha-nav a.nav-activo-ficha {
+    background: #eef2ff;
+    color: #4338ca;
+    font-weight: 600;
+  }
+</style>
 {% endblock %}
