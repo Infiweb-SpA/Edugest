@@ -34,268 +34,23 @@ NIVELES_EDUCATIVOS = {
 }
 
 
-def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
-    """
-    PASO 1: Recoge los datos del formulario.
-    PASO 2: Si ya existe un apoderado en ese "slot" (titular/suplente), lo actualiza.
-    PASO 3: Si no existe, crea uno nuevo.
-    """
-
-    # =========================================================================
-    # PASO 1: LEER DATOS DEL FORMULARIO (sin cambios)
-    # =========================================================================
-    first_name  = request.form.get(f'{prefix}_first_name')
-    last_name   = request.form.get(f'{prefix}_last_name')
-    second_last = request.form.get(f'{prefix}_second_last_name', '')
-    rut_raw     = request.form.get(f'{prefix}_rut')
-    telefono    = request.form.get(f'{prefix}_telefono')
-    nivel       = request.form.get(f'{prefix}_nivel_educativo')
-
-    parentesco  = request.form.get(f'{prefix}_parentesco')
-    email       = request.form.get(f'{prefix}_email')
-    profesion   = request.form.get(f'{prefix}_profesion')
-    trabajo     = request.form.get(f'{prefix}_lugar_trabajo')
-    direccion   = request.form.get(f'{prefix}_direccion')
-
-    if not first_name or not last_name:
-        return None
-
-    rut = normalizar_rut(rut_raw) if rut_raw else None
-
-    # =========================================================================
-    # PASO 2: DETERMINAR EL "SLOT" DEL APODERADO
-    #   - ap_titular   → posición 0
-    #   - ap_suplente1 → posición 1
-    #   - ap_suplente2 → posición 2
-    # Esto permite saber cuál de los apoderados del estudiante estamos
-    # procesando, para buscar el existente correspondiente.
-    # =========================================================================
-    slot_map = {
-        'ap_titular': 0,
-        'ap_suplente1': 1,
-        'ap_suplente2': 2
-    }
-    slot_index = slot_map.get(prefix, 0)
-
-    # =========================================================================
-    # PASO 3: BUSCAR SI YA EXISTE UN APODERADO EN ESE SLOT
-    #   Consultamos todas las relaciones de apoderado (RefPersonRelationshipId=31)
-    #   ordenadas por PersonRelationshipId (orden de creación).
-    #   El que esté en la posición slot_index es el que debemos actualizar.
-    # =========================================================================
-    relaciones_existentes = PersonRelationship.query.filter_by(
-        PersonId=estudiante_id,
-        RefPersonRelationshipId=ref_rel_id
-    ).order_by(PersonRelationship.PersonRelationshipId).all()
-
-    relacion_existente = None
-    if slot_index < len(relaciones_existentes):
-        relacion_existente = relaciones_existentes[slot_index]
-
-    if relacion_existente:
-        # =====================================================================
-        # CASO A: YA EXISTE → ACTUALIZAR (en lugar de crear uno nuevo)
-        # =====================================================================
-        apoderado = Person.query.get(relacion_existente.RelatedPersonId)
-        if not apoderado:
-            # Si por algún motivo la persona ya no existe, crear una nueva
-            apoderado = Person(
-                FirstName=first_name,
-                MiddleName='',
-                LastName=last_name,
-                SecondLastName=second_last
-            )
-            db.session.add(apoderado)
-            db.session.flush()
-            relacion_existente.RelatedPersonId = apoderado.PersonId
-        else:
-            # Actualizar datos personales del apoderado existente
-            apoderado.FirstName = first_name
-            apoderado.MiddleName = ''
-            apoderado.LastName = last_name
-            apoderado.SecondLastName = second_last
-
-        # Actualizar RUT (upsert)
-        if rut:
-            ident = PersonIdentifier.query.filter_by(
-                PersonId=apoderado.PersonId,
-                RefPersonIdentificationSystemId=51
-            ).first()
-            if ident:
-                ident.Identifier = rut
-            else:
-                db.session.add(PersonIdentifier(
-                    PersonId=apoderado.PersonId,
-                    Identifier=rut,
-                    RefPersonIdentificationSystemId=51
-                ))
-
-        # Actualizar teléfono (upsert)
-        if telefono:
-            tel = PersonTelephone.query.filter_by(PersonId=apoderado.PersonId).first()
-            if tel:
-                tel.TelephoneNumber = telefono
-            else:
-                db.session.add(PersonTelephone(
-                    PersonId=apoderado.PersonId,
-                    TelephoneNumber=telefono
-                ))
-
-        # Actualizar email (upsert)
-        if email:
-            em = PersonEmailAddress.query.filter_by(PersonId=apoderado.PersonId).first()
-            if em:
-                em.EmailAddress = email
-            else:
-                db.session.add(PersonEmailAddress(
-                    PersonId=apoderado.PersonId,
-                    EmailAddress=email
-                ))
-
-        # Actualizar dirección (upsert)
-        if direccion:
-            addr = PersonAddress.query.filter_by(PersonId=apoderado.PersonId).first()
-            if addr:
-                addr.StreetNumberAndName = direccion
-            else:
-                db.session.add(PersonAddress(
-                    PersonId=apoderado.PersonId,
-                    StreetNumberAndName=direccion
-                ))
-
-        # Actualizar nivel educativo (upsert)
-        if nivel:
-            deg = PersonDegreeOrCertificate.query.filter_by(PersonId=apoderado.PersonId).first()
-            if deg:
-                deg.RefDegreeOrCertificateTypeId = int(nivel)
-            else:
-                db.session.add(PersonDegreeOrCertificate(
-                    PersonId=apoderado.PersonId,
-                    RefDegreeOrCertificateTypeId=int(nivel)
-                ))
-
-        # Actualizar detalle de relación (upsert)
-        if parentesco or profesion or trabajo or direccion or email:
-            detalle = EdugestPersonRelationshipDetail.query.filter_by(
-                PersonRelationshipId=relacion_existente.PersonRelationshipId
-            ).first()
-            if detalle:
-                detalle.Parentesco = parentesco
-                detalle.ProfesionOcupacion = profesion
-                detalle.LugarTrabajo = trabajo
-                detalle.Direccion = direccion
-                detalle.CorreoElectronico = email
-                detalle.EstadoCivil = request.form.get(f'{prefix}_estado_civil')
-                detalle.AutorizadoRetirarEstablecimiento = _parse_bool(f'{prefix}_autorizado_retirar')
-            else:
-                db.session.add(EdugestPersonRelationshipDetail(
-                    PersonRelationshipId=relacion_existente.PersonRelationshipId,
-                    Parentesco=parentesco,
-                    ProfesionOcupacion=profesion,
-                    LugarTrabajo=trabajo,
-                    Direccion=direccion,
-                    CorreoElectronico=email,
-                    EstadoCivil=request.form.get(f'{prefix}_estado_civil'),
-                    AutorizadoRetirarEstablecimiento=_parse_bool(f'{prefix}_autorizado_retirar')
-                ))
-
-        return apoderado
-
-    else:
-        # =====================================================================
-        # CASO B: NO EXISTE → CREAR NUEVO (lógica original sin cambios)
-        # =====================================================================
-        apoderado = Person(
-            FirstName=first_name,
-            MiddleName='',
-            LastName=last_name,
-            SecondLastName=second_last
-        )
-        db.session.add(apoderado)
-        db.session.flush()
-
-        if rut:
-            db.session.add(PersonIdentifier(
-                PersonId=apoderado.PersonId,
-                Identifier=rut,
-                RefPersonIdentificationSystemId=51
-            ))
-        if telefono:
-            db.session.add(PersonTelephone(
-                PersonId=apoderado.PersonId,
-                TelephoneNumber=telefono
-            ))
-        if email:
-            db.session.add(PersonEmailAddress(
-                PersonId=apoderado.PersonId,
-                EmailAddress=email
-            ))
-        if direccion:
-            db.session.add(PersonAddress(
-                PersonId=apoderado.PersonId,
-                StreetNumberAndName=direccion
-            ))
-        if nivel:
-            db.session.add(PersonDegreeOrCertificate(
-                PersonId=apoderado.PersonId,
-                RefDegreeOrCertificateTypeId=int(nivel)
-            ))
-
-        rel = PersonRelationship(
-            PersonId=estudiante_id,
-            RelatedPersonId=apoderado.PersonId,
-            RefPersonRelationshipId=ref_rel_id
-        )
-        db.session.add(rel)
-        db.session.flush()
-
-        if parentesco or profesion or trabajo or direccion or email:
-            db.session.add(EdugestPersonRelationshipDetail(
-                PersonRelationshipId=rel.PersonRelationshipId,
-                Parentesco=parentesco,
-                ProfesionOcupacion=profesion,
-                LugarTrabajo=trabajo,
-                Direccion=direccion,
-                CorreoElectronico=email,
-                AutorizadoRetirarEstablecimiento=_parse_bool(f'{prefix}_autorizado_retirar')
-            ))
-
-        return apoderado
+def _parse_date(campo):
+    val = request.form.get(campo)
+    if val:
+        try:
+            return datetime.strptime(val, '%Y-%m-%d').date()
+        except ValueError:
+            return None
+    return None
 
 
+def _parse_int(campo):
+    val = request.form.get(campo)
+    return int(val) if val and val.isdigit() else None
 
-def obtener_apoderados_estudiante(person_id):
-    """Retorna lista de apoderados con datos enriquecidos."""
-    relaciones = PersonRelationship.query.filter_by(
-        PersonId=person_id, RefPersonRelationshipId=31
-    ).order_by(PersonRelationship.PersonRelationshipId).all()
 
-    resultado = []
-    for rel in relaciones:
-        apod = Person.query.get(rel.RelatedPersonId)
-        if not apod:
-            continue
-        rut = PersonIdentifier.query.filter_by(
-            PersonId=apod.PersonId, RefPersonIdentificationSystemId=51
-        ).first()
-        fono = PersonTelephone.query.filter_by(PersonId=apod.PersonId).first()
-        email = PersonEmailAddress.query.filter_by(PersonId=apod.PersonId).first()
-        direccion = PersonAddress.query.filter_by(PersonId=apod.PersonId).first()
-        nivel = PersonDegreeOrCertificate.query.filter_by(PersonId=apod.PersonId).first()
-        detalle = EdugestPersonRelationshipDetail.query.filter_by(
-            PersonRelationshipId=rel.PersonRelationshipId
-        ).first()
-
-        resultado.append({
-            'persona': apod,
-            'rut': rut.Identifier if rut else None,
-            'telefono': fono.TelephoneNumber if fono else None,
-            'email': email.EmailAddress if email else None,
-            'direccion': direccion.StreetNumberAndName if direccion else None,
-            'nivel': nivel.RefDegreeOrCertificateTypeId if nivel else None,
-            'detalle': detalle
-        })
-    return resultado
+def _parse_bool(campo):
+    return request.form.get(campo) == '1'
 
 
 def normalizar_rut(rut):
@@ -347,45 +102,325 @@ def obtener_jerarquia_curso(curso_id):
     return resultado
 
 
-def _parse_date(campo):
-    val = request.form.get(campo)
-    if val:
-        try:
-            return datetime.strptime(val, '%Y-%m-%d').date()
-        except ValueError:
-            return None
-    return None
+def get_permiso_modulo(module_name):
+    """Obtiene el nivel de permiso del usuario actual para un modulo especifico.
+    Retorna: 0=Sin acceso, 1=Solo lectura, 2=Lectura y escritura"""
+    modulo = EdugestModule.query.filter_by(ModuleName=module_name, IsEnabled=True).first()
+    if not modulo:
+        return 0
+    permiso = EdugestRolePermission.query.filter_by(
+        RoleId=current_user.RoleId,
+        ModuleId=modulo.ModuleId
+    ).first()
+    return permiso.PermissionLevel if permiso else 0
 
 
-def _parse_int(campo):
-    val = request.form.get(campo)
-    return int(val) if val and val.isdigit() else None
+def obtener_apoderados_estudiante(person_id):
+    """Retorna lista de apoderados con datos enriquecidos."""
+    relaciones = PersonRelationship.query.filter_by(
+        PersonId=person_id, RefPersonRelationshipId=31
+    ).order_by(PersonRelationship.PersonRelationshipId).all()
+
+    resultado = []
+    for rel in relaciones:
+        apod = Person.query.get(rel.RelatedPersonId)
+        if not apod:
+            continue
+        rut = PersonIdentifier.query.filter_by(
+            PersonId=apod.PersonId, RefPersonIdentificationSystemId=51
+        ).first()
+        fono = PersonTelephone.query.filter_by(PersonId=apod.PersonId).first()
+        email_obj = PersonEmailAddress.query.filter_by(PersonId=apod.PersonId).first()
+        direccion = PersonAddress.query.filter_by(PersonId=apod.PersonId).first()
+        nivel = PersonDegreeOrCertificate.query.filter_by(PersonId=apod.PersonId).first()
+        detalle = EdugestPersonRelationshipDetail.query.filter_by(
+            PersonRelationshipId=rel.PersonRelationshipId
+        ).first()
+
+        resultado.append({
+            'persona': apod,
+            'rut': rut.Identifier if rut else None,
+            'telefono': fono.TelephoneNumber if fono else None,
+            'email': email_obj.EmailAddress if email_obj else None,
+            'direccion': direccion.StreetNumberAndName if direccion else None,
+            'nivel': nivel.RefDegreeOrCertificateTypeId if nivel else None,
+            'detalle': detalle
+        })
+    return resultado
 
 
-def _parse_bool(campo):
-    return request.form.get(campo) == '1'
+def crear_apoderado_estudiante(estudiante_id, prefix, ref_rel_id=31):
+    """
+    PASO 1: Recoge los datos del formulario.
+    PASO 2: Si ya existe un apoderado en ese slot (titular/suplente), lo actualiza.
+    PASO 3: Si no existe, busca por RUT para reutilizar apoderado existente.
+    PASO 4: Si tampoco existe por RUT, crea uno nuevo.
+    """
+
+    # PASO 1: LEER DATOS DEL FORMULARIO
+    first_name = request.form.get(f'{prefix}_first_name')
+    last_name = request.form.get(f'{prefix}_last_name')
+    second_last = request.form.get(f'{prefix}_second_last_name', '')
+    rut_raw = request.form.get(f'{prefix}_rut')
+    telefono = request.form.get(f'{prefix}_telefono')
+    nivel = request.form.get(f'{prefix}_nivel_educativo')
+    parentesco = request.form.get(f'{prefix}_parentesco')
+    email = request.form.get(f'{prefix}_email')
+    profesion = request.form.get(f'{prefix}_profesion')
+    trabajo = request.form.get(f'{prefix}_lugar_trabajo')
+    direccion = request.form.get(f'{prefix}_direccion')
+
+    if not first_name or not last_name:
+        return None
+
+    rut = normalizar_rut(rut_raw) if rut_raw else None
+
+    # PASO 2: DETERMINAR EL SLOT DEL APODERADO
+    slot_map = {
+        'ap_titular': 0,
+        'ap_suplente1': 1,
+        'ap_suplente2': 2
+    }
+    slot_index = slot_map.get(prefix, 0)
+
+    # PASO 3: BUSCAR SI YA EXISTE UN APODERADO EN ESE SLOT
+    relaciones_existentes = PersonRelationship.query.filter_by(
+        PersonId=estudiante_id,
+        RefPersonRelationshipId=ref_rel_id
+    ).order_by(PersonRelationship.PersonRelationshipId).all()
+
+    relacion_existente = None
+    if slot_index < len(relaciones_existentes):
+        relacion_existente = relaciones_existentes[slot_index]
+
+    if relacion_existente:
+        # CASO A: YA EXISTE EN ESE SLOT -> ACTUALIZAR
+        apoderado = Person.query.get(relacion_existente.RelatedPersonId)
+        if not apoderado:
+            apoderado = Person(
+                FirstName=first_name,
+                MiddleName='',
+                LastName=last_name,
+                SecondLastName=second_last
+            )
+            db.session.add(apoderado)
+            db.session.flush()
+            relacion_existente.RelatedPersonId = apoderado.PersonId
+        else:
+            apoderado.FirstName = first_name
+            apoderado.MiddleName = ''
+            apoderado.LastName = last_name
+            apoderado.SecondLastName = second_last
+
+        if rut:
+            ident = PersonIdentifier.query.filter_by(
+                PersonId=apoderado.PersonId,
+                RefPersonIdentificationSystemId=51
+            ).first()
+            if ident:
+                ident.Identifier = rut
+            else:
+                db.session.add(PersonIdentifier(
+                    PersonId=apoderado.PersonId,
+                    Identifier=rut,
+                    RefPersonIdentificationSystemId=51
+                ))
+
+        if telefono:
+            tel = PersonTelephone.query.filter_by(PersonId=apoderado.PersonId).first()
+            if tel:
+                tel.TelephoneNumber = telefono
+            else:
+                db.session.add(PersonTelephone(
+                    PersonId=apoderado.PersonId,
+                    TelephoneNumber=telefono
+                ))
+
+        if email:
+            em = PersonEmailAddress.query.filter_by(PersonId=apoderado.PersonId).first()
+            if em:
+                em.EmailAddress = email
+            else:
+                db.session.add(PersonEmailAddress(
+                    PersonId=apoderado.PersonId,
+                    EmailAddress=email
+                ))
+
+        if direccion:
+            addr = PersonAddress.query.filter_by(PersonId=apoderado.PersonId).first()
+            if addr:
+                addr.StreetNumberAndName = direccion
+            else:
+                db.session.add(PersonAddress(
+                    PersonId=apoderado.PersonId,
+                    StreetNumberAndName=direccion
+                ))
+
+        if nivel:
+            deg = PersonDegreeOrCertificate.query.filter_by(PersonId=apoderado.PersonId).first()
+            if deg:
+                deg.RefDegreeOrCertificateTypeId = int(nivel)
+            else:
+                db.session.add(PersonDegreeOrCertificate(
+                    PersonId=apoderado.PersonId,
+                    RefDegreeOrCertificateTypeId=int(nivel)
+                ))
+
+        if parentesco or profesion or trabajo or direccion or email:
+            detalle = EdugestPersonRelationshipDetail.query.filter_by(
+                PersonRelationshipId=relacion_existente.PersonRelationshipId
+            ).first()
+            if detalle:
+                detalle.Parentesco = parentesco
+                detalle.ProfesionOcupacion = profesion
+                detalle.LugarTrabajo = trabajo
+                detalle.Direccion = direccion
+                detalle.CorreoElectronico = email
+                detalle.EstadoCivil = request.form.get(f'{prefix}_estado_civil')
+                detalle.AutorizadoRetirarEstablecimiento = _parse_bool(f'{prefix}_autorizado_retirar')
+            else:
+                db.session.add(EdugestPersonRelationshipDetail(
+                    PersonRelationshipId=relacion_existente.PersonRelationshipId,
+                    Parentesco=parentesco,
+                    ProfesionOcupacion=profesion,
+                    LugarTrabajo=trabajo,
+                    Direccion=direccion,
+                    CorreoElectronico=email,
+                    EstadoCivil=request.form.get(f'{prefix}_estado_civil'),
+                    AutorizadoRetirarEstablecimiento=_parse_bool(f'{prefix}_autorizado_retirar')
+                ))
+
+        return apoderado
+
+    else:
+        # CASO B: NO EXISTE EN ESE SLOT
+        # Subpaso B1: Buscar si ya existe una persona con ese RUT
+        apoderado_existente = None
+        if rut:
+            apoderado_existente = Person.query.join(PersonIdentifier).filter(
+                PersonIdentifier.Identifier == rut,
+                PersonIdentifier.RefPersonIdentificationSystemId == 51
+            ).first()
+
+        if apoderado_existente:
+            # Reutilizar el apoderado existente
+            apoderado = apoderado_existente
+            apoderado.FirstName = first_name
+            apoderado.MiddleName = ''
+            apoderado.LastName = last_name
+            apoderado.SecondLastName = second_last
+        else:
+            # Subpaso B2: Crear persona completamente nueva
+            apoderado = Person(
+                FirstName=first_name,
+                MiddleName='',
+                LastName=last_name,
+                SecondLastName=second_last
+            )
+            db.session.add(apoderado)
+            db.session.flush()
+
+        # Crear o actualizar identificadores del apoderado
+        if rut:
+            ident = PersonIdentifier.query.filter_by(
+                PersonId=apoderado.PersonId,
+                RefPersonIdentificationSystemId=51
+            ).first()
+            if ident:
+                ident.Identifier = rut
+            else:
+                db.session.add(PersonIdentifier(
+                    PersonId=apoderado.PersonId,
+                    Identifier=rut,
+                    RefPersonIdentificationSystemId=51
+                ))
+
+        if telefono:
+            tel = PersonTelephone.query.filter_by(PersonId=apoderado.PersonId).first()
+            if tel:
+                tel.TelephoneNumber = telefono
+            else:
+                db.session.add(PersonTelephone(
+                    PersonId=apoderado.PersonId,
+                    TelephoneNumber=telefono
+                ))
+
+        if email:
+            em = PersonEmailAddress.query.filter_by(PersonId=apoderado.PersonId).first()
+            if em:
+                em.EmailAddress = email
+            else:
+                db.session.add(PersonEmailAddress(
+                    PersonId=apoderado.PersonId,
+                    EmailAddress=email
+                ))
+
+        if direccion:
+            addr = PersonAddress.query.filter_by(PersonId=apoderado.PersonId).first()
+            if addr:
+                addr.StreetNumberAndName = direccion
+            else:
+                db.session.add(PersonAddress(
+                    PersonId=apoderado.PersonId,
+                    StreetNumberAndName=direccion
+                ))
+
+        if nivel:
+            deg = PersonDegreeOrCertificate.query.filter_by(PersonId=apoderado.PersonId).first()
+            if deg:
+                deg.RefDegreeOrCertificateTypeId = int(nivel)
+            else:
+                db.session.add(PersonDegreeOrCertificate(
+                    PersonId=apoderado.PersonId,
+                    RefDegreeOrCertificateTypeId=int(nivel)
+                ))
+
+        # Crear la relacion estudiante-apoderado
+        rel = PersonRelationship(
+            PersonId=estudiante_id,
+            RelatedPersonId=apoderado.PersonId,
+            RefPersonRelationshipId=ref_rel_id
+        )
+        db.session.add(rel)
+        db.session.flush()
+
+        if parentesco or profesion or trabajo or direccion or email:
+            db.session.add(EdugestPersonRelationshipDetail(
+                PersonRelationshipId=rel.PersonRelationshipId,
+                Parentesco=parentesco,
+                ProfesionOcupacion=profesion,
+                LugarTrabajo=trabajo,
+                Direccion=direccion,
+                CorreoElectronico=email,
+                EstadoCivil=request.form.get(f'{prefix}_estado_civil'),
+                AutorizadoRetirarEstablecimiento=_parse_bool(f'{prefix}_autorizado_retirar')
+            ))
+
+        return apoderado
 
 
 def _serialize_estudiante(person_id):
-    """Serializa todos los datos de un estudiante para precarga vía AJAX."""
+    """Serializa todos los datos de un estudiante para precarga via AJAX."""
     persona = Person.query.get(person_id)
     if not persona:
         return None
-    
+
     ids = PersonIdentifier.query.filter_by(PersonId=person_id).all()
     ids_map = {i.RefPersonIdentificationSystemId: i.Identifier for i in ids}
-    
+
     residencia = PersonAddress.query.filter_by(PersonId=person_id).first()
     apoderados = obtener_apoderados_estudiante(person_id)
     ap_titular = apoderados[0] if len(apoderados) > 0 else None
     ap_suplente1 = apoderados[1] if len(apoderados) > 1 else None
     ap_suplente2 = apoderados[2] if len(apoderados) > 2 else None
-    
+
     enrollment = EdugestStudentEnrollment.query.filter_by(PersonId=person_id).first()
     health = EdugestStudentHealth.query.filter_by(PersonId=person_id).first()
     pie = EdugestStudentPIE.query.filter_by(PersonId=person_id).first()
-    contactos = EdugestEmergencyContact.query.filter_by(PersonId=person_id).order_by(EdugestEmergencyContact.Orden).all()
-    
+    contactos = EdugestEmergencyContact.query.filter_by(
+        PersonId=person_id
+    ).order_by(EdugestEmergencyContact.Orden).all()
+
     def ap_json(ap):
         if not ap:
             return None
@@ -404,7 +439,7 @@ def _serialize_estudiante(person_id):
             'estado_civil': ap['detalle'].EstadoCivil if ap['detalle'] else None,
             'autorizado_retirar': ap['detalle'].AutorizadoRetirarEstablecimiento if ap['detalle'] else False,
         }
-    
+
     def contacto_json(c):
         return {
             'first_name': c.FirstName,
@@ -419,7 +454,100 @@ def _serialize_estudiante(person_id):
             'profesion': c.ProfesionOcupacion,
             'nivel_educativo': c.NivelEducacional,
         }
-    
+
+    # Datos de matricula
+    enrollment_data = {}
+    if enrollment:
+        enrollment_data = {
+            'nacionalidad': enrollment.Nacionalidad,
+            'pais_origen': enrollment.PaisOrigen,
+            'comuna_residencia': enrollment.ComunaResidencia,
+            'region_residencia': enrollment.RegionResidencia,
+            'email_estudiante': enrollment.EmailEstudiante,
+            'telefono_estudiante': enrollment.TelefonoEstudiante,
+            'colegio_procedencia': enrollment.ColegioProcedencia,
+            'comuna_colegio_anterior': enrollment.ComunaColegioAnterior,
+            'region_colegio_anterior': enrollment.RegionColegioAnterior,
+            'ultimo_curso_aprobado': enrollment.UltimoCursoAprobado,
+            'anio_ultimo_curso': enrollment.AnioUltimoCursoAprobado,
+            'motivo_traslado': enrollment.MotivoTraslado,
+            'fecha_ingreso_establecimiento': enrollment.FechaIngresoEstablecimiento.isoformat() if enrollment.FechaIngresoEstablecimiento else None,
+            'nivel_madre': enrollment.NivelEducacionalMadre,
+            'nivel_padre': enrollment.NivelEducacionalPadre,
+            'nivel_apoderado': enrollment.NivelEducacionalApoderado,
+            'ingreso_familiar': enrollment.IngresoFamiliar,
+            'num_integrantes_hogar': enrollment.NumIntegrantesHogar,
+            'alumno_prioritario': enrollment.AlumnoPrioritario,
+            'alumno_preferente': enrollment.AlumnoPreferente,
+            'beneficiario_sep': enrollment.BeneficiarioSEP,
+            'pertenece_pueblo_originario': enrollment.PertenecePuebloOriginario,
+            'pueblo_originario': enrollment.PuebloOriginario,
+            'habla_lengua_indigena': enrollment.HablaLenguaIndigena,
+            'lengua_indigena': enrollment.LenguaIndigena,
+            'nacionalidad_extranjera': enrollment.NacionalidadExtranjera,
+            'medio_transporte': enrollment.MedioTransporte,
+            'utiliza_transporte_escolar': enrollment.UtilizaTransporteEscolar,
+            'nombre_transportista': enrollment.NombreTransportista,
+            'telefono_transportista': enrollment.TelefonoTransportista,
+            'tiempo_traslado': enrollment.TiempoEstimadoTraslado,
+            'autoriza_fotografias': enrollment.AutorizaFotografias,
+            'autoriza_redes_sociales': enrollment.AutorizaRedesSociales,
+            'autoriza_salidas': enrollment.AutorizaSalidasPedagogicas,
+            'autoriza_traslado_medico': enrollment.AutorizaTrasladoCentroAsistencial,
+            'autoriza_atencion_urgencia': enrollment.AutorizaAtencionMedicaUrgencia,
+            'doc_cert_nacimiento': enrollment.EntregaCertificadoNacimiento,
+            'doc_cert_estudios': enrollment.EntregaCertificadoAnualEstudios,
+            'doc_informe_personalidad': enrollment.EntregaInformePersonalidad,
+            'doc_informe_notas': enrollment.EntregaInformeNotas,
+            'doc_informe_pie': enrollment.EntregaInformePIE,
+            'doc_fotocopia_run_est': enrollment.EntregaFotocopiaRUNEstudiante,
+            'doc_fotocopia_run_apod': enrollment.EntregaFotocopiaRUNApoderado,
+            'doc_comprobante_domicilio': enrollment.EntregaComprobanteDomicilio,
+            'doc_ficha_medica': enrollment.EntregaFichaMedica,
+            'obs_academicas': enrollment.ObservacionesAcademicas,
+            'obs_medicas': enrollment.ObservacionesMedicas,
+            'obs_familiares': enrollment.ObservacionesFamiliares,
+            'obs_establecimiento': enrollment.ComentariosEstablecimiento,
+            'religion': enrollment.Religion,
+            'acepta_religion': enrollment.AceptaReligionEnColegio,
+            'tiene_computadores': enrollment.TieneComputadores,
+            'cantidad_computadores': enrollment.CantidadComputadores,
+            'vive_con': enrollment.ViveCon,
+            'es_nuevo': enrollment.EsNuevoEnEstablecimiento,
+        }
+
+    # Datos de salud
+    health_data = None
+    if health:
+        health_data = {
+            'grupo_sanguineo': health.GrupoSanguineo,
+            'sistema_salud': health.SistemaSalud,
+            'enfermedades_permanentes': health.EnfermedadesPermanentes,
+            'alergias': health.Alergias,
+            'medicamentos_permanentes': health.MedicamentosPermanentes,
+            'restricciones_alimentarias': health.RestriccionesAlimentarias,
+            'necesidades_medicas': health.NecesidadesMedicasEspeciales,
+            'obs_medicas_detalle': health.ObservacionesMedicasDetalle,
+            'centro_salud': health.CentroSaludHabitual,
+            'medico_tratante': health.MedicoTratante,
+            'telefono_medico': health.TelefonoMedicoTratante,
+            'estatura': health.Estatura,
+            'peso': health.Peso,
+            'apto_educacion_fisica': health.AptoEducacionFisica,
+        }
+
+    # Datos PIE
+    pie_data = None
+    if pie:
+        pie_data = {
+            'pertenece_pie': pie.PertenecePIE,
+            'diagnostico_pie': pie.DiagnosticoPIE,
+            'fecha_diagnostico_pie': pie.FechaDiagnostico.isoformat() if pie.FechaDiagnostico else None,
+            'profesional_pie': pie.ProfesionalTratante,
+            'observaciones_pie': pie.ObservacionesPIE,
+            'tipo_permanencia': pie.TipoPermanencia,
+        }
+
     return {
         'persona': {
             'person_id': persona.PersonId,
@@ -435,121 +563,28 @@ def _serialize_estudiante(person_id):
         'ap_titular': ap_json(ap_titular),
         'ap_suplente1': ap_json(ap_suplente1),
         'ap_suplente2': ap_json(ap_suplente2),
-        'enrollment': {
-            'nacionalidad': enrollment.Nacionalidad if enrollment else None,
-            'pais_origen': enrollment.PaisOrigen if enrollment else None,
-            'comuna_residencia': enrollment.ComunaResidencia if enrollment else None,
-            'region_residencia': enrollment.RegionResidencia if enrollment else None,
-            'email_estudiante': enrollment.EmailEstudiante if enrollment else None,
-            'telefono_estudiante': enrollment.TelefonoEstudiante if enrollment else None,
-            'colegio_procedencia': enrollment.ColegioProcedencia if enrollment else None,
-            'comuna_colegio_anterior': enrollment.ComunaColegioAnterior if enrollment else None,
-            'region_colegio_anterior': enrollment.RegionColegioAnterior if enrollment else None,
-            'ultimo_curso_aprobado': enrollment.UltimoCursoAprobado if enrollment else None,
-            'anio_ultimo_curso': enrollment.AnioUltimoCursoAprobado if enrollment else None,
-            'motivo_traslado': enrollment.MotivoTraslado if enrollment else None,
-            'fecha_ingreso_establecimiento': enrollment.FechaIngresoEstablecimiento.isoformat() if enrollment and enrollment.FechaIngresoEstablecimiento else None,
-            'nivel_madre': enrollment.NivelEducacionalMadre if enrollment else None,
-            'nivel_padre': enrollment.NivelEducacionalPadre if enrollment else None,
-            'nivel_apoderado': enrollment.NivelEducacionalApoderado if enrollment else None,
-            'ingreso_familiar': enrollment.IngresoFamiliar if enrollment else None,
-            'num_integrantes_hogar': enrollment.NumIntegrantesHogar if enrollment else None,
-            'alumno_prioritario': enrollment.AlumnoPrioritario if enrollment else False,
-            'alumno_preferente': enrollment.AlumnoPreferente if enrollment else False,
-            'beneficiario_sep': enrollment.BeneficiarioSEP if enrollment else False,
-            'pertenece_pueblo_originario': enrollment.PertenecePuebloOriginario if enrollment else False,
-            'pueblo_originario': enrollment.PuebloOriginario if enrollment else None,
-            'habla_lengua_indigena': enrollment.HablaLenguaIndigena if enrollment else False,
-            'lengua_indigena': enrollment.LenguaIndigena if enrollment else None,
-            'nacionalidad_extranjera': enrollment.NacionalidadExtranjera if enrollment else None,
-            'medio_transporte': enrollment.MedioTransporte if enrollment else None,
-            'utiliza_transporte_escolar': enrollment.UtilizaTransporteEscolar if enrollment else False,
-            'nombre_transportista': enrollment.NombreTransportista if enrollment else None,
-            'telefono_transportista': enrollment.TelefonoTransportista if enrollment else None,
-            'tiempo_traslado': enrollment.TiempoEstimadoTraslado if enrollment else None,
-            'autoriza_fotografias': enrollment.AutorizaFotografias if enrollment else False,
-            'autoriza_redes_sociales': enrollment.AutorizaRedesSociales if enrollment else False,
-            'autoriza_salidas': enrollment.AutorizaSalidasPedagogicas if enrollment else False,
-            'autoriza_traslado_medico': enrollment.AutorizaTrasladoCentroAsistencial if enrollment else False,
-            'autoriza_atencion_urgencia': enrollment.AutorizaAtencionMedicaUrgencia if enrollment else False,
-            'doc_cert_nacimiento': enrollment.EntregaCertificadoNacimiento if enrollment else False,
-            'doc_cert_estudios': enrollment.EntregaCertificadoAnualEstudios if enrollment else False,
-            'doc_informe_personalidad': enrollment.EntregaInformePersonalidad if enrollment else False,
-            'doc_informe_notas': enrollment.EntregaInformeNotas if enrollment else False,
-            'doc_informe_pie': enrollment.EntregaInformePIE if enrollment else False,
-            'doc_fotocopia_run_est': enrollment.EntregaFotocopiaRUNEstudiante if enrollment else False,
-            'doc_fotocopia_run_apod': enrollment.EntregaFotocopiaRUNApoderado if enrollment else False,
-            'doc_comprobante_domicilio': enrollment.EntregaComprobanteDomicilio if enrollment else False,
-            'doc_ficha_medica': enrollment.EntregaFichaMedica if enrollment else False,
-            'obs_academicas': enrollment.ObservacionesAcademicas if enrollment else None,
-            'obs_medicas': enrollment.ObservacionesMedicas if enrollment else None,
-            'obs_familiares': enrollment.ObservacionesFamiliares if enrollment else None,
-            'obs_establecimiento': enrollment.ComentariosEstablecimiento if enrollment else None,
-            'religion': enrollment.Religion if enrollment else None,
-            'acepta_religion': enrollment.AceptaReligionEnColegio if enrollment else False,
-            'tiene_computadores': enrollment.TieneComputadores if enrollment else False,
-            'cantidad_computadores': enrollment.CantidadComputadores if enrollment else None,
-            'vive_con': enrollment.ViveCon if enrollment else None,
-            'es_nuevo': enrollment.EsNuevoEnEstablecimiento if enrollment else True,
-        },
+        'enrollment': enrollment_data,
         'contactos_emergencia': [contacto_json(c) for c in contactos],
-        'health': {
-            'grupo_sanguineo': health.GrupoSanguineo if health else None,
-            'sistema_salud': health.SistemaSalud if health else None,
-            'enfermedades_permanentes': health.EnfermedadesPermanentes if health else None,
-            'alergias': health.Alergias if health else None,
-            'medicamentos_permanentes': health.MedicamentosPermanentes if health else None,
-            'restricciones_alimentarias': health.RestriccionesAlimentarias if health else None,
-            'necesidades_medicas': health.NecesidadesMedicasEspeciales if health else None,
-            'obs_medicas_detalle': health.ObservacionesMedicasDetalle if health else None,
-            'centro_salud': health.CentroSaludHabitual if health else None,
-            'medico_tratante': health.MedicoTratante if health else None,
-            'telefono_medico': health.TelefonoMedicoTratante if health else None,
-            'estatura': health.Estatura if health else None,
-            'peso': health.Peso if health else None,
-            'apto_educacion_fisica': health.AptoEducacionFisica if health else True,
-        } if health else None,
-        'pie': {
-            'pertenece_pie': pie.PertenecePIE if pie else False,
-            'diagnostico_pie': pie.DiagnosticoPIE if pie else None,
-            'fecha_diagnostico_pie': pie.FechaDiagnostico.isoformat() if pie and pie.FechaDiagnostico else None,
-            'profesional_pie': pie.ProfesionalTratante if pie else None,
-            'observaciones_pie': pie.ObservacionesPIE if pie else None,
-            'tipo_permanencia': pie.TipoPermanencia if pie else None,
-        } if pie else None,
+        'health': health_data,
+        'pie': pie_data,
     }
 
-def get_permiso_modulo(module_name):
-    """Obtiene el nivel de permiso del usuario actual para un modulo especifico.
-    Retorna: 0=Sin acceso, 1=Solo lectura, 2=Lectura y escritura"""
-    modulo = EdugestModule.query.filter_by(ModuleName=module_name, IsEnabled=True).first()
-    if not modulo:
-        return 0
-    permiso = EdugestRolePermission.query.filter_by(
-        RoleId=current_user.RoleId,
-        ModuleId=modulo.ModuleId
-    ).first()
-    return permiso.PermissionLevel if permiso else 0
 
 # ============================================================================
-# LISTADO DE ESTUDIANTES (agrupado por RUT para evitar duplicados de persona)
+# LISTADO DE ESTUDIANTES
 # ============================================================================
 @matricula_bp.route('/')
 def listar_estudiantes():
     if not verificar_modulo_habilitado():
         return redirect(url_for('admin.dashboard'))
 
-    # ── Verificar nivel de permisos ──
     nivel = get_permiso_modulo('Matrícula')
-
     if nivel == 0:
         flash("No tiene acceso al módulo de Matrícula.", "warning")
         return redirect(url_for('portada.bienvenida'))
 
-    # Obtener TODOS los roles activos con sus identificadores RUT
     roles = OrganizationPersonRole.query.filter_by(RoleId=6, ExitDate=None).all()
 
-    # Agrupar por RUT (normalizado) y quedarse con el rol de EntryDate más reciente
     mejores_por_rut = {}
     for rol in roles:
         rut_id = PersonIdentifier.query.filter_by(
@@ -558,7 +593,6 @@ def listar_estudiantes():
         rut = rut_id.Identifier if rut_id else None
         if not rut:
             rut = f"ID_{rol.PersonId}"
-
         if rut not in mejores_por_rut:
             mejores_por_rut[rut] = rol
         else:
@@ -576,45 +610,43 @@ def listar_estudiantes():
 
 
 # ============================================================================
-# FORMULARIO NUEVO / EDICIÓN
+# FORMULARIO NUEVO / EDICION
 # ============================================================================
 @matricula_bp.route('/nuevo', methods=['GET', 'POST'])
 def nuevo_estudiante():
     if not verificar_modulo_habilitado():
         return redirect(url_for('admin.dashboard'))
 
-    # ── Solo nivel 2 puede crear/editar estudiantes ──
     nivel = get_permiso_modulo('Matrícula')
     if nivel < 2:
         flash("No tiene permisos para crear o editar estudiantes.", "danger")
         return redirect(url_for('matricula.listar_estudiantes'))
 
-    niveles = Organization.query.filter_by(RefOrganizationTypeId=40).order_by(Organization.Name).all()
+    niveles = Organization.query.filter_by(
+        RefOrganizationTypeId=40
+    ).order_by(Organization.Name).all()
 
     if request.method == 'POST':
-        first_name   = request.form.get('first_name')
-        middle_name  = request.form.get('middle_name', '')
-        last_name    = request.form.get('last_name')
-        second_last  = request.form.get('second_last_name', '')
-        ref_sex_id   = request.form.get('ref_sex_id')
-        birthdate    = request.form.get('birthdate')
+        first_name = request.form.get('first_name')
+        middle_name = request.form.get('middle_name', '')
+        last_name = request.form.get('last_name')
+        second_last = request.form.get('second_last_name', '')
+        ref_sex_id = request.form.get('ref_sex_id')
+        birthdate = request.form.get('birthdate')
+        rut_raw = request.form.get('rut')
+        rut = normalizar_rut(rut_raw) if rut_raw else None
+        ipe = request.form.get('ipe', '')
+        num_matricula = request.form.get('num_matricula', '')
+        num_lista = request.form.get('num_lista', '')
+        curso_id = request.form.get('curso_id')
+        entry_date = request.form.get('entry_date')
+        residencia = request.form.get('residencia')
+        ap_t_first = request.form.get('ap_titular_first_name')
+        ap_t_last = request.form.get('ap_titular_last_name')
+        ap_t_rut = request.form.get('ap_titular_rut')
 
-        rut_raw      = request.form.get('rut')
-        rut          = normalizar_rut(rut_raw) if rut_raw else None
-        ipe          = request.form.get('ipe', '')
-        num_matricula= request.form.get('num_matricula', '')
-        num_lista    = request.form.get('num_lista', '')
-
-        curso_id     = request.form.get('curso_id')
-        entry_date   = request.form.get('entry_date')
-        residencia   = request.form.get('residencia')
-
-        ap_t_first   = request.form.get('ap_titular_first_name')
-        ap_t_last    = request.form.get('ap_titular_last_name')
-        ap_t_rut     = request.form.get('ap_titular_rut')
-
-        # Validación mínima
-        if not all([first_name, last_name, rut, curso_id, entry_date, residencia, ap_t_first, ap_t_last, ap_t_rut]):
+        if not all([first_name, last_name, rut, curso_id, entry_date,
+                    residencia, ap_t_first, ap_t_last, ap_t_rut]):
             flash("Complete todos los campos obligatorios.", "danger")
             return redirect(url_for('matricula.nuevo_estudiante'))
 
@@ -633,43 +665,59 @@ def nuevo_estudiante():
                 flash("La fecha de matrícula es obligatoria y debe ser válida.", "danger")
                 return redirect(url_for('matricula.nuevo_estudiante'))
 
-            # Verificar si ya existe una persona con este RUT (para evitar duplicados)
+            # Verificar si ya existe una persona con este RUT
             persona_existente = None
             if rut:
                 persona_existente = Person.query.join(PersonIdentifier).filter(
                     PersonIdentifier.Identifier == rut,
                     PersonIdentifier.RefPersonIdentificationSystemId == 51
                 ).first()
-            
-            # Si se envió person_id_precargado, usamos ese (viene del buscador)
+
+            # ================================================================
+            # CORRECCION: Validar person_id_precargado contra el RUT
+            # ================================================================
             person_id_precargado = request.form.get('person_id_precargado')
             if person_id_precargado and person_id_precargado.isdigit():
-                # Forzar a usar ese ID (ya sea que coincida con el RUT o no)
-                persona = Person.query.get(int(person_id_precargado))
-                if not persona:
+                persona_precargada = Person.query.get(int(person_id_precargado))
+                if not persona_precargada:
                     flash("El estudiante seleccionado no existe.", "danger")
                     return redirect(url_for('matricula.nuevo_estudiante'))
-                # Si el RUT del formulario no coincide con el de la persona, actualizamos
-                if rut:
-                    existing_rut = PersonIdentifier.query.filter_by(
-                        PersonId=persona.PersonId, RefPersonIdentificationSystemId=51
-                    ).first()
-                    if existing_rut and existing_rut.Identifier != rut:
-                        # Podría ser un error, pero permitimos actualizar
-                        existing_rut.Identifier = rut
-                    elif not existing_rut:
-                        db.session.add(PersonIdentifier(
-                            PersonId=persona.PersonId, Identifier=rut, RefPersonIdentificationSystemId=51
-                        ))
-                nueva_persona = persona
-                es_nuevo = False
+
+                rut_precargado = PersonIdentifier.query.filter_by(
+                    PersonId=persona_precargada.PersonId,
+                    RefPersonIdentificationSystemId=51
+                ).first()
+
+                if rut_precargado and rut and rut_precargado.Identifier == rut:
+                    # El RUT coincide: es el MISMO estudiante -> re-matricula valida
+                    nueva_persona = persona_precargada
+                    es_nuevo = False
+                else:
+                    # El RUT NO coincide: el usuario seleccionó un estudiante
+                    # existente pero está registrando a alguien DIFERENTE
+                    if persona_existente:
+                        nueva_persona = persona_existente
+                        es_nuevo = False
+                        flash("Se detectó un estudiante existente con el mismo RUT. "
+                              "Se procederá a re-matricular.", "info")
+                    else:
+                        nueva_persona = Person(
+                            FirstName=first_name,
+                            MiddleName=middle_name,
+                            LastName=last_name,
+                            SecondLastName=second_last,
+                            RefSexId=int(ref_sex_id) if ref_sex_id else None,
+                            Birthdate=birthdate_obj
+                        )
+                        db.session.add(nueva_persona)
+                        db.session.flush()
+                        es_nuevo = True
             elif persona_existente:
-                # Caso: no se usó el buscador, pero el RUT ya existe -> re-matrícula
                 nueva_persona = persona_existente
                 es_nuevo = False
-                flash("Se ha detectado un estudiante existente con el mismo RUT. Se procederá a re-matricular.", "info")
+                flash("Se detectó un estudiante existente con el mismo RUT. "
+                      "Se procederá a re-matricular.", "info")
             else:
-                # Estudiante completamente nuevo
                 nueva_persona = Person(
                     FirstName=first_name,
                     MiddleName=middle_name,
@@ -690,7 +738,7 @@ def nuevo_estudiante():
             nueva_persona.RefSexId = int(ref_sex_id) if ref_sex_id else None
             nueva_persona.Birthdate = birthdate_obj
 
-            # Cerrar TODOS los roles activos anteriores (si no es nuevo)
+            # Cerrar roles activos anteriores (solo re-matricula)
             if not es_nuevo:
                 roles_anteriores = OrganizationPersonRole.query.filter_by(
                     PersonId=nueva_persona.PersonId, RoleId=6, ExitDate=None
@@ -702,13 +750,16 @@ def nuevo_estudiante():
             def upsert_identifier(sys_id, val_identificador):
                 if val_identificador:
                     ident = PersonIdentifier.query.filter_by(
-                        PersonId=nueva_persona.PersonId, RefPersonIdentificationSystemId=sys_id
+                        PersonId=nueva_persona.PersonId,
+                        RefPersonIdentificationSystemId=sys_id
                     ).first()
                     if ident:
                         ident.Identifier = val_identificador
                     else:
                         db.session.add(PersonIdentifier(
-                            PersonId=nueva_persona.PersonId, Identifier=val_identificador, RefPersonIdentificationSystemId=sys_id
+                            PersonId=nueva_persona.PersonId,
+                            Identifier=val_identificador,
+                            RefPersonIdentificationSystemId=sys_id
                         ))
 
             upsert_identifier(51, rut)
@@ -727,24 +778,32 @@ def nuevo_estudiante():
 
             # Residencia
             if residencia:
-                addr = PersonAddress.query.filter_by(PersonId=nueva_persona.PersonId).first()
+                addr = PersonAddress.query.filter_by(
+                    PersonId=nueva_persona.PersonId
+                ).first()
                 if addr:
                     addr.StreetNumberAndName = residencia
                 else:
-                    db.session.add(PersonAddress(PersonId=nueva_persona.PersonId, StreetNumberAndName=residencia))
+                    db.session.add(PersonAddress(
+                        PersonId=nueva_persona.PersonId,
+                        StreetNumberAndName=residencia
+                    ))
 
-            # Apoderados (solo si no existen ya? Por simplicidad se crean nuevos cada vez.
-            # Para evitar duplicados, se podría buscar primero. Pero por ahora se mantiene.
+            # Apoderados
             crear_apoderado_estudiante(nueva_persona.PersonId, 'ap_titular')
             crear_apoderado_estudiante(nueva_persona.PersonId, 'ap_suplente1')
             crear_apoderado_estudiante(nueva_persona.PersonId, 'ap_suplente2')
 
-            # Datos adicionales de matrícula
-            enrollment = EdugestStudentEnrollment.query.filter_by(PersonId=nueva_persona.PersonId).first()
+            # Datos adicionales de matricula
+            enrollment = EdugestStudentEnrollment.query.filter_by(
+                PersonId=nueva_persona.PersonId
+            ).first()
             if not enrollment:
-                enrollment = EdugestStudentEnrollment(PersonId=nueva_persona.PersonId)
+                enrollment = EdugestStudentEnrollment(
+                    PersonId=nueva_persona.PersonId
+                )
                 db.session.add(enrollment)
-            
+
             enrollment.Nacionalidad = request.form.get('nacionalidad')
             enrollment.PaisOrigen = request.form.get('pais_origen')
             enrollment.ComunaResidencia = request.form.get('comuna_residencia')
@@ -795,7 +854,6 @@ def nuevo_estudiante():
             enrollment.ObservacionesMedicas = request.form.get('obs_medicas')
             enrollment.ObservacionesFamiliares = request.form.get('obs_familiares')
             enrollment.ComentariosEstablecimiento = request.form.get('obs_establecimiento')
-                        # Nuevos campos matrícula
             enrollment.Religion = request.form.get('religion')
             enrollment.AceptaReligionEnColegio = _parse_bool('acepta_religion')
             enrollment.TieneComputadores = _parse_bool('tiene_computadores')
@@ -804,34 +862,74 @@ def nuevo_estudiante():
 
             # Contactos de emergencia
             for i in [1, 2]:
-                first_name_c = request.form.get(f'contacto_emergencia_{i}_first_name')
+                first_name_c = request.form.get(
+                    f'contacto_emergencia_{i}_first_name'
+                )
                 if first_name_c:
-                    nombre_completo = f"{first_name_c} {request.form.get(f'contacto_emergencia_{i}_last_name', '')} {request.form.get(f'contacto_emergencia_{i}_second_last_name', '')}".strip()
-                    contacto = EdugestEmergencyContact.query.filter_by(PersonId=nueva_persona.PersonId, Orden=i).first()
+                    nombre_completo = (
+                        f"{first_name_c} "
+                        f"{request.form.get(f'contacto_emergencia_{i}_last_name', '')} "
+                        f"{request.form.get(f'contacto_emergencia_{i}_second_last_name', '')}"
+                    ).strip()
+                    contacto = EdugestEmergencyContact.query.filter_by(
+                        PersonId=nueva_persona.PersonId, Orden=i
+                    ).first()
                     if not contacto:
-                        contacto = EdugestEmergencyContact(PersonId=nueva_persona.PersonId, Orden=i)
+                        contacto = EdugestEmergencyContact(
+                            PersonId=nueva_persona.PersonId, Orden=i
+                        )
                         db.session.add(contacto)
                     contacto.FirstName = first_name_c
-                    contacto.LastName = request.form.get(f'contacto_emergencia_{i}_last_name')
-                    contacto.SecondLastName = request.form.get(f'contacto_emergencia_{i}_second_last_name')
+                    contacto.LastName = request.form.get(
+                        f'contacto_emergencia_{i}_last_name'
+                    )
+                    contacto.SecondLastName = request.form.get(
+                        f'contacto_emergencia_{i}_second_last_name'
+                    )
                     contacto.NombreCompleto = nombre_completo or None
-                    contacto.RUN = normalizar_rut(request.form.get(f'contacto_emergencia_{i}_run'))
-                    contacto.Parentesco = request.form.get(f'contacto_emergencia_{i}_parentesco')
-                    contacto.TelefonoPrincipal = request.form.get(f'contacto_emergencia_{i}_telefono')
-                    contacto.TelefonoAlternativo = request.form.get(f'contacto_emergencia_{i}_telefono_alt')
-                    contacto.Email = request.form.get(f'contacto_emergencia_{i}_email')
-                    contacto.ProfesionOcupacion = request.form.get(f'contacto_emergencia_{i}_profesion')
-                    contacto.NivelEducacional = _parse_int(f'contacto_emergencia_{i}_nivel_educativo')
+                    contacto.RUN = normalizar_rut(
+                        request.form.get(f'contacto_emergencia_{i}_run')
+                    )
+                    contacto.Parentesco = request.form.get(
+                        f'contacto_emergencia_{i}_parentesco'
+                    )
+                    contacto.TelefonoPrincipal = request.form.get(
+                        f'contacto_emergencia_{i}_telefono'
+                    )
+                    contacto.TelefonoAlternativo = request.form.get(
+                        f'contacto_emergencia_{i}_telefono_alt'
+                    )
+                    contacto.Email = request.form.get(
+                        f'contacto_emergencia_{i}_email'
+                    )
+                    contacto.ProfesionOcupacion = request.form.get(
+                        f'contacto_emergencia_{i}_profesion'
+                    )
+                    contacto.NivelEducacional = _parse_int(
+                        f'contacto_emergencia_{i}_nivel_educativo'
+                    )
 
             # Salud
-            if any([request.form.get('grupo_sanguineo'), request.form.get('sistema_salud'),
-                    request.form.get('enfermedades_permanentes'), request.form.get('alergias'),
-                    request.form.get('medicamentos_permanentes'), request.form.get('restricciones_alimentarias'),
-                    request.form.get('necesidades_medicas'), request.form.get('obs_medicas_detalle'),
-                    request.form.get('centro_salud'), request.form.get('medico_tratante'), request.form.get('telefono_medico')]):
-                health = EdugestStudentHealth.query.filter_by(PersonId=nueva_persona.PersonId).first()
+            if any([
+                request.form.get('grupo_sanguineo'),
+                request.form.get('sistema_salud'),
+                request.form.get('enfermedades_permanentes'),
+                request.form.get('alergias'),
+                request.form.get('medicamentos_permanentes'),
+                request.form.get('restricciones_alimentarias'),
+                request.form.get('necesidades_medicas'),
+                request.form.get('obs_medicas_detalle'),
+                request.form.get('centro_salud'),
+                request.form.get('medico_tratante'),
+                request.form.get('telefono_medico')
+            ]):
+                health = EdugestStudentHealth.query.filter_by(
+                    PersonId=nueva_persona.PersonId
+                ).first()
                 if not health:
-                    health = EdugestStudentHealth(PersonId=nueva_persona.PersonId)
+                    health = EdugestStudentHealth(
+                        PersonId=nueva_persona.PersonId
+                    )
                     db.session.add(health)
                 health.GrupoSanguineo = request.form.get('grupo_sanguineo')
                 health.SistemaSalud = request.form.get('sistema_salud')
@@ -849,10 +947,14 @@ def nuevo_estudiante():
                 health.AptoEducacionFisica = _parse_bool('apto_educacion_fisica')
 
             # PIE
-            pie = EdugestStudentPIE.query.filter_by(PersonId=nueva_persona.PersonId).first()
+            pie = EdugestStudentPIE.query.filter_by(
+                PersonId=nueva_persona.PersonId
+            ).first()
             if _parse_bool('pertenece_pie'):
                 if not pie:
-                    pie = EdugestStudentPIE(PersonId=nueva_persona.PersonId)
+                    pie = EdugestStudentPIE(
+                        PersonId=nueva_persona.PersonId
+                    )
                     db.session.add(pie)
                 pie.PertenecePIE = True
                 pie.DiagnosticoPIE = request.form.get('diagnostico_pie')
@@ -864,7 +966,10 @@ def nuevo_estudiante():
                 pie.PertenecePIE = False
 
             db.session.commit()
-            flash(f"Estudiante {first_name} {last_name} matriculado correctamente.", "success")
+            flash(
+                f"Estudiante {first_name} {last_name} matriculado correctamente.",
+                "success"
+            )
             return redirect(url_for('matricula.listar_estudiantes'))
 
         except Exception as e:
@@ -872,7 +977,11 @@ def nuevo_estudiante():
             flash(f"Error al guardar: {str(e)}", "danger")
             return redirect(url_for('matricula.nuevo_estudiante'))
 
-    return render_template('matricula/formulario.html', niveles=niveles, estudiante=None)
+    return render_template(
+        'matricula/formulario.html',
+        niveles=niveles,
+        estudiante=None
+    )
 
 
 # ============================================================================
@@ -886,12 +995,14 @@ def ajax_grados(nivel_id):
     hijos = {}
     for r in relaciones:
         hijos.setdefault(r.ParentOrganizationId, []).append(r.OrganizationId)
+
     def get_all_descendants(org_id):
         result = []
         for hijo_id in hijos.get(org_id, []):
             result.append(hijo_id)
             result.extend(get_all_descendants(hijo_id))
         return result
+
     descendientes = get_all_descendants(nivel_id)
     grados = Organization.query.filter(
         Organization.OrganizationId.in_(descendientes),
@@ -904,13 +1015,22 @@ def ajax_grados(nivel_id):
 def ajax_cursos(grado_id):
     if not verificar_modulo_habilitado():
         return jsonify([])
-    relaciones = OrganizationRelationship.query.filter_by(ParentOrganizationId=grado_id).all()
+    relaciones = OrganizationRelationship.query.filter_by(
+        ParentOrganizationId=grado_id
+    ).all()
     curso_ids = [r.OrganizationId for r in relaciones]
     cursos = Organization.query.filter(
         Organization.OrganizationId.in_(curso_ids),
         Organization.RefOrganizationTypeId == 21
     ).order_by(Organization.ShortName).all()
-    return jsonify([{'id': c.OrganizationId, 'nombre': f"{c.Name} ({c.ShortName})", 'letra': c.ShortName} for c in cursos])
+    return jsonify([
+        {
+            'id': c.OrganizationId,
+            'nombre': f"{c.Name} ({c.ShortName})",
+            'letra': c.ShortName
+        }
+        for c in cursos
+    ])
 
 
 @matricula_bp.route('/ajax/buscar_estudiante')
@@ -921,17 +1041,8 @@ def ajax_buscar_estudiante():
     if len(q) < 3:
         return jsonify([])
 
-    # Subconsulta: obtener el PersonId más reciente para cada RUT (evita duplicados de persona con mismo RUT)
-    from sqlalchemy import func, and_
+    from sqlalchemy import and_
 
-    # Primero, buscamos personas por nombre o RUT (sin join aún, para evitar duplicados)
-    # Pero necesitamos el RUT para mostrarlo. Lo haremos en dos pasos: obtener los PersonId que cumplen,
-    # luego agrupar por RUT.
-
-    # Opción más robusta: usar una subconsulta que agrupe por Identifier (RUT) y elija un PersonId.
-    # Como SQLAlchemy puede ser complejo, usaremos una consulta nativa (sqlalchemy.text) o una agrupación en Python.
-
-    # Solución: obtener todos los candidatos (personas con sus RUT) y luego agrupar en Python por RUT.
     personas_raw = Person.query.distinct(Person.PersonId).outerjoin(
         PersonIdentifier,
         and_(
@@ -944,9 +1055,8 @@ def ajax_buscar_estudiante():
             Person.LastName.ilike(f'%{q}%'),
             PersonIdentifier.Identifier.ilike(f'%{q}%')
         )
-    ).limit(20).all()  # Aumentamos un poco el límite porque luego agrupamos
+    ).limit(20).all()
 
-    # Agrupar por RUT (normalizado)
     mejores_por_rut = {}
     for p in personas_raw:
         rut = PersonIdentifier.query.filter_by(
@@ -954,11 +1064,10 @@ def ajax_buscar_estudiante():
         ).first()
         rut_str = rut.Identifier if rut else None
         if not rut_str:
-            continue  # Si no tiene RUT, lo ignoramos (podría ser IPE, pero no debería)
+            continue
         if rut_str not in mejores_por_rut:
             mejores_por_rut[rut_str] = p
         else:
-            # Si ya existe, conservamos el que tenga mayor PersonId (o podrías usar EntryDate más reciente)
             if p.PersonId > mejores_por_rut[rut_str].PersonId:
                 mejores_por_rut[rut_str] = p
 
@@ -969,7 +1078,10 @@ def ajax_buscar_estudiante():
         ).first()
         resultado.append({
             'id': p.PersonId,
-            'text': f"{p.FirstName} {p.LastName} {p.SecondLastName or ''} — RUT: {rut.Identifier if rut else 'Sin RUT'}"
+            'text': (
+                f"{p.FirstName} {p.LastName} {p.SecondLastName or ''} "
+                f"\u2014 RUT: {rut.Identifier if rut else 'Sin RUT'}"
+            )
         })
     return jsonify(resultado)
 
@@ -981,7 +1093,6 @@ def ajax_datos_estudiante(person_id):
     data = _serialize_estudiante(person_id)
     return jsonify(data or {})
 
-
 # ============================================================================
 # VER DETALLE
 # ============================================================================
@@ -992,18 +1103,29 @@ def ver_estudiante(person_id):
 
     persona = Person.query.get_or_404(person_id)
     identificadores = PersonIdentifier.query.filter_by(PersonId=person_id).all()
-    roles = OrganizationPersonRole.query.filter_by(PersonId=person_id, RoleId=6).all()
-    ids_map = {i.RefPersonIdentificationSystemId: i.Identifier for i in identificadores}
+    roles = OrganizationPersonRole.query.filter_by(
+        PersonId=person_id, RoleId=6
+    ).all()
+    ids_map = {
+        i.RefPersonIdentificationSystemId: i.Identifier
+        for i in identificadores
+    }
     residencia = PersonAddress.query.filter_by(PersonId=person_id).first()
 
     apoderados_data = obtener_apoderados_estudiante(person_id)
-    ap_titular   = apoderados_data[0] if len(apoderados_data) > 0 else None
+    ap_titular = apoderados_data[0] if len(apoderados_data) > 0 else None
     ap_suplente1 = apoderados_data[1] if len(apoderados_data) > 1 else None
     ap_suplente2 = apoderados_data[2] if len(apoderados_data) > 2 else None
 
-    enrollment = EdugestStudentEnrollment.query.filter_by(PersonId=person_id).first()
-    contactos_emergencia = EdugestEmergencyContact.query.filter_by(PersonId=person_id).order_by(EdugestEmergencyContact.Orden).all()
-    health = EdugestStudentHealth.query.filter_by(PersonId=person_id).first()
+    enrollment = EdugestStudentEnrollment.query.filter_by(
+        PersonId=person_id
+    ).first()
+    contactos_emergencia = EdugestEmergencyContact.query.filter_by(
+        PersonId=person_id
+    ).order_by(EdugestEmergencyContact.Orden).all()
+    health = EdugestStudentHealth.query.filter_by(
+        PersonId=person_id
+    ).first()
     pie = EdugestStudentPIE.query.filter_by(PersonId=person_id).first()
 
     matriculas_data = []

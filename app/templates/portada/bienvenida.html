@@ -6,7 +6,7 @@
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
 
-    <!-- SALUDO PRINCIPAL -->
+    <!-- SALUDO PRINCIPAL (existente, sin cambios) -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <div class="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
@@ -44,7 +44,7 @@
         </div>
     </div>
 
-    <!-- AVISO DE SOPORTE -->
+    <!-- AVISO DE SOPORTE (existente, sin cambios) -->
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
         <div class="flex items-start gap-3">
             <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -64,7 +64,103 @@
         </div>
     </div>
 
-    <!-- NOTAS SUMATIVAS (solo para estudiantes matriculados) -->
+    <!-- ============================================================ -->
+    <!-- NUEVO: HIJOS DEL APODERADO                                    -->
+    <!-- ============================================================ -->
+    {% if hijos|length > 0 %}
+    <div class="space-y-5">
+        <div>
+            <h4 class="text-sm font-bold text-gray-600 uppercase tracking-wider mb-1">
+                Mis hijos / pupilos
+            </h4>
+            <p class="text-xs text-gray-400 mb-4">
+                Selecciona un hijo para ver sus calificaciones, asignaturas y reportes.
+            </p>
+        </div>
+
+        {% for hijo in hijos %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <!-- Encabezado del hijo -->
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <span class="text-lg font-bold text-emerald-700">
+                            {{ hijo.nombre[:1] }}
+                        </span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h5 class="text-lg font-bold text-gray-900 truncate">{{ hijo.nombre }}</h5>
+                        <p class="text-sm text-gray-500">
+                            RUT: <span class="font-mono">{{ hijo.rut }}</span>
+                            · Curso: <span class="font-semibold text-gray-700">
+                                {{ hijo.grado_nombre }} {{ hijo.curso_nombre }} ({{ hijo.letra }})
+                            </span>
+                        </p>
+                    </div>
+                    <a href="{{ url_for('reportes.reporte_curso', curso_id=hijo.curso_id) }}"
+                       class="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium
+                              text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100
+                              transition-colors duration-200">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Ver reporte completo
+                    </a>
+                </div>
+            </div>
+
+            <!-- Asignaturas del hijo -->
+            {% if hijo.asignaturas|length > 0 %}
+            <div class="p-6">
+                <h6 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+                    Notas Sumativas por Asignatura
+                </h6>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {% for asig in hijo.asignaturas %}
+                    <a href="{{ url_for('reportes.reporte_notas_sumativas', org_id=asig.org_id) }}"
+                       class="group flex items-center gap-3 p-4 bg-white border border-gray-200
+                              rounded-lg hover:border-indigo-300 hover:bg-indigo-50/30
+                              transition-all duration-200">
+                        <div class="w-10 h-10 rounded-lg bg-violet-100 group-hover:bg-indigo-100
+                                    flex items-center justify-center flex-shrink-0 transition-colors">
+                            <svg class="w-5 h-5 text-violet-600 group-hover:text-indigo-600 transition-colors"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-gray-800 truncate">
+                                {{ asig.nombre }}
+                            </p>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Link al reporte completo (móvil) -->
+            <div class="sm:hidden px-6 pb-4">
+                <a href="{{ url_for('reportes.reporte_curso', curso_id=hijo.curso_id) }}"
+                   class="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium
+                          text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100
+                          transition-colors duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Ver reporte completo
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <!-- FIN SECCIÓN APODERADO -->
+
+    <!-- NOTAS SUMATIVAS (existente, solo para estudiantes) -->
     {% if asignaturas|length > 0 %}
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h4 class="text-sm font-bold text-gray-600 uppercase tracking-wider mb-1">Notas Sumativas</h4>
@@ -80,50 +176,38 @@
                               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                 </div>
-                <div>
-                    <span class="block text-sm font-semibold text-gray-800 group-hover:text-indigo-700 transition-colors">
-                        {{ asig.nombre }}
-                    </span>
-                    <span class="block text-xs text-gray-400">Ver calificaciones</span>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 truncate">{{ asig.nombre }}</p>
                 </div>
             </a>
             {% endfor %}
         </div>
     </div>
+    {% endif %}
 
-    <!-- LIBRO DIGITAL -->
+    <!-- SECCIÓN ASIGNATURAS (existente, solo para estudiantes) -->
+    {% if asignaturas|length > 0 %}
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h4 class="text-sm font-bold text-gray-600 uppercase tracking-wider mb-1">Asignaturas</h4>
         <p class="text-xs text-gray-400 mb-4">Revisa las unidades y clases registradas de tus asignaturas.</p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {% for asig in asignaturas %}
-            <a href="{{ url_for('libro_digital.ver_unidades', org_id=asig.org_id) }}"
+            <a href="#"
                class="group flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg hover:border-emerald-300 hover:bg-emerald-50/30 transition-all duration-200">
                 <div class="w-10 h-10 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 flex items-center justify-center flex-shrink-0 transition-colors">
-                    <svg class="w-5 h-5 text-emerald-600 group-hover:text-emerald-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                 </div>
-                <div>
-                    <span class="block text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors">
-                        {{ asig.nombre }}
-                    </span>
-                    <span class="block text-xs text-gray-400">Ver unidades y clases</span>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 truncate">{{ asig.nombre }}</p>
+                    <p class="text-xs text-gray-400">Ver unidades y clases</p>
                 </div>
             </a>
             {% endfor %}
         </div>
-    </div>
-
-    {% elif current_user.RoleId == 6 %}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-        <span class="text-4xl">📭</span>
-        <p class="text-gray-500 font-medium mt-3">No se encontró una matrícula activa.</p>
-        <p class="text-xs text-gray-400 mt-1">
-            Si crees que esto es un error, contacta al administrador del establecimiento.
-        </p>
     </div>
     {% endif %}
 
