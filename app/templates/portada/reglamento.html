@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}Reglamento Interno - Edugest{% endblock %}
+{% block header_title %}Reglamento Interno{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- Cabecera -->
+    <div class="relative bg-gradient-to-r from-slate-800 via-slate-700 to-slate-900 rounded-2xl shadow-xl overflow-hidden">
+        <div class="absolute inset-0 opacity-5">
+            <div class="absolute -top-16 -right-16 w-56 h-56 bg-white rounded-full"></div>
+            <div class="absolute -bottom-16 -left-16 w-64 h-64 bg-white rounded-full"></div>
+        </div>
+        <div class="relative p-6 sm:p-8">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border border-white/20">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-white">Reglamento Interno</h1>
+                    <p class="text-sm text-white/60 mt-1">Establecimiento Educacional — Año Académico 2026</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Índice -->
+    <nav class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Contenido</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <a href="#cap1" class="text-sm text-indigo-600 hover:underline">1. Disposiciones Generales</a>
+            <a href="#cap2" class="text-sm text-indigo-600 hover:underline">2. Derechos y Deberes</a>
+            <a href="#cap3" class="text-sm text-indigo-600 hover:underline">3. Normas de Convivencia Escolar</a>
+            <a href="#cap4" class="text-sm text-indigo-600 hover:underline">4. Asistencia y Puntualidad</a>
+            <a href="#cap5" class="text-sm text-indigo-600 hover:underline">5. Evaluaciones y Calificaciones</a>
+            <a href="#cap6" class="text-sm text-indigo-600 hover:underline">6. Uniforme y Presentación Personal</a>
+            <a href="#cap7" class="text-sm text-indigo-600 hover:underline">7. Uso de Tecnologías</a>
+            <a href="#cap8" class="text-sm text-indigo-600 hover:underline">8. Medidas Disciplinarias</a>
+            <a href="#cap9" class="text-sm text-indigo-600 hover:underline">9. Protocolo de Emergencias</a>
+            <a href="#cap10" class="text-sm text-indigo-600 hover:underline">10. Disposiciones Finales</a>
+        </div>
+    </nav>
+
+    <!-- Capítulo 1 -->
+    <section id="cap1" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">1</span>
+            Disposiciones Generales
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <p><strong>Artículo 1°.</strong> El presente Reglamento Interno establece las normas de organización, convivencia y funcionamiento del establecimiento educacional, en conformidad con la Ley N° 20.845 de Inclusión Escolar, la Ley N° 20.370 General de Educación, y el DFL N° 2 del Ministerio de Educación.</p>
+            <p><strong>Artículo 2°.</strong> El reglamento es de cumplimiento obligatorio para todos los miembros de la comunidad educativa: estudiantes, apoderados, funcionarios, docentes y asistentes de la educación.</p>
+            <p><strong>Artículo 3°.</strong> Este reglamento fue elaborado considerando la participación de los distintos estamentos de la comunidad educativa y será revisado anualmente por el Consejo Escolar.</p>
+            <p><strong>Artículo 4°.</strong> La jornada escolar se desarrolla de lunes a viernes, en el horario establecido por el calendario académico vigente. El Director del establecimiento podrá modificar excepcionalmente el horario previa comunicación a los apoderados.</p>
+        </div>
+    </section>
+
+    <!-- Capítulo 2 -->
+    <section id="cap2" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">2</span>
+            Derechos y Deberes
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <h3 class="font-semibold text-gray-800">De los Estudiantes</h3>
+            <p><strong>Artículo 5°.</strong> Los estudiantes tienen derecho a:</p>
+            <ul class="list-disc pl-6 space-y-1">
+                <li>Recibir una educación de calidad en un ambiente seguro y de respeto mutuo.</li>
+                <li>Ser tratados con dignidad, sin discriminación arbitraria alguna.</li>
+                <li>Participar en actividades curriculares y extracurriculares programadas.</li>
+                <li>Expresar su opinión de manera respetuosa y ser escuchados.</li>
+                <li>Recibir evaluaciones justas, oportunas y con retroalimentación.</li>
+                <li>Acceder a la infraestructura y recursos del establecimiento.</li>
+            </ul>
+            <p><strong>Artículo 6°.</strong> Los estudiantes tienen el deber de:</p>
+            <ul class="list-disc pl-6 space-y-1">
+                <li>Asistir puntualmente a clases y cumplir con la jornada escolar.</li>
+                <li>Respetar a todos los miembros de la comunidad educativa.</li>
+                <li>Cuidar las instalaciones, mobiliario y recursos del establecimiento.</li>
+                <li>Cumplir con las normas de convivencia establecidas en este reglamento.</li>
+                <li>Portar los elementos de trabajo y uniforme reglamentario.</li>
+            </ul>
+
+            <h3 class="font-semibold text-gray-800 pt-2">De los Apoderados</h3>
+            <p><strong>Artículo 7°.</strong> Los apoderados tienen el deber de:</p>
+            <ul class="list-disc pl-6 space-y-1">
+                <li>Velar por la asistencia y puntualidad de sus pupilos.</li>
+                <li>Mantener actualizados sus datos de contacto con el establecimiento.</li>
+                <li>Asistir a las reuniones de apoderados y citaciones del establecimiento.</li>
+                <li>Colaborar con el proceso educativo y formativo de sus pupilos.</li>
+                <li>Firmar el Libro de Observaciones y revisar las comunicaciones oficiales.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Capítulo 3 -->
+    <section id="cap3" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">3</span>
+            Normas de Convivencia Escolar
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <p><strong>Artículo 8°.</strong> La convivencia escolar se basa en el respeto mutuo, la solidaridad, la responsabilidad y la inclusión. Toda forma de violencia física, psicológica o verbal queda estrictamente prohibida.</p>
+            <p><strong>Artículo 9°.</strong> Se prohíbe expresamente el <em>bullying</em> (acoso escolar) en todas sus formas, incluyendo el ciberacoso. El establecimiento aplicará el protocolo de convivencia escolar ante cualquier denuncia.</p>
+            <p><strong>Artículo 10°.</strong> Se prohíbe el ingreso y consumo de sustancias ilegales, alcohol, tabaco y vapeadores en las dependencias del establecimiento y en sus alrededores.</p>
+            <p><strong>Artículo 11°.</strong> Queda prohibido el ingreso de armas de cualquier tipo, objetos punzantes, cortantes o contundentes al establecimiento.</p>
+            <p><strong>Artículo 12°.</strong> Los conflictos entre pares serán abordados preferentemente mediante la mediación escolar, el diálogo reparador y las estrategias de resolución pacífica de conflictos.</p>
+        </div>
+    </section>
+
+    <!-- Capítulo 4 -->
+    <section id="cap4" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">4</span>
+            Asistencia y Puntualidad
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <p><strong>Artículo 13°.</strong> La asistencia a clases es obligatoria. Los estudiantes deben concurrir diariamente al establecimiento en el horario establecido.</p>
+            <p><strong>Artículo 14°.</strong> Las inasistencias deberán ser justificadas por el apoderado dentro de los tres días hábiles siguientes, mediante licencia médica, certificado o comunicación escrita.</p>
+            <p><strong>Artículo 15°.</strong> Se considera atraso la llegada posterior al segundo toque de campana. Tres atrasos injustificados equivaldrán a una inasistencia.</p>
+            <p><strong>Artículo 16°.</strong> Los estudiantes con inasistencia superior al 20% de la jornada escolar en el período lectivo podrán ser citados por el Equipo de Gestión para evaluar las causas y buscar soluciones.</p>
+            <p><strong>Artículo 17°.</strong> La salida anticipada del establecimiento durante la jornada escolar requiere autorización del profesor jefe y será registrada en el sistema de asistencia.</p>
+        </div>
+    </section>
+
+    <!-- Capítulo 5 -->
+    <section id="cap5" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">5</span>
+            Evaluaciones y Calificaciones
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <p><strong>Artículo 18°.</strong> Las evaluaciones se realizarán conforme al Currículum Nacional y los Planes y Programas vigentes del Ministerio de Educación. Se aplicarán evaluaciones formativas, sumativas y calificativas.</p>
+            <p><strong>Artículo 19°.</strong> El sistema de calificación utiliza la escala de 1,0 a 7,0, donde la nota mínima de aprobación es 4,0. Las evaluaciones serán publicadas con al menos 48 horas de anticipación.</p>
+            <p><strong>Artículo 20°.</strong> Todo estudiante tiene derecho a rendir evaluaciones diferidas cuando su inasistencia haya sido debidamente justificada con licencia médica o caso fortuito.</p>
+            <p><strong>Artículo 21°.</strong> Las evaluaciones sumativas podrán ser complementarias y recuperativas, de acuerdo con lo establecido por el Consejo de Profesores.</p>
+            <p><strong>Artículo 22°.</strong> Los apoderados podrán consultar las calificaciones a través de la plataforma digital del establecimiento.</p>
+        </div>
+    </section>
+
+    <!-- Capítulo 6 -->
+    <section id="cap6" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">6</span>
+            Uniforme y Presentación Personal
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <p><strong>Artículo 23°.</strong> El uso del uniforme reglamentario es obligatorio dentro del establecimiento y en actividades externas oficiales. Los detalles del uniforme serán comunicados al inicio de cada año lectivo.</p>
+            <p><strong>Artículo 24°.</strong> El uniforme diario comprende:</p>
+            <ul class="list-disc pl-6 space-y-1">
+                <li>Polera o camisa con el emblema del establecimiento.</li>
+                <li>Pantalón o falda de vestir de color institucional.</li>
+                <li>Zapatos cerrados o zapatillas de color sobrio.</li>
+                <li>Chaqueta o abrigo de colores sobrios (se permite el uso de la chaqueta del establecimiento).</li>
+            </ul>
+            <p><strong>Artículo 25°.</strong> Para Educación Física es obligatorio el uso del uniforme deportivo institucional.</p>
+            <p><strong>Artículo 26°.</strong> No se permite el uso de accesorios que atenten contra la seguridad del estudiante o que no correspondan al ámbito escolar.</p>
+        </div>
+                <div class="border-l-4 border-indigo-300 pl-4 py-2 bg-indigo-50/50 rounded-r-lg">
+            <h3 class="font-semibold text-gray-800 mb-2">Presentación personal y estilos de cabello</h3>
+            <p><strong>Artículo 26.1°.</strong> El establecimiento promueve la presentación personal acorde al
+            ambiente escolar, respetando siempre la identidad, integridad y dignidad de cada estudiante,
+            en conformidad con la Ley N° 20.845 de Inclusión Escolar.</p>
+
+            <p><strong>Artículo 26.2°.</strong> Se establecen los siguientes lineamientos respecto al cabello:</p>
+            <ul class="list-disc pl-6 space-y-1">
+                <li>El cabello debe mantenerse limpio y aseado.</li>
+                <li>No se establecen restricciones sobre el largo, corte o estilo de peinado.</li>
+                <li>Se permite el uso de cualquier coloración o tinte en el cabello.</li>
+                <li>En clases de Educación Física y actividades prácticas, se recomienda llevar el cabello
+                    recogido por razones de seguridad e higiene.</li>
+            </ul>
+
+            <p><strong>Artículo 26.3°.</strong> Ningún estudiante podrá ser suspendido, expulsado, separado de
+            clases o sancionado por la elección de su corte, peinado o color de cabello. Cualquier medida
+            disciplinaria relacionada con la apariencia personal será considerada una vulneración al
+            derecho a la educación y a la no discriminación.</p>
+
+            <p><strong>Artículo 26.4°.</strong> El establecimiento se compromete a resolver mediante el diálogo
+            cualquier situación relacionada con la presentación personal, privilegiando siempre el
+            bienestar del estudiante y su derecho a la educación.</p>
+        </div>
+    </section>
+
+    <!-- Capítulo 7 -->
+    <section id="cap7" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">7</span>
+            Uso de Tecnologías
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <p><strong>Artículo 27°.</strong> El uso de teléfonos celulares y dispositivos electrónicos durante la jornada escolar queda restringido a actividades pedagógicas autorizadas por el docente a cargo.</p>
+            <p><strong>Artículo 28°.</strong> El establecimiento no se hace responsable por la pérdida, robo o deterioro de dispositivos electrónicos personales. Se recomienda no traer objetos de alto valor.</p>
+            <p><strong>Artículo 29°.</strong> Queda estrictamente prohibido grabar, fotografiar o transmitir en vivo contenido que involucre a otros miembros de la comunidad educativa sin su consentimiento expreso.</p>
+            <p><strong>Artículo 30°.</strong> El uso de la red institucional de internet es exclusivamente para fines educativos. El acceso a contenido inapropiado será bloqueado y sancionado.</p>
+        </div>
+    </section>
+
+    <!-- Capítulo 8 -->
+    <section id="cap8" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">8</span>
+            Medidas Disciplinarias
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <p><strong>Artículo 31°.</strong> Las medidas disciplinarias se aplicarán de forma gradual, proporcional y considerando siempre el interés superior del estudiante, conforme a la Ley N° 20.845.</p>
+            <p><strong>Artículo 32°.</strong> Las medidas correctivas aplicables son:</p>
+            <ol class="list-decimal pl-6 space-y-2">
+                <li><strong>Observación verbal:</strong> Llamado de atención del docente en el aula.</li>
+                <li><strong>Anotación negativa:</strong> Registro en el Libro Digital y comunicación al apoderado.</li>
+                <li><strong>Citación del apoderado:</strong> Reunión con el profesor jefe o inspector.</li>
+                <li><strong>Medidas restaurativas:</strong> Acuerdos de reparación entre las partes involucradas.</li>
+                <li><strong>Suspensión preventiva:</strong> Solo en casos graves que comprometan la seguridad, por un máximo de 5 días hábiles, con derecho a evaluaciones diferidas.</li>
+            </ol>
+            <p><strong>Artículo 33°.</strong> Quedan absolutamente prohibidos los castigos corporales, las sanciones colectivas, la humillación pública y cualquier forma de trato degradante.</p>
+            <p><strong>Artículo 34°.</strong> El estudiante tiene derecho a ser escuchado antes de la aplicación de cualquier medida disciplinaria y a apelar ante el Director del establecimiento.</p>
+        </div>
+    </section>
+
+    <!-- Capítulo 9 -->
+    <section id="cap9" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">9</span>
+            Protocolo de Emergencias
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <p><strong>Artículo 35°.</strong> El establecimiento cuenta con un Plan de Emergencia y Evacuación actualizado, el cual es simulado al menos dos veces al semestre.</p>
+            <p><strong>Artículo 36°.</strong> En caso de emergencia médica, se aplicará el siguiente protocolo:</p>
+            <ul class="list-disc pl-6 space-y-1">
+                <li>El personal de primeros auxilios brindará la atención inicial.</li>
+                <li>Se contactará de inmediato al apoderado designado.</li>
+                <li>De ser necesario, se activará el servicio de ambulancia (SAMU o urgencia).</li>
+            </ul>
+            <p><strong>Artículo 37°.</strong> Los apoderados deben mantener actualizada la información médica del estudiante en la plataforma, incluyendo alergias, medicamentos permanentes y condiciones de salud relevantes.</p>
+            <p><strong>Artículo 38°.</strong> En caso de emergencia por desastre natural (sismo, incendio, inundación), todo el personal y estudiantes deberán seguir las instrucciones del equipo de emergencia del establecimiento.</p>
+        </div>
+    </section>
+
+    <!-- Capítulo 10 -->
+    <section id="cap10" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4 scroll-mt-24">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">10</span>
+            Disposiciones Finales
+        </h2>
+        <div class="text-sm text-gray-700 space-y-3 leading-relaxed">
+            <p><strong>Artículo 39°.</strong> El presente Reglamento Interno entrará en vigencia desde su publicación y será comunicado a todos los integrantes de la comunidad educativa al inicio del año lectivo.</p>
+            <p><strong>Artículo 40°.</strong> Toda modificación al presente reglamento deberá ser aprobada por el Consejo Escolar y comunicada formalmente a los apoderados con al menos 15 días de anticipación.</p>
+            <p><strong>Artículo 41°.</strong> Los casos no contemplados en este reglamento serán resueltos por el Director del establecimiento, considerando la normativa vigente y el bienestar de la comunidad educativa.</p>
+            <p><strong>Artículo 42°.</strong> Este reglamento se enmarca en lo dispuesto por:</p>
+            <ul class="list-disc pl-6 space-y-1">
+                <li>Constitución Política de la República.</li>
+                <li>Ley N° 20.370, Ley General de Educación.</li>
+                <li>Ley N° 20.845, Ley de Inclusión Escolar.</li>
+                <li>Decreto N° 67, Normativa de Admisión Escolar.</li>
+                <li>Decreto N° 1.055, Condiciones mínimas de funcionamiento.</li>
+                <li>Decreto Supremo de Educación N° 67, Estatuto Docente.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Pie del documento -->
+    <div class="bg-slate-50 rounded-xl border border-gray-200 p-5 text-center space-y-1">
+        <p class="text-xs text-gray-500">Documento aprobado por el Consejo Escolar</p>
+        <p class="text-xs text-gray-400">Última actualización: Marzo 2026</p>
+        <p class="text-xs text-gray-400">Este documento es de carácter informativo. Para la versión oficial firmada, contactar a la administración del establecimiento.</p>
+    </div>
+
+</div>
+{% endblock %}

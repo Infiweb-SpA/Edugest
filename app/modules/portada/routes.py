@@ -269,3 +269,8 @@ def bienvenida():
                            asignaturas=asignaturas_data,
                            hijos=hijos_data,
                            proximos_eventos=proximos_eventos)
+
+@portada_bp.route('/reglamento')
+@login_required
+def reglamento():
+    return render_template('portada/reglamento.html')
