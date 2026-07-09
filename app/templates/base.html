@@ -81,11 +81,19 @@
                     </a>
                     {% endif %}
 
-                    {% if user_permisos.get('Evaluaciones', 0) >= 1 %}
+                                        {% if user_permisos.get('Evaluaciones', 0) >= 1 %}
                     <a href="{{ url_for('evaluaciones.listar_grados') }}"
                         class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
                         <span>📝</span>
                         <span>Evaluaciones</span>
+                    </a>
+                    {% endif %}
+
+                    {% if user_permisos.get('Calendario', 0) >= 1 %}
+                    <a href="{{ url_for('calendario.index') }}"
+                        class="flex items-center space-x-3 py-3 px-4 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition font-medium">
+                        <span>📅</span>
+                        <span>Calendario</span>
                     </a>
                     {% endif %}
 

@@ -20,7 +20,8 @@ def create_app():
                 EdugestModule(ModuleName="Libro Digital", IsEnabled=True),
                 EdugestModule(ModuleName="Evaluaciones", IsEnabled=True),
                 EdugestModule(ModuleName="Biblioteca CRA", IsEnabled=True),
-                EdugestModule(ModuleName="Comunicaciones", IsEnabled=True)
+                EdugestModule(ModuleName="Comunicaciones", IsEnabled=True),
+                EdugestModule(ModuleName="Calendario", IsEnabled=True)  # ← NUEVO
             ]
             db.session.add_all(modulos_iniciales)
             db.session.commit()
@@ -79,6 +80,10 @@ def create_app():
     from app.modules.reportes.routes import reportes_bp
     app.register_blueprint(reportes_bp)
 
+    # 8. Calendario Académico                          # ← NUEVO
+    from app.modules.calendario import calendario_bp    # ← NUEVO
+    app.register_blueprint(calendario_bp)               # ← NUEVO
+
     # ==========================================
     # RUTA RAÍZ → REDIRIGIR AL LOGIN
     # ==========================================
@@ -93,7 +98,7 @@ def create_app():
     @app.template_filter('tochar')
     def tochar(number):
         return chr(65 + number)
-    
+
     # ==========================================
     # CONTEXTO GLOBAL: Permisos del usuario actual
     # ==========================================

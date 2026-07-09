@@ -19,3 +19,4 @@ from app.models.edugest import (
     EdugestPersonRelationshipDetail, EdugestManualGrade,
     EdugestUser, EdugestRole
 )
+from app.models.EdugestCalendar import EdugestCalendarEvent

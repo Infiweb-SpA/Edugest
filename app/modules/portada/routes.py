@@ -1,12 +1,12 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
-from flask import Blueprint, render_template
-from flask_login import login_required, current_user
 from app.models.mineduc import (
     Person, PersonIdentifier, Organization, OrganizationRelationship,
-    OrganizationPersonRole, PersonRelationship  # ← PersonRelationship es nuevo
+    OrganizationPersonRole, PersonRelationship
 )
 from app.models.edugest import EdugestRole
+from app.models.EdugestCalendar import EdugestCalendarEvent  # ← NUEVO
+from datetime import date  # ← NUEVO
 
 portada_bp = Blueprint('portada', __name__, url_prefix='/portada')
 
@@ -152,10 +152,18 @@ def bienvenida():
                 'asignaturas': asignaturas_hijo
             })
 
+        # ← NUEVO: Próximos eventos globales del calendario
+    hoy = date.today()
+    proximos_eventos = EdugestCalendarEvent.query.filter(
+        EdugestCalendarEvent.EventDate >= hoy,
+        EdugestCalendarEvent.TargetOrganizationId.is_(None)
+    ).order_by(EdugestCalendarEvent.EventDate).limit(5).all()
+
     return render_template('portada/bienvenida.html',
                            persona=persona,
                            rut=ident.Identifier if ident else 'Sin RUT',
                            rol_nombre=rol_nombre,
                            curso_info=curso_info,
                            asignaturas=asignaturas_data,
-                           hijos=hijos_data)
+                           hijos=hijos_data,
+                           proximos_eventos=proximos_eventos)  # ← NUEVO

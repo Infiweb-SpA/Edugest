@@ -25,14 +25,15 @@ def crear_jerarquia_completa():
             EdugestModule(ModuleName="Biblioteca CRA", IsEnabled=True),
             EdugestModule(ModuleName="Comunicaciones", IsEnabled=True),
             EdugestModule(ModuleName="Matrícula", IsEnabled=True),
-            EdugestModule(ModuleName="Reportes", IsEnabled=True)
+            EdugestModule(ModuleName="Reportes", IsEnabled=True),
+            EdugestModule(ModuleName="Calendario", IsEnabled=True)  # ← NUEVO
         ]
         db.session.add_all(modulos_iniciales)
         db.session.commit()
         print("✅ Módulos base creados.")
     else:
         # Verificar módulos faltantes y agregarlos
-        modulos_faltantes = ["Matrícula", "Reportes"]
+        modulos_faltantes = ["Matrícula", "Reportes", "Calendario"]  # ← NUEVO
         for nombre_modulo in modulos_faltantes:
             if not EdugestModule.query.filter_by(ModuleName=nombre_modulo).first():
                 db.session.add(EdugestModule(ModuleName=nombre_modulo, IsEnabled=True))

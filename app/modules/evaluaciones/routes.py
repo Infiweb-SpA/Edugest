@@ -18,6 +18,7 @@ from app.models import (
     PersonIdentifier
 )
 from app.modules.auth.routes import permiso_requerido, verificar_escritura
+from app.models.EdugestCalendar import EdugestCalendarEvent  # ← NUEVO
 
 evaluaciones_bp = Blueprint('evaluaciones', __name__, url_prefix='/evaluaciones')
 
@@ -230,6 +231,24 @@ def crear_evaluacion_clase_post(plan_id):
     )
     db.session.add(nuevo_ins)
     db.session.commit()
+
+    # ← NUEVO: Si se proporcionó fecha, crear evento en el calendario
+    assessment_date = request.form.get('assessment_date')
+    if assessment_date:
+        try:
+            fecha = datetime.strptime(assessment_date, '%Y-%m-%d').date()
+            nuevo_evento = EdugestCalendarEvent(
+                Title=titulo,
+                EventDate=fecha,
+                EventType='Evaluacion',
+                TargetOrganizationId=asignatura.OrganizationId,
+                InstrumentId=nuevo_ins.InstrumentId,
+                CreatedBy=current_user.PersonId
+            )
+            db.session.add(nuevo_evento)
+            db.session.commit()
+        except ValueError:
+            pass  # Fecha inválida, no se crea el evento
 
     flash("Evaluacion creada y vinculada a la clase.", "success")
     return redirect(url_for('evaluaciones.unidades_asignatura', org_id=asignatura.OrganizationId))
