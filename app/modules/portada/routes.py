@@ -5,8 +5,8 @@ from app.models.mineduc import (
     OrganizationPersonRole, PersonRelationship
 )
 from app.models.edugest import EdugestRole
-from app.models.EdugestCalendar import EdugestCalendarEvent  # ← NUEVO
-from datetime import date  # ← NUEVO
+from app.models.EdugestCalendar import EdugestCalendarEvent
+from datetime import date
 
 portada_bp = Blueprint('portada', __name__, url_prefix='/portada')
 
@@ -27,7 +27,7 @@ def bienvenida():
     # Datos del estudiante (solo si roleId=6)
     curso_info = None
     asignaturas_data = []
-    hijos_data = []  # ← NUEVO: lista de hijos para apoderado
+    hijos_data = []
 
     # ================================================================
     # CASO A: Estudiante (RoleId=6)
@@ -152,12 +152,114 @@ def bienvenida():
                 'asignaturas': asignaturas_hijo
             })
 
-        # ← NUEVO: Próximos eventos globales del calendario
+    # ================================================================
+    # PRÓXIMOS EVENTOS DEL CALENDARIO
+    # ================================================================
     hoy = date.today()
-    proximos_eventos = EdugestCalendarEvent.query.filter(
-        EdugestCalendarEvent.EventDate >= hoy,
-        EdugestCalendarEvent.TargetOrganizationId.is_(None)
-    ).order_by(EdugestCalendarEvent.EventDate).limit(5).all()
+
+    # Admin: ve todos los eventos sin restricción
+    if current_user.RoleId == 1:
+        proximos_eventos = EdugestCalendarEvent.query.filter(
+            EdugestCalendarEvent.EventDate >= hoy
+        ).order_by(EdugestCalendarEvent.EventDate).limit(5).all()
+
+        return render_template('portada/bienvenida.html',
+                               persona=persona,
+                               rut=ident.Identifier if ident else 'Sin RUT',
+                               rol_nombre=rol_nombre,
+                               curso_info=curso_info,
+                               asignaturas=asignaturas_data,
+                               hijos=hijos_data,
+                               proximos_eventos=proximos_eventos)
+
+    # Construir lista de org_ids visibles según el rol
+    org_ids = []
+
+    if current_user.RoleId == 6:
+        # Estudiante: su curso, grado y asignaturas
+        matriculas_org = OrganizationPersonRole.query.filter_by(
+            PersonId=current_user.PersonId, RoleId=6, ExitDate=None
+        ).all()
+        for mat in matriculas_org:
+            org = Organization.query.get(mat.OrganizationId)
+            if org and org.RefOrganizationTypeId == 21:
+                org_ids.append(org.OrganizationId)
+                rel = OrganizationRelationship.query.filter_by(
+                    OrganizationId=org.OrganizationId
+                ).first()
+                if rel:
+                    org_ids.append(rel.ParentOrganizationId)
+                    asigns = Organization.query.join(
+                        OrganizationRelationship,
+                        Organization.OrganizationId == OrganizationRelationship.OrganizationId
+                    ).filter(
+                        OrganizationRelationship.ParentOrganizationId == rel.ParentOrganizationId,
+                        Organization.RefOrganizationTypeId == 22
+                    ).all()
+                    for asig in asigns:
+                        org_ids.append(asig.OrganizationId)
+
+    elif current_user.RoleId == 5:
+        # Apoderado: organizaciones de sus hijos ya calculados
+        for hijo in hijos_data:
+            org_ids.append(hijo['curso_id'])
+            org_hijo = Organization.query.get(hijo['curso_id'])
+            if org_hijo:
+                rel = OrganizationRelationship.query.filter_by(
+                    OrganizationId=org_hijo.OrganizationId
+                ).first()
+                if rel:
+                    org_ids.append(rel.ParentOrganizationId)
+                    asigns = Organization.query.join(
+                        OrganizationRelationship,
+                        Organization.OrganizationId == OrganizationRelationship.OrganizationId
+                    ).filter(
+                        OrganizationRelationship.ParentOrganizationId == rel.ParentOrganizationId,
+                        Organization.RefOrganizationTypeId == 22
+                    ).all()
+                    for asig in asigns:
+                        org_ids.append(asig.OrganizationId)
+
+    else:
+        # Profesor, Director, Inspector: organizaciones donde tiene rol
+        # + organizaciones hermanas bajo el mismo padre
+        roles = OrganizationPersonRole.query.filter_by(
+            PersonId=current_user.PersonId, ExitDate=None
+        ).all()
+        for rol in roles:
+            org_ids.append(rol.OrganizationId)
+            rel = OrganizationRelationship.query.filter_by(
+                OrganizationId=rol.OrganizationId
+            ).first()
+            if rel:
+                parent_id = rel.ParentOrganizationId
+                org_ids.append(parent_id)
+                hermanas = Organization.query.join(
+                    OrganizationRelationship,
+                    Organization.OrganizationId == OrganizationRelationship.OrganizationId
+                ).filter(
+                    OrganizationRelationship.ParentOrganizationId == parent_id
+                ).all()
+                for h in hermanas:
+                    org_ids.append(h.OrganizationId)
+
+    org_ids = list(set(org_ids)) if org_ids else []
+
+    # Consultar eventos: globales (TargetOrganizationId NULL) + dirigidos a las orgs del usuario
+    if org_ids:
+        proximos_eventos = EdugestCalendarEvent.query.filter(
+            EdugestCalendarEvent.EventDate >= hoy,
+            (
+                EdugestCalendarEvent.TargetOrganizationId.is_(None) |
+                EdugestCalendarEvent.TargetOrganizationId.in_(org_ids)
+            )
+        ).order_by(EdugestCalendarEvent.EventDate).limit(5).all()
+    else:
+        # Sin organizaciones: solo eventos globales
+        proximos_eventos = EdugestCalendarEvent.query.filter(
+            EdugestCalendarEvent.EventDate >= hoy,
+            EdugestCalendarEvent.TargetOrganizationId.is_(None)
+        ).order_by(EdugestCalendarEvent.EventDate).limit(5).all()
 
     return render_template('portada/bienvenida.html',
                            persona=persona,
@@ -166,4 +268,4 @@ def bienvenida():
                            curso_info=curso_info,
                            asignaturas=asignaturas_data,
                            hijos=hijos_data,
-                           proximos_eventos=proximos_eventos)  # ← NUEVO
+                           proximos_eventos=proximos_eventos)

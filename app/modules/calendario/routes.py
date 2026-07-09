@@ -5,7 +5,7 @@ from app.models.mineduc import (
     Organization, OrganizationRelationship, OrganizationPersonRole,
     PersonRelationship
 )
-from app.models.edugest import EdugestRolePermission, EdugestModule
+from app.models.edugest import EdugestRolePermission, EdugestModule, EdugestAssessmentInstrument
 from app.models.EdugestCalendar import EdugestCalendarEvent
 from app.modules.auth.routes import permiso_requerido
 from datetime import date, datetime
@@ -63,6 +63,20 @@ def _get_nivel_permiso():
     if current_user.RoleId == 1:
         return 2
     modulo = EdugestModule.query.filter_by(ModuleName='Calendario').first()
+    if modulo:
+        perm = EdugestRolePermission.query.filter_by(
+            RoleId=current_user.RoleId, ModuleId=modulo.ModuleId
+        ).first()
+        if perm:
+            return perm.PermissionLevel
+    return 0
+
+
+def _get_nivel_permiso_evaluaciones():
+    """Retorna el nivel de permiso del usuario actual para el módulo Evaluaciones"""
+    if current_user.RoleId == 1:
+        return 2
+    modulo = EdugestModule.query.filter_by(ModuleName='Evaluaciones').first()
     if modulo:
         perm = EdugestRolePermission.query.filter_by(
             RoleId=current_user.RoleId, ModuleId=modulo.ModuleId
@@ -137,6 +151,7 @@ def _get_org_ids_for_user():
 
     else:
         # Profesor, Director, Inspector: organizaciones donde tiene rol activo
+        # + organizaciones hermanas bajo el mismo padre (asignaturas, otros cursos)
         roles = OrganizationPersonRole.query.filter_by(
             PersonId=current_user.PersonId, ExitDate=None
         ).all()
@@ -146,7 +161,19 @@ def _get_org_ids_for_user():
                 OrganizationId=rol.OrganizationId
             ).first()
             if rel:
-                org_ids.append(rel.ParentOrganizationId)
+                parent_id = rel.ParentOrganizationId
+                org_ids.append(parent_id)
+
+                # Buscar TODAS las organizaciones hermanas bajo el mismo padre
+                # (incluye asignaturas tipo 22 y otros cursos tipo 21)
+                hermanas = Organization.query.join(
+                    OrganizationRelationship,
+                    Organization.OrganizationId == OrganizationRelationship.OrganizationId
+                ).filter(
+                    OrganizationRelationship.ParentOrganizationId == parent_id
+                ).all()
+                for h in hermanas:
+                    org_ids.append(h.OrganizationId)
 
     return list(set(org_ids)) if org_ids else []
 
@@ -195,7 +222,36 @@ def index():
         # Sin organizaciones: solo eventos globales
         query = query.filter(EdugestCalendarEvent.TargetOrganizationId.is_(None))
 
-    events = query.order_by(EdugestCalendarEvent.EventDate).all()
+    events_raw = query.order_by(EdugestCalendarEvent.EventDate).all()
+
+    # ── Filtrar evaluaciones no publicadas para usuarios sin permiso nivel 2 ──
+    nivel_eval = _get_nivel_permiso_evaluaciones()
+
+    if nivel_eval < 2:
+        # Recopilar IDs de instrumentos vinculados a eventos de evaluación
+        instrument_ids = [
+            ev.InstrumentId for ev in events_raw
+            if ev.InstrumentId and ev.EventType == 'Evaluacion'
+        ]
+
+        # Consulta batch: qué instrumentos están publicados (IsVisible=True)
+        instrumentos_publicados = set()
+        if instrument_ids:
+            publicados = EdugestAssessmentInstrument.query.filter(
+                EdugestAssessmentInstrument.InstrumentId.in_(instrument_ids),
+                EdugestAssessmentInstrument.IsVisible == True
+            ).all()
+            instrumentos_publicados = {i.InstrumentId for i in publicados}
+
+        # Filtrar: eventos de evaluación no publicadas se ocultan
+        events = []
+        for ev in events_raw:
+            if ev.InstrumentId and ev.EventType == 'Evaluacion':
+                if ev.InstrumentId not in instrumentos_publicados:
+                    continue
+            events.append(ev)
+    else:
+        events = events_raw
 
     # Agrupar eventos por día
     events_by_day = {}

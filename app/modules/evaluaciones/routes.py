@@ -798,9 +798,47 @@ def eliminar_nota_manual(inst_id, opr_id):
 @login_required
 @permiso_requerido('Evaluaciones', 2)
 def cambiar_visibilidad(inst_id):
+    from app.models.EdugestCalendar import EdugestCalendarEvent
+
     instrumento = EdugestAssessmentInstrument.query.get_or_404(inst_id)
     instrumento.IsVisible = not instrumento.IsVisible
     db.session.commit()
+
+    if instrumento.IsVisible:
+        # ── Publicar: crear evento en calendario si no existe uno para este instrumento ──
+        evento_existente = EdugestCalendarEvent.query.filter_by(
+            InstrumentId=instrumento.InstrumentId
+        ).first()
+
+        if not evento_existente:
+            # Buscar el grado padre para asignar como TargetOrganizationId
+            relacion_grado = OrganizationRelationship.query.filter_by(
+                OrganizationId=instrumento.OrganizationId
+            ).first()
+            grado_id = relacion_grado.ParentOrganizationId if relacion_grado else None
+
+            nuevo_evento = EdugestCalendarEvent(
+                Title=instrumento.Title,
+                EventDate=datetime.now().date(),
+                EventType='Evaluacion',
+                # Apuntar al grado para que todos los cursos y asignaturas lo vean
+                TargetOrganizationId=grado_id if grado_id else instrumento.OrganizationId,
+                InstrumentId=instrumento.InstrumentId,
+                CreatedBy=current_user.PersonId
+            )
+            db.session.add(nuevo_evento)
+            db.session.commit()
+
+    else:
+        # ── Ocultar: eliminar evento vinculado del calendario si existe ──
+        evento = EdugestCalendarEvent.query.filter_by(
+            InstrumentId=instrumento.InstrumentId
+        ).first()
+
+        if evento:
+            db.session.delete(evento)
+            db.session.commit()
+
     estado = "publicado" if instrumento.IsVisible else "ocultado"
     flash(f"El instrumento ha sido {estado} correctamente.", "success")
     return redirect(url_for('evaluaciones.unidades_asignatura', org_id=instrumento.OrganizationId))
