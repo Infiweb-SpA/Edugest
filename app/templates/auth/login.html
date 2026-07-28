@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edugest - Iniciar Sesión</title>
+    <title>Edugest - Iniciar Sesion</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -89,13 +89,13 @@
 
     <div class="relative z-10 w-full max-w-md">
 
-        <!-- Logo y título -->
+        <!-- Logo y titulo -->
         <div class="text-center mb-8 animate-in">
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-4">
-                <span class="text-3xl">🎓</span>
+                <span class="text-3xl">&#127891;</span>
             </div>
             <h1 class="text-3xl font-bold text-white tracking-tight">Edugest</h1>
-            <p class="text-slate-400 text-sm mt-1">Sistema de Gestión Escolar</p>
+            <p class="text-slate-400 text-sm mt-1">Sistema de Gestion Escolar</p>
         </div>
 
         <!-- Card de login -->
@@ -109,7 +109,8 @@
                 <div class="px-4 py-3 rounded-lg text-sm font-medium
                     {% if category == 'error' %}bg-red-500/10 text-red-400 border border-red-500/20
                     {% elif category == 'warning' %}bg-amber-500/10 text-amber-400 border border-amber-500/20
-                    {% else %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% endif %}">
+                    {% elif category == 'success' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20
+                    {% else %}bg-blue-500/10 text-blue-400 border border-blue-500/20{% endif %}">
                     {{ message }}
                 </div>
                 {% endfor %}
@@ -126,12 +127,12 @@
                         class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 outline-none text-sm">
                 </div>
 
-                <!-- Campo Contraseña -->
+                <!-- Campo Contrasena -->
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-2">Contraseña</label>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Contrasena</label>
                     <div class="relative">
                         <input type="password" name="password" id="password" required autocomplete="current-password"
-                            placeholder="Ingresa tu contraseña"
+                            placeholder="Ingresa tu contrasena"
                             class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 outline-none text-sm pr-12">
                         <button type="button" onclick="togglePassword()"
                             class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition">
@@ -150,17 +151,24 @@
                     </div>
                 </div>
 
-                <!-- Botón -->
+                <!-- FIX: Checkbox Recordarme (antes remember estaba hardcodeado en backend) -->
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="remember" id="remember"
+                        class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500/30 focus:ring-offset-0 cursor-pointer">
+                    <label for="remember" class="text-sm text-slate-400 cursor-pointer select-none">Recordarme</label>
+                </div>
+
+                <!-- Boton -->
                 <button type="submit"
                     class="btn-login w-full py-3 rounded-xl text-white font-semibold text-sm tracking-wide shadow-lg cursor-pointer">
-                    Iniciar Sesión
+                    Iniciar Sesion
                 </button>
             </form>
         </div>
 
         <!-- Footer -->
         <p class="text-center text-slate-600 text-xs mt-6 animate-in-delay-2">
-            Edugest SpA &copy; 2026 &middot; Región de La Araucanía
+            Edugest SpA &copy; 2026 &middot; Region de La Araucania
         </p>
     </div>
 

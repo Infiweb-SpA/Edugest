@@ -1,5 +1,6 @@
 from functools import wraps
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from urllib.parse import urlparse
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from app.database import db
@@ -21,6 +22,27 @@ def init_login_manager(app):
 def load_user(user_id):
     from app.models.edugest import EdugestUser
     return EdugestUser.query.get(int(user_id))
+
+
+# ============================================================================
+# HELPERS DE SEGURIDAD
+# ============================================================================
+def _es_url_segura(url):
+    """Verifica que la URL sea relativa (misma aplicacion). Evita open redirect."""
+    if not url:
+        return False
+    parsed = urlparse(url)
+    return not parsed.scheme and not parsed.netloc
+
+
+def _redirect_por_rol(usuario):
+    """Retorna la URL de redireccion segun el RoleId del usuario."""
+    if usuario.RoleId == 1:
+        return url_for('admin.dashboard')
+    elif usuario.RoleId == 3:
+        return url_for('libro_digital.listar_grados')
+    else:
+        return url_for('portada.bienvenida')
 
 
 # ============================================================================
@@ -72,7 +94,6 @@ def verificar_escritura(module_name):
         return  # Admin tiene acceso total
 
     from app.models.edugest import EdugestModule, EdugestRolePermission
-    from flask import abort
 
     modulo = EdugestModule.query.filter_by(ModuleName=module_name).first()
     if not modulo:
@@ -93,7 +114,7 @@ def verificar_escritura(module_name):
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('admin.dashboard'))
+        return redirect(_redirect_por_rol(current_user))
 
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
@@ -111,21 +132,16 @@ def login():
             flash('RUT o contrasena incorrectos.', 'error')
             return render_template('auth/login.html')
 
-        login_user(usuario, remember=True)
+        # FIX: remember ya no es hardcodeado, depende del checkbox
+        remember = True if request.form.get('remember') else False
+        login_user(usuario, remember=remember)
 
-        # Redirigir segun el rol
+        # FIX: Validar next_page contra open redirect
         next_page = request.args.get('next')
-        if next_page:
+        if next_page and _es_url_segura(next_page):
             return redirect(next_page)
 
-        if usuario.RoleId == 1:
-            return redirect(url_for('admin.dashboard'))
-        elif usuario.RoleId == 3:
-            return redirect(url_for('libro_digital.listar_grados'))
-        elif usuario.RoleId == 6:
-            return redirect(url_for('portada.bienvenida'))
-        else:
-            return redirect(url_for('portada.bienvenida'))
+        return redirect(_redirect_por_rol(usuario))
 
     return render_template('auth/login.html')
 
@@ -144,20 +160,26 @@ def logout():
 @auth_bp.route('/usuarios')
 @login_required
 def listar_usuarios():
+    # FIX: Verificacion consistente con flash message
     if current_user.RoleId != 1:
-        return render_template('auth/unauthorized.html',
-                               mensaje='Solo los administradores pueden gestionar usuarios.'), 403
+        flash('No tienes permisos para acceder a esta seccion.', 'error')
+        return redirect(url_for('portada.bienvenida'))
 
     from app.models.edugest import EdugestUser
     from app.models.mineduc import Person
+    from sqlalchemy.orm import joinedload
 
-    usuarios = EdugestUser.query.all()
+    # FIX: N+1 query resuelto con joinedload
+    usuarios = EdugestUser.query.options(
+        joinedload(EdugestUser.person)
+    ).all()
+
     usuarios_data = []
     for u in usuarios:
-        persona = Person.query.get(u.PersonId)
+        # Con joinedload, u.person ya esta cargado sin query adicional
         usuarios_data.append({
             'usuario': u,
-            'persona': persona
+            'persona': u.person
         })
 
     return render_template('auth/usuarios.html', usuarios=usuarios_data)

@@ -13,11 +13,37 @@
     </div>
     <h3 class="text-2xl font-bold text-gray-900 mb-2">Acceso No Autorizado</h3>
     <p class="text-gray-500 mb-6">
-        {{ mensaje if mensaje else 'No tienes los permisos necesarios para acceder a esta sección.' }}
+        {{ mensaje if mensaje else 'No tienes los permisos necesarios para acceder a esta seccion.' }}
     </p>
-    <a href="{{ url_for('admin.dashboard') }}"
-        class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
-        Volver al Panel
-    </a>
+
+    <!-- FIX: Boton redirige segun el rol del usuario, no siempre a admin.dashboard -->
+    {% if current_user.is_authenticated %}
+        {% if current_user.RoleId == 1 %}
+            <a href="{{ url_for('admin.dashboard') }}"
+                class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
+                Volver al Panel
+            </a>
+        {% elif current_user.RoleId == 3 %}
+            <a href="{{ url_for('libro_digital.listar_grados') }}"
+                class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
+                Volver al Libro Digital
+            </a>
+        {% elif current_user.RoleId == 2 %}
+            <a href="{{ url_for('portada.bienvenida') }}"
+                class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
+                Volver al Inicio
+            </a>
+        {% else %}
+            <a href="{{ url_for('portada.bienvenida') }}"
+                class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
+                Volver al Inicio
+            </a>
+        {% endif %}
+    {% else %}
+        <a href="{{ url_for('auth.login') }}"
+            class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
+            Iniciar Sesion
+        </a>
+    {% endif %}
 </div>
 {% endblock %}
