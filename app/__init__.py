@@ -1,13 +1,27 @@
 from flask import Flask, redirect, url_for
+from flask_wtf.csrf import CSRFProtect  # ← NUEVO
 from app.config import Config
 from app.database import db, init_db
+
+csrf = CSRFProtect()  # ← NUEVO: Instancia global de CSRF
+
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # ← NUEVO: Verificar que SECRET_KEY exista y no esté vacía
+    if not app.config.get('SECRET_KEY'):
+        import os
+        app.config['SECRET_KEY'] = os.environ.get(
+            'SECRET_KEY', 'cambiar-esta-clave-en-produccion'
+        )
+
     # Inicializar db
     init_db(app)
+
+    # ← NUEVO: Inicializar CSRF después de configurar la app
+    csrf.init_app(app)
 
     with app.app_context():
         from app import models
@@ -21,7 +35,9 @@ def create_app():
                 EdugestModule(ModuleName="Evaluaciones", IsEnabled=True),
                 EdugestModule(ModuleName="Biblioteca CRA", IsEnabled=True),
                 EdugestModule(ModuleName="Comunicaciones", IsEnabled=True),
-                EdugestModule(ModuleName="Calendario", IsEnabled=True)  # ← NUEVO
+                EdugestModule(ModuleName="Calendario", IsEnabled=True),
+                EdugestModule(ModuleName="Matrícula", IsEnabled=True),
+                EdugestModule(ModuleName="Reportes", IsEnabled=True),
             ]
             db.session.add_all(modulos_iniciales)
             db.session.commit()
@@ -80,9 +96,9 @@ def create_app():
     from app.modules.reportes.routes import reportes_bp
     app.register_blueprint(reportes_bp)
 
-    # 8. Calendario Académico                          # ← NUEVO
-    from app.modules.calendario import calendario_bp    # ← NUEVO
-    app.register_blueprint(calendario_bp)               # ← NUEVO
+    # 8. Calendario Académico
+    from app.modules.calendario import calendario_bp
+    app.register_blueprint(calendario_bp)
 
     # ==========================================
     # RUTA RAÍZ → REDIRIGIR AL LOGIN

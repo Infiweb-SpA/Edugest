@@ -118,7 +118,8 @@
             {% endif %}
             {% endwith %}
 
-            <form method="POST" class="space-y-5">
+                <form method="POST" class="space-y-5">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <!-- Campo RUT -->
                 <div>
                     <label class="block text-sm font-medium text-slate-300 mb-2">RUT</label>

@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from app.database import db
+from app.models.edugest import EdugestModule, EdugestRolePermission  # ← NUEVO al inicio
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -63,7 +64,7 @@ def permiso_requerido(module_name, nivel=1):
             if current_user.RoleId == 1:
                 return f(*args, **kwargs)
 
-            from app.models.edugest import EdugestModule, EdugestRolePermission
+            # ← ELIMINADO: import inline (ya está al inicio del archivo)
 
             modulo = EdugestModule.query.filter_by(ModuleName=module_name).first()
             if not modulo:
@@ -93,7 +94,7 @@ def verificar_escritura(module_name):
     if current_user.RoleId == 1:
         return  # Admin tiene acceso total
 
-    from app.models.edugest import EdugestModule, EdugestRolePermission
+    # ← ELIMINADO: import inline (ya está al inicio del archivo)
 
     modulo = EdugestModule.query.filter_by(ModuleName=module_name).first()
     if not modulo:
@@ -109,7 +110,7 @@ def verificar_escritura(module_name):
 
 
 # ============================================================================
-# RUTAS DE AUTENTICACION
+# RUTAS DE AUTENTICACION (sin cambios)
 # ============================================================================
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -132,11 +133,9 @@ def login():
             flash('RUT o contrasena incorrectos.', 'error')
             return render_template('auth/login.html')
 
-        # FIX: remember ya no es hardcodeado, depende del checkbox
         remember = True if request.form.get('remember') else False
         login_user(usuario, remember=remember)
 
-        # FIX: Validar next_page contra open redirect
         next_page = request.args.get('next')
         if next_page and _es_url_segura(next_page):
             return redirect(next_page)
@@ -154,13 +153,9 @@ def logout():
     return redirect(url_for('auth.login'))
 
 
-# ============================================================================
-# RUTA: GESTION DE USUARIOS (solo admin)
-# ============================================================================
 @auth_bp.route('/usuarios')
 @login_required
 def listar_usuarios():
-    # FIX: Verificacion consistente con flash message
     if current_user.RoleId != 1:
         flash('No tienes permisos para acceder a esta seccion.', 'error')
         return redirect(url_for('portada.bienvenida'))
@@ -169,14 +164,12 @@ def listar_usuarios():
     from app.models.mineduc import Person
     from sqlalchemy.orm import joinedload
 
-    # FIX: N+1 query resuelto con joinedload
     usuarios = EdugestUser.query.options(
         joinedload(EdugestUser.person)
     ).all()
 
     usuarios_data = []
     for u in usuarios:
-        # Con joinedload, u.person ya esta cargado sin query adicional
         usuarios_data.append({
             'usuario': u,
             'persona': u.person
