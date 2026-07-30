@@ -507,13 +507,46 @@
           <label class="form-label">Nacionalidad</label>
           <input type="text" name="nacionalidad" id="nacionalidad" class="form-input" placeholder="Ej: Chilena">
         </div>
-        <div>
+                <div>
           <label class="form-label">País de Origen</label>
-          <input type="text" name="pais_origen" id="pais_origen" class="form-input" placeholder="Ej: Chile">
+          <select name="pais_origen" id="pais_origen" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="Chile" selected>Chile</option>
+            <option value="Argentina">Argentina</option>
+            <option value="Bolivia">Bolivia</option>
+            <option value="Brasil">Brasil</option>
+            <option value="Colombia">Colombia</option>
+            <option value="Costa Rica">Costa Rica</option>
+            <option value="Cuba">Cuba</option>
+            <option value="Ecuador">Ecuador</option>
+            <option value="El Salvador">El Salvador</option>
+            <option value="España">España</option>
+            <option value="Estados Unidos">Estados Unidos</option>
+            <option value="Francia">Francia</option>
+            <option value="Guatemala">Guatemala</option>
+            <option value="Haití">Haití</option>
+            <option value="Honduras">Honduras</option>
+            <option value="India">India</option>
+            <option value="Italia">Italia</option>
+            <option value="Japón">Japón</option>
+            <option value="México">México</option>
+            <option value="Nicaragua">Nicaragua</option>
+            <option value="Panamá">Panamá</option>
+            <option value="Paraguay">Paraguay</option>
+            <option value="Perú">Perú</option>
+            <option value="República Dominicana">República Dominicana</option>
+            <option value="Reino Unido">Reino Unido</option>
+            <option value="Rusia">Rusia</option>
+            <option value="Turquía">Turquía</option>
+            <option value="Uruguay">Uruguay</option>
+            <option value="Venezuela">Venezuela</option>
+          </select>
         </div>
-        <div>
+                <div>
           <label class="form-label">Comuna de Residencia</label>
-          <input type="text" name="comuna_residencia" id="comuna_residencia" class="form-input" placeholder="Ej: Temuco">
+          <select name="comuna_residencia" id="comuna_residencia" required disabled class="form-select bg-disabled">
+            <option value="">-- Primero seleccione región --</option>
+          </select>
         </div>
         <div>
           <label class="form-label">Región de Residencia</label>
@@ -1206,9 +1239,21 @@
             <label for="chk_pueblo">Pertenece a Pueblo Originario</label>
           </div>
         </div>
-        <div>
+                <div>
           <label class="form-label">Pueblo Originario</label>
-          <input type="text" name="pueblo_originario" id="pueblo_originario" class="form-input">
+          <select name="pueblo_originario" id="pueblo_originario" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option value="Mapuche">Mapuche</option>
+            <option value="Aymara">Aymara</option>
+            <option value="Atacameño">Atacameño (Lickanantay)</option>
+            <option value="Quechua">Quechua</option>
+            <option value="Rapa Nui">Rapa Nui</option>
+            <option value="Colla">Colla</option>
+            <option value="Diaguita">Diaguita</option>
+            <option value="Kawésqar">Kawésqar</option>
+            <option value="Yagán">Yagán</option>
+            <option value="Chango">Chango</option>
+          </select>
         </div>
         <div class="flex items-center">
           <div class="form-checkbox-wrap w-full">
@@ -1491,6 +1536,85 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             alert('Corrija los siguientes errores antes de enviar:\n\n• ' + errores.join('\n• '));
         }
+    });
+
+        // ═══════════════════════════════════════════════════════════════
+    // CASCADA REGIÓN → COMUNA
+    // ═══════════════════════════════════════════════════════════════
+    var selectRegionResidencia = document.getElementById('region_residencia');
+    var selectComunaResidencia = document.getElementById('comuna_residencia');
+
+    var COMUNAS_POR_REGION = {
+        'Arica y Parinacota': [
+            'Arica','Camarones','Putre','General Lagos'
+        ],
+        'Tarapacá': [
+            'Iquique','Alto Hospicio','Pozo Almonte','Camiña','Colchane','Huara','Pica'
+        ],
+        'Antofagasta': [
+            'Antofagasta','Mejillones','Sierra Gorda','Taltal','Calama','Ollagüe','San Pedro de Atacama','Tocopilla','María Elena'
+        ],
+        'Atacama': [
+            'Copiapó','Caldera','Tierra Amarilla','Chañaral','Diego de Almagro','Vallenar','Alto del Carmen','Freirina','Huasco'
+        ],
+        'Coquimbo': [
+            'La Serena','Coquimbo','Andacollo','La Higuera','Paihuano','Vicuña','Illapel','Canela','Los Vilos','Salamanca','Ovalle','Combarbalá','Monte Patria','Punitaqui','Río Hurtado'
+        ],
+        'Valparaíso': [
+            'Valparaíso','Casablanca','Concón','Juan Fernández','Puchuncaví','Quintero','Viña del Mar','Isla de Pascua','Los Andes','Calle Larga','Rinconada','San Esteban','La Ligua','Cabildo','Papudo','Petorca','Zapallar','Quillota','Calera','Hijuelas','La Cruz','Limache','Nogales','Olmué','San Antonio','Algarrobo','Cartagena','El Quisco','El Tabo','Santo Domingo','San Felipe','Catemu','Llaillay','Panquehue','Putaendo','Santa María','Quilpué','Villa Alemana'
+        ],
+        'Libertador General Bernardo O\'Higgins': [
+            'Rancagua','Codegua','Coinco','Coltauco','Doñihue','Graneros','Las Cabras','Machalí','Malloa','Mostazal','Olivar','Peumo','Pichidegua','Quinta de Tilcoco','Rengo','Requínoa','San Vicente','Pichilemu','La Estrella','Litueche','Marchihue','Navidad','Paredones','San Fernando','Chépica','Chimbarongo','Lolol','Nancagua','Palmilla','Peralillo','Placilla','Pumanque','Santa Cruz'
+        ],
+        'Maule': [
+            'Cauquenes','Chanco','Pelluhue','Curicó','Hualañé','Licantén','Molina','Rauco','Romeral','Sagrada Familia','Teno','Vichuquén','Linares','Colbún','Longaví','Parral','Retiro','San Javier','Villa Alegre','Yerbas Buenas','Talca','Constitución','Curepto','Empedrado','Maule','Pelarco','Pencahue','Río Claro','San Clemente','San Rafael'
+        ],
+        'Ñuble': [
+            'Bulnes','Chillán','Chillán Viejo','El Carmen','Pemuco','Pinto','Quillón','San Ignacio','Yungay','Quirihue','Cobquecura','Coelemu','Ñinhue','Portezuelo','Ránquil','Treguaco','San Carlos','Coihueco','Ñiquén','San Fabián','San Nicolás'
+        ],
+        'Biobío': [
+            'Concepción','Coronel','Chiguayante','Florida','Hualqui','Lota','Penco','San Pedro de la Paz','Santa Juana','Talcahuano','Tomé','Hualpén','Lebu','Arauco','Cañete','Contulmo','Curanilahue','Los Álamos','Tirúa','Los Ángeles','Antuco','Cabrero','Laja','Mulchen','Nacimiento','Negrete','Quilaco','Quilleco','San Rosendo','Santa Bárbara','Tucapel','Yumbel','Alto Biobío'
+        ],
+        'La Araucanía': [
+            'Temuco','Carahue','Cunco','Curarrehue','Freire','Galvarino','Gorbea','Lautaro','Loncoche','Melipeuco','Nueva Imperial','Padre Las Casas','Perquenco','Pitrufquén','Pucón','Saavedra','Teodoro Schmidt','Toltén','Vilcún','Villarrica','Cholchol','Angol','Collipulli','Curacautín','Ercilla','Lonquimay','Los Sauces','Lumaco','Purén','Renaico','Traiguén','Victoria'
+        ],
+        'Los Ríos': [
+            'Valdivia','Corral','Lanco','Los Lagos','Máfil','Mariquina','Paillaco','Panguipulli','La Unión','Futrono','Lago Ranco','Río Bueno'
+        ],
+        'Los Lagos': [
+            'Puerto Montt','Calbuco','Cochamó','Fresia','Frutillar','Los Muermos','Llanquihue','Maullín','Puerto Varas','Castro','Ancud','Chonchi','Curaco de Vélez','Dalcahue','Puqueldón','Queilén','Quellón','Quemchi','Quinchao','Osorno','Puerto Octay','Purranque','Puyehue','Río Negro','San Juan de la Costa','San Pablo','Chaitén','Futaleufú','Hualaihue','Palena'
+        ],
+        'Aysén del General Carlos Ibáñez del Campo': [
+            'Coyhaique','Lago Verde','Aysén','Cisnes','Guaitecas','Chile Chico','Río Ibáñez','Cochrane','O\'Higgins','Tortel'
+        ],
+        'Magallanes y de la Antártica Chilena': [
+            'Punta Arenas','Laguna Blanca','Río Verde','San Gregorio','Porvenir','Primavera','Timaukel','Natales','Torres del Paine','Cabo de Hornos','Antártica'
+        ],
+        'Metropolitana de Santiago': [
+            'Santiago','Cerrillos','Cerro Navia','Conchalí','El Bosque','Estación Central','Huechuraba','Independencia','La Cisterna','La Florida','La Granja','La Pintana','La Reina','Las Condes','Lo Barnechea','Lo Espejo','Lo Prado','Macul','Maipú','Ñuñoa','Pedro Aguirre Cerda','Peñalolén','Providencia','Pudahuel','Quilicura','Quinta Normal','Recoleta','Renca','San Joaquín','San Miguel','San Ramón','Vitacura','Puente Alto','Pirque','San José de Maipo','Colina','Lampa','Tiltil','San Bernardo','Buin','Calera de Tango','Paine','Melipilla','Alhué','Curacaví','María Pinto','San Pedro','Talagante','El Monte','Isla de Maipo','Padre Hurtado','Peñaflor'
+        ]
+    };
+
+    function poblarComunas(region) {
+        selectComunaResidencia.innerHTML = '<option value="">-- Seleccionar comuna --</option>';
+        if (region && COMUNAS_POR_REGION[region]) {
+            COMUNAS_POR_REGION[region].forEach(function(nombre) {
+                var opt = document.createElement('option');
+                opt.value = nombre;
+                opt.textContent = nombre;
+                selectComunaResidencia.appendChild(opt);
+            });
+            selectComunaResidencia.disabled = false;
+            selectComunaResidencia.classList.remove('bg-disabled');
+        } else {
+            selectComunaResidencia.innerHTML = '<option value="">-- Primero seleccione región --</option>';
+            selectComunaResidencia.disabled = true;
+            selectComunaResidencia.classList.add('bg-disabled');
+        }
+    }
+
+    selectRegionResidencia.addEventListener('change', function() {
+        poblarComunas(this.value);
     });
 
     // ═══════════════════════════════════════════════════════════════
@@ -1783,8 +1907,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     var e = data.enrollment;
                     setVal('nacionalidad', e.nacionalidad);
                     setVal('pais_origen', e.pais_origen);
-                    setVal('comuna_residencia', e.comuna_residencia);
+                    setVal('comuna_residencia', e.comuna_residencia || data.comuna_residencia_mineduc || '');
                     setVal('region_residencia', e.region_residencia);
+                    poblarComunas(e.region_residencia);
+                    setVal('comuna_residencia', e.comuna_residencia || data.comuna_residencia_mineduc || '');
                     setVal('email_estudiante', e.email_estudiante);
                     setVal('telefono_estudiante', e.telefono_estudiante);
                     setVal('fecha_ingreso_establecimiento', e.fecha_ingreso_establecimiento);
