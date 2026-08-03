@@ -45,7 +45,8 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             <form method="POST" action="{{ url_for('libro_digital.actualizar_grado') }}"
-                                class="inline-flex items-center">
+                            class="inline-flex items-center">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="organization_id" value="{{ g.id }}">
                                 <input type="hidden" name="is_active" value="{{ '0' if g.activo else '1' }}">
                                 <button type="submit"

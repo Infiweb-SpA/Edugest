@@ -53,6 +53,7 @@
     {# ── FORMULARIO COMPLETO: solo nivel 2 puede firmar asistencia ── #}
     {% if user_permisos.get('Libro Digital', 0) >= 2 %}
     <form method="POST" class="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="letra_curso" value="{{ letra_actual }}">
 
         <div class="p-6 border-b border-gray-200 bg-gray-50">

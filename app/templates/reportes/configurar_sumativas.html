@@ -27,6 +27,7 @@
     <!-- Formulario -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <form method="POST" class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             {% if sumativas_data %}
             <div class="space-y-3">

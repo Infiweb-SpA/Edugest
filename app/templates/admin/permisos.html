@@ -18,6 +18,7 @@
         </div>
         <div class="flex space-x-3">
             <form action="{{ url_for('admin.init_rbac') }}" method="POST" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition text-sm font-medium"
                         onclick="return confirm('¿Restaurar permisos por defecto?')">🔄 Restaurar Defaults</button>
             </form>
@@ -26,6 +27,7 @@
     </div>
 
     <form id="form-permisos" method="POST" action="{{ url_for('admin.guardar_permisos') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% for modulo, features in features_por_modulo.items() %}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
             <div class="bg-gray-50 px-6 py-3 border-b border-gray-200">

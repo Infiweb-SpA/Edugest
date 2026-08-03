@@ -24,8 +24,8 @@
                   pestana: 'existente',
                   rolSeleccionado: {{ usuario.RoleId if usuario else '6' }},
                   esProfesor: false,
-                  gradoSeleccionado: '{{ grado_actual_id if grado_actual_id else "" }}',
-                  cursoSeleccionado: '{{ curso_actual_id if curso_actual_id else "" }}',
+                  gradoSeleccionado: '{{ grado_actual_id if grado_actual_id else '' }}',
+                  cursoSeleccionado: '{{ curso_actual_id if curso_actual_id else '' }}',
                   esJefe: {{ 'true' if jefe_info else 'false' }},
                   cursos: [],
                   cargandoCursos: false,
@@ -73,9 +73,11 @@
                   }
               }">
 
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
             {% if modo_form == 'crear' %}
             <!-- ============================================================ -->
-            <!-- PESTAÑAS: Existente / Nueva Persona -->
+            <!-- PESTANAS: Existente / Nueva Persona -->
             <!-- ============================================================ -->
             <div>
                 <div class="flex border-b border-gray-200 mb-5">
@@ -97,7 +99,7 @@
 
                 <input type="hidden" name="modo" :value="pestana">
 
-                <!-- PESTAÑA 1: Persona existente -->
+                <!-- PESTANA 1: Persona existente -->
                 <div x-show="pestana === 'existente'" x-transition>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Seleccionar persona <span class="text-red-500">*</span></label>
@@ -112,16 +114,16 @@
                             {% endfor %}
                         </select>
                         <p class="text-xs text-gray-400 mt-1">
-                            Aparecen alumnos, apoderados y personas registradas que aún no tienen cuenta de usuario.
+                            Aparecen alumnos, apoderados y personas registradas que aun no tienen cuenta de usuario.
                         </p>
                     </div>
                 </div>
 
-                <!-- PESTAÑA 2: Nueva persona (funcionario) -->
+                <!-- PESTANA 2: Nueva persona (funcionario) -->
                 <div x-show="pestana === 'nueva'" x-transition>
                     <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4">
                         <p class="text-xs text-indigo-700 font-medium">
-                            Use esta opción para registrar profesores, directores, UTP, inspectores u otros funcionarios que no están en el sistema.
+                            Use esta opcion para registrar profesores, directores, UTP, inspectores u otros funcionarios que no estan en el sistema.
                         </p>
                     </div>
 
@@ -138,7 +140,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
                                 <input type="text" name="apellido_p"
                                     value="{{ datos_form.get('apellido_p', '') }}"
-                                    placeholder="Ej: González"
+                                    placeholder="Ej: Gonzalez"
                                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                             </div>
                         </div>
@@ -148,7 +150,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
                                 <input type="text" name="apellido_m"
                                     value="{{ datos_form.get('apellido_m', '') }}"
-                                    placeholder="Ej: Muñoz"
+                                    placeholder="Ej: Munoz"
                                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                             </div>
                             <div>
@@ -157,7 +159,7 @@
                                     value="{{ datos_form.get('rut', '') }}"
                                     placeholder="Ej: 12.345.678-9"
                                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                                <p class="text-xs text-gray-400 mt-1">Se usará como nombre de usuario.</p>
+                                <p class="text-xs text-gray-400 mt-1">Se usara como nombre de usuario.</p>
                             </div>
                         </div>
 
@@ -170,7 +172,7 @@
                                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono (opcional)</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Telefono (opcional)</label>
                                 <input type="text" name="telefono"
                                     value="{{ datos_form.get('telefono', '') }}"
                                     placeholder="+56912345678"
@@ -191,26 +193,26 @@
                 <p class="text-xs text-gray-500 mt-0.5">RUT: {{ rut_persona }}</p>
             </div>
 
-            <!-- NUEVA CONTRASEÑA (opcional en editar) -->
+            <!-- NUEVA CONTRASENA (opcional en editar) -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña (opcional)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nueva contrasena (opcional)</label>
                 <input type="password" name="new_password" minlength="4"
-                    placeholder="Dejar vacío para mantener la actual"
+                    placeholder="Dejar vacio para mantener la actual"
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
             </div>
             {% endif %}
 
             {% if modo_form == 'crear' %}
-            <!-- CONTRASEÑA -->
+            <!-- CONTRASENA -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Contrasena <span class="text-red-500">*</span></label>
                 <input type="password" name="password" required minlength="4"
-                    placeholder="Mínimo 4 caracteres"
+                    placeholder="Minimo 4 caracteres"
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
             </div>
             {% endif %}
 
-            <!-- ROL (DINÁMICO DESDE BD) -->
+            <!-- ROL (DINAMICO DESDE BD) -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Rol <span class="text-red-500">*</span></label>
                 <select name="role_id" required x-model="rolSeleccionado"
@@ -226,7 +228,7 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- SECCIÓN: Asignación de Profesor Jefe (solo si rol = Profesor) -->
+            <!-- SECCION: Asignacion de Profesor Jefe (solo si rol = Profesor) -->
             <!-- ============================================================ -->
             <div x-show="esProfesor" x-transition.duration.300ms class="space-y-4">
                 <div class="border-t border-gray-200 pt-4">
@@ -235,7 +237,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                         </svg>
-                        Asignación de Curso
+                        Asignacion de Curso
                     </h4>
 
                     {% if jefe_info %}
@@ -293,7 +295,7 @@
                     </div>
 
                     <p class="text-xs text-gray-400 mt-2" x-show="!esJefe">
-                        Marque la casilla si desea asignar a este profesor como jefe de un curso específico.
+                        Marque la casilla si desea asignar a este profesor como jefe de un curso especifico.
                     </p>
                 </div>
             </div>
@@ -304,7 +306,7 @@
                     {% if not usuario or usuario.IsActive %}checked{% endif %}
                     class="h-4 w-4 rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500">
                 <label for="is_active" class="ml-2 block text-sm font-medium text-gray-700 cursor-pointer">
-                    Usuario activo (puede iniciar sesión)
+                    Usuario activo (puede iniciar sesion)
                 </label>
             </div>
 
@@ -313,10 +315,10 @@
             <div class="border-t border-gray-200 pt-4">
                 <a href="{{ url_for('gestion_usuarios.resetear_password', user_id=usuario.UserId) }}"
                    class="inline-block px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition"
-                   onclick="return confirm('¿Generar una nueva contraseña temporal?')">
-                    Resetear Contraseña
+                   onclick="return confirm('¿Generar una nueva contrasena temporal?')">
+                    Resetear Contrasena
                 </a>
-                <span class="text-xs text-gray-400 ml-2">Genera una contraseña aleatoria de 8 caracteres</span>
+                <span class="text-xs text-gray-400 ml-2">Genera una contrasena aleatoria de 8 caracteres</span>
             </div>
             {% endif %}
 

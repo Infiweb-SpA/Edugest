@@ -17,7 +17,7 @@
             </div>
         </div>
         {% if can('admin_roles_crud', 'edit') %}
-        <a href="{{ url_for('admin.nuevo_rol') }}" 
+        <a href="{{ url_for('admin.nuevo_rol') }}"
            class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm font-medium">
             ➕ Nuevo Rol
         </a>
@@ -60,6 +60,7 @@
                         {% endif %}
                         {% if can('admin_roles_crud', 'delete') and rol.RoleName not in ['Administrador', 'Soporte', 'Profesor', 'Apoderado', 'Estudiante'] %}
                         <form action="{{ url_for('admin.eliminar_rol', role_id=rol.RoleId) }}" method="POST" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('¿Eliminar este rol?')">Eliminar</button>
                         </form>
                         {% endif %}

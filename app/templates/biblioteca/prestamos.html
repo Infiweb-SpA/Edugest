@@ -82,11 +82,13 @@
                     {% if p.Status in ['Prestado', 'Atrasado'] %}
                     <div class="flex justify-end gap-1">
                         <form action="{{ url_for('biblioteca.devolver_prestamo', loan_id=p.LoanId) }}" method="POST" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">
                                 ✓ Devolver
                             </button>
                         </form>
                         <form action="{{ url_for('biblioteca.renovar_prestamo', loan_id=p.LoanId) }}" method="POST" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="dias_extra" value="7">
                             <button type="submit" class="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
                                 ↻ Renovar

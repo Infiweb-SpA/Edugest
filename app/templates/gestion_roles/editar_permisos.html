@@ -21,6 +21,7 @@
 
     <!-- Formulario de permisos -->
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
                 <h4 class="text-sm font-bold text-gray-600 uppercase tracking-wider">Matriz de Permisos por Módulo</h4>
@@ -91,7 +92,6 @@
 
 <script>
 function actualizarColor(select) {
-    // Limpiar clases de color
     select.classList.remove(
         'bg-red-50', 'text-red-700', 'border-red-200',
         'bg-amber-50', 'text-amber-700', 'border-amber-200',

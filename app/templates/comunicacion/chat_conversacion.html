@@ -77,6 +77,7 @@
     <form method="POST"
           action="{{ url_for('comunicacion.chat_enviar', contacto_id=contacto.PersonId) }}"
           class="flex items-center gap-3 p-4 bg-white rounded-b-xl border border-gray-200 shadow-sm shrink-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="text"
                name="mensaje"
                id="chat-input"

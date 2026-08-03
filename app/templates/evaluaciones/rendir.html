@@ -10,6 +10,7 @@
     </div>
 
     <form method="POST" class="p-6 space-y-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% for item in preguntas_data %}
         <div class="space-y-3 p-4 border border-gray-100 rounded-xl bg-slate-50">
             <h4 class="font-bold text-gray-900 text-sm">

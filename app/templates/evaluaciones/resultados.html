@@ -4,6 +4,7 @@
 
 {% block content %}
 <form method="POST" action="{{ url_for('evaluaciones.guardar_nota_manual', inst_id=instrumento.InstrumentId) }}" id="formNotas">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div class="max-w-7xl mx-auto bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
 
     <!-- CABECERA -->

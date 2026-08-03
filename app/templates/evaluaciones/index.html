@@ -53,6 +53,7 @@
                     </a>
                     
                     <form action="{{ url_for('evaluaciones.cambiar_visibilidad', inst_id=inst.InstrumentId) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="text-xs px-3 py-2 rounded-lg font-medium cursor-pointer text-white {% if inst.IsVisible %} bg-red-600 hover:bg-red-700 {% else %} bg-emerald-600 hover:bg-emerald-700 {% endif %}">
                             {% if inst.IsVisible %} Ocultar {% else %} Publicar {% endif %}
                         </button>

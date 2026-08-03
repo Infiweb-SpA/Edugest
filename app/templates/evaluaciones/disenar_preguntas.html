@@ -10,6 +10,7 @@
         <h3 class="text-base font-bold text-gray-900 mb-4">Nueva Pregunta</h3>
 
         <form method="POST" action="{{ url_for('evaluaciones.disenar_preguntas_post', inst_id=instrumento.InstrumentId) }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <!-- TIPO DE PREGUNTA -->
             <div>

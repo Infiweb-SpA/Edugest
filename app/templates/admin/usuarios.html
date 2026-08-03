@@ -43,7 +43,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ u.Username }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ u.person.FirstName }} {{ u.person.LastName or '' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                             {% if u.role.RoleName == 'Administrador' %}bg-purple-100 text-purple-800
                             {% elif u.role.RoleName == 'Soporte' %}bg-blue-100 text-blue-800
                             {% elif u.role.RoleName == 'Profesor' %}bg-green-100 text-green-800
@@ -67,12 +67,14 @@
                         <a href="{{ url_for('admin.editar_usuario', user_id=u.UserId) }}" class="text-indigo-600 hover:text-indigo-900">Editar</a>
                         {% endif %}
                         <form action="{{ url_for('admin.toggle_usuario', user_id=u.UserId) }}" method="POST" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="text-gray-600 hover:text-gray-900">
                                 {% if u.IsActive %}Desactivar{% else %}Activar{% endif %}
                             </button>
                         </form>
                         {% if can('admin_users_crud', 'delete') %}
                         <form action="{{ url_for('admin.eliminar_usuario', user_id=u.UserId) }}" method="POST" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('¿Eliminar este usuario?')">Eliminar</button>
                         </form>
                         {% endif %}

@@ -90,6 +90,7 @@
                                     Editar
                                 </a>
                                 <form method="POST" action="{{ url_for('gestion_usuarios.toggle_activo', user_id=u.usuario.UserId) }}" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit"
                                         class="px-2 py-1 text-xs font-medium rounded transition
                                         {% if u.usuario.IsActive %}
