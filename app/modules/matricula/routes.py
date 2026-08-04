@@ -829,7 +829,7 @@ def _serialize_estudiante(person_id):
             'tipo_permanencia': pie.TipoPermanencia,
         }
 
-        return {
+    return {
         'persona': {
             'person_id': persona.PersonId,
             'first_name': persona.FirstName,
